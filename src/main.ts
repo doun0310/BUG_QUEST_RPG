@@ -141,6 +141,10 @@ function renderApp() {
             <button class="dropdown-item" id="btn-open-pet"> 펫 Lv.${userState.pet.level}</button>
             <button class="dropdown-item" id="btn-open-forge"> 장비 강화 +${userState.weapon.enhanceLevel}</button>
             <div style="border-top: 1px solid var(--panel-border); margin: 0.2rem 0;"></div>
+            <div style="padding: 0.4rem 0.8rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-main);">
+              <span>🔊 볼륨:</span>
+              <input type="range" id="sound-volume-range" min="0" max="100" value="${Math.round(soundFx.getVolume() * 100)}" style="width: 80px; accent-color: var(--primary); cursor: pointer;" />
+            </div>
             <button class="dropdown-item" id="btn-toggle-sound"> 사운드 ${soundFx.getIsMuted() ? 'OFF' : 'ON'}</button>
           </div>
         </div>
@@ -201,13 +205,13 @@ function renderApp() {
           ${filteredMonsters.map(m => {
             const isHit = hitMonsterId === m.id;
             return `
-              <div class="card" style="border-left: 4px solid ${m.isOverdue ? 'var(--danger)' : m.isBoss ? 'var(--danger)' : m.severity === 'Major' ? 'var(--warning)' : 'var(--primary)'};">
+              <div class="card monster-card-animated" style="border-left: 4px solid ${m.isOverdue ? 'var(--danger)' : m.isBoss ? 'var(--danger)' : m.severity === 'Major' ? 'var(--warning)' : 'var(--primary)'};">
                 
                 <div class="dq-monster-container">
                   <img src="${m.monsterImage || '/cyber_bug.jpg'}" alt="Monster" class="dq-monster-img ${m.status === 'Defeated' ? 'dq-monster-defeated' : ''} ${isHit ? 'hit-animation' : ''}" />
                   
                   ${isHit && lastHitDamageText ? `
-                    <div class="damage-float-text">${lastHitDamageText}</div>
+                    <div class="damage-float-text ${lastHitDamageText.includes('CRITICAL') || lastHitDamageText.includes('2X') ? 'critical' : ''}">${lastHitDamageText}</div>
                   ` : ''}
 
                   <div style="flex: 1;">
@@ -1659,6 +1663,16 @@ function attachEvents() {
     renderApp();
   });
 
+  document.querySelector('#btn-toggle-sound')?.addEventListener('click', () => {
+    soundFx.toggleMute();
+    renderApp();
+  });
+
+  document.querySelector('#sound-volume-range')?.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value, 10) / 100;
+    soundFx.setVolume(val);
+  });
+
   document.querySelector('#btn-toggle-theme')?.addEventListener('click', () => {
     if (currentTheme === 'dark') currentTheme = 'light';
     else if (currentTheme === 'light') currentTheme = 'matrix';
@@ -1762,7 +1776,15 @@ function attachEvents() {
     const monster = monstersState.find(m => m.id === attackTargetId);
     
     if (monster && monster.status === 'Active') {
-      soundFx.playHitSound();
+      const isCritical = isSkillActiveNextAttack || Math.random() > 0.6;
+      
+      if (isSkillActiveNextAttack) {
+        soundFx.playSkillCastSound();
+      } else if (isCritical) {
+        soundFx.playCriticalHitSound();
+      } else {
+        soundFx.playHitSound();
+      }
 
       // AI Code Quality Rating Simulation
       const aiQualityMultiplier = Math.random() > 0.3 ? 1.2 : 0.8;
@@ -1774,9 +1796,17 @@ function attachEvents() {
       }
 
       if (monster.defenseTrait === 'Dodge' && Math.random() < 0.2) {
+        soundFx.playDodgeSound();
         battleLogMessage = `[${monster.title}] 몬스터가 회피 스킬을 사용하여 데미지를 입지 않았습니다!`;
+        hitMonsterId = monster.id;
+        lastHitDamageText = `DODGE!`;
         activeModal = null;
         renderApp();
+        setTimeout(() => {
+          hitMonsterId = null;
+          lastHitDamageText = null;
+          renderApp();
+        }, 800);
         return;
       }
 
@@ -1794,7 +1824,7 @@ function attachEvents() {
       mockGuildWar.guildA.score += baseDamage;
       
       hitMonsterId = monster.id;
-      lastHitDamageText = `- ${baseDamage} HP`;
+      lastHitDamageText = isCritical ? `CRITICAL! -${baseDamage} HP` : `-${baseDamage} HP`;
 
       battleLogMessage = `[AI 코드 검수 우수] ${userState.name}의 공격! ${monster.title}에게 ${baseDamage} 데미지! (Slack 채널 알림 발송 완료)`;
 
@@ -1821,7 +1851,7 @@ function attachEvents() {
         }
 
         soundFx.playVictorySound();
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } });
 
         battleLogMessage = `${monster.title} 몬스터 토벌 완료! (+${monster.rewardXp} XP 획득, Slack 축하 메시지 전송)`;
 
@@ -1847,6 +1877,8 @@ function attachEvents() {
           userState.level += 1;
           userState.xp -= userState.maxXp;
           userState.maxXp += 200;
+          soundFx.playLevelUpSound();
+          confetti({ particleCount: 200, spread: 120, origin: { y: 0.4 } });
         }
 
         activeModal = 'lootBox';
