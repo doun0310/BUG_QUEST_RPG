@@ -340,6 +340,21 @@ function renderChartIfModalOpen() {
         if (burnChartInstance) {
           burnChartInstance.destroy();
         }
+
+        const chartCtx = ctx.getContext('2d');
+        let idealGradient = '#38bdf8';
+        let actualGradient = '#fb7185';
+
+        if (chartCtx) {
+          idealGradient = chartCtx.createLinearGradient(0, 0, 0, 250) as any;
+          (idealGradient as any).addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+          (idealGradient as any).addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+          actualGradient = chartCtx.createLinearGradient(0, 0, 0, 250) as any;
+          (actualGradient as any).addColorStop(0, 'rgba(251, 113, 133, 0.5)');
+          (actualGradient as any).addColorStop(1, 'rgba(251, 113, 133, 0.0)');
+        }
+
         burnChartInstance = new Chart(ctx, {
           type: 'line',
           data: {
@@ -349,27 +364,71 @@ function renderChartIfModalOpen() {
                 label: '목표 예산 소진 (Ideal)',
                 data: [16.6, 33.3, 58.3, 75.0, 100],
                 borderColor: '#38bdf8',
-                backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                borderDash: [5, 5],
-                fill: true
+                backgroundColor: idealGradient,
+                borderDash: [6, 6],
+                tension: 0.35,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                pointBackgroundColor: '#38bdf8'
               },
               {
                 label: '실제 예산 소진 (Actual)',
                 data: [22.0, 48.0, 73.0, null, null],
                 borderColor: '#fb7185',
-                backgroundColor: 'rgba(251, 113, 133, 0.2)',
+                backgroundColor: actualGradient,
                 borderWidth: 3,
-                fill: true
+                tension: 0.3,
+                fill: true,
+                pointRadius: 6,
+                pointHoverRadius: 9,
+                pointBackgroundColor: '#fb7185'
               }
             ]
           },
           options: {
             responsive: true,
+            animation: {
+              duration: 1000,
+              easing: 'easeOutQuart'
+            },
+            plugins: {
+              tooltip: {
+                backgroundColor: '#121824',
+                titleColor: '#f1f5f9',
+                bodyColor: '#94a3b8',
+                borderColor: '#232d3f',
+                borderWidth: 1,
+                padding: 12,
+                boxPadding: 6,
+                callbacks: {
+                  label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                      label += ': ';
+                    }
+                    if (context.parsed.y !== null) {
+                      label += context.parsed.y + '%';
+                      if (context.dataset.label?.includes('Actual')) {
+                        label += ' (⚠️ 초과 소진 주의)';
+                      }
+                    }
+                    return label;
+                  }
+                }
+              }
+            },
             scales: {
+              x: {
+                grid: { color: 'rgba(35, 45, 63, 0.5)' },
+                ticks: { color: '#94a3b8' }
+              },
               y: {
                 beginAtZero: true,
                 max: 100,
+                grid: { color: 'rgba(35, 45, 63, 0.5)' },
                 ticks: {
+                  color: '#94a3b8',
                   callback: (value) => `${value}%`
                 }
               }
@@ -387,6 +446,7 @@ function renderChartIfModalOpen() {
         if (radarChartInstance) {
           radarChartInstance.destroy();
         }
+
         radarChartInstance = new Chart(ctx, {
           type: 'radar',
           data: {
@@ -396,18 +456,41 @@ function renderChartIfModalOpen() {
                 label: `${userState.name} 개발 스탯`,
                 data: [userState.stats.productivity, userState.stats.testCoverage, userState.stats.agility, userState.stats.codeReview],
                 borderColor: '#38bdf8',
-                backgroundColor: 'rgba(56, 189, 248, 0.25)',
-                borderWidth: 2
+                backgroundColor: 'rgba(56, 189, 248, 0.3)',
+                pointBackgroundColor: '#38bdf8',
+                pointBorderColor: '#ffffff',
+                pointHoverBackgroundColor: '#ffffff',
+                pointHoverBorderColor: '#38bdf8',
+                borderWidth: 3,
+                pointRadius: 5
               }
             ]
           },
           options: {
             responsive: true,
+            animation: {
+              duration: 1200,
+              easing: 'easeOutElastic'
+            },
+            plugins: {
+              tooltip: {
+                backgroundColor: '#121824',
+                titleColor: '#38bdf8',
+                bodyColor: '#f1f5f9',
+                borderColor: '#232d3f',
+                borderWidth: 1,
+                padding: 10,
+                callbacks: {
+                  label: (context) => ` 현재 측정 수치: ${context.formattedValue}점 / 100점`
+                }
+              }
+            },
             scales: {
               r: {
                 angleLines: { color: '#232d3f' },
                 grid: { color: '#232d3f' },
-                pointLabels: { color: '#f1f5f9', font: { size: 12 } },
+                pointLabels: { color: '#f1f5f9', font: { size: 12, weight: 'bold' } },
+                ticks: { backdropColor: 'transparent', color: '#94a3b8' },
                 suggestedMin: 0,
                 suggestedMax: 100
               }
@@ -1341,6 +1424,68 @@ function renderModals() {
 
           <div style="display: flex; justify-content: flex-end;">
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (activeModal === 'codex') {
+    const totalCount = monstersState.length;
+    const defeatedCount = monstersState.filter(m => m.status === 'Defeated').length;
+    const activeCount = totalCount - defeatedCount;
+
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 580px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">📖 몬스터 도감 & 버그 토벌 전적 (Codex)</h2>
+            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+
+          <!-- Codex Summary Header -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+            <div style="background: var(--inner-box-bg); padding: 0.65rem; border-radius: 8px; text-align: center; border: 1px solid var(--panel-border);">
+              <div style="font-size: 0.7rem; color: var(--text-sub);">발견된 버그 몬스터</div>
+              <div style="font-size: 1.15rem; font-weight: 800; color: var(--primary);">${totalCount} 마리</div>
+            </div>
+            <div style="background: var(--inner-box-bg); padding: 0.65rem; border-radius: 8px; text-align: center; border: 1px solid var(--panel-border);">
+              <div style="font-size: 0.7rem; color: var(--text-sub);">토벌 완료 (Slain)</div>
+              <div style="font-size: 1.15rem; font-weight: 800; color: var(--success);">${defeatedCount} 마리</div>
+            </div>
+            <div style="background: var(--inner-box-bg); padding: 0.65rem; border-radius: 8px; text-align: center; border: 1px solid var(--panel-border);">
+              <div style="font-size: 0.7rem; color: var(--text-sub);">전장 출현 중 (Active)</div>
+              <div style="font-size: 1.15rem; font-weight: 800; color: var(--danger);">${activeCount} 마리</div>
+            </div>
+          </div>
+
+          <!-- Codex List Grid -->
+          <div style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 320px; overflow-y: auto; padding-right: 0.3rem;">
+            ${monstersState.map(m => `
+              <div style="background: var(--inner-box-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid ${m.status === 'Defeated' ? 'var(--success-light)' : 'var(--panel-border)'}; opacity: ${m.status === 'Defeated' ? 0.85 : 1};">
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                  <img src="${m.monsterImage || '/cyber_bug.jpg'}" alt="Monster" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1px solid var(--panel-border); ${m.status === 'Defeated' ? 'filter: grayscale(100%);' : ''}" />
+                  <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                      <strong style="font-size: 0.85rem; color: ${m.status === 'Defeated' ? 'var(--text-sub)' : 'var(--text-main)'};">
+                        ${m.title}
+                      </strong>
+                      <span class="badge ${m.status === 'Defeated' ? 'badge-success' : 'badge-danger'}">
+                        ${m.status === 'Defeated' ? '🏆 토벌 도감 등록' : m.severity}
+                      </span>
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--text-sub);">
+                      위험도: <strong>${m.severity}</strong> | 처치 경험치: <strong style="color: var(--warning);">+${m.rewardXp} XP</strong>
+                    </div>
+                    ${m.postMortem ? `
+                      <div style="font-size: 0.7rem; color: var(--primary); margin-top: 0.2rem; background: rgba(56, 189, 248, 0.1); padding: 0.2rem 0.4rem; border-radius: 4px;">
+                        📌 사후 분석: ${m.postMortem.category} (${m.postMortem.actionItem})
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
       </div>
