@@ -47,7 +47,7 @@ let lastHitDamageText: string | null = null;
 let isSkillActiveNextAttack: boolean = false;
 
 // Modal States
-let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | null = null;
+let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | null = null;
 let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
@@ -123,7 +123,9 @@ function renderApp() {
              RPG 메뉴 ▼
           </button>
           <div class="dropdown-menu" id="rpg-dropdown-menu">
-            <button class="dropdown-item" id="btn-open-cicdpipeline"> CI/CD 파이프라인 모니터링</button>
+            <button class="dropdown-item" id="btn-open-releasemilestone">🚀 v2.0 릴리즈 배포 마일스톤</button>
+            <button class="dropdown-item" id="btn-open-slackbot">🤖 Slack / Teams 챗봇 연동</button>
+            <button class="dropdown-item" id="btn-open-cicdpipeline">🚀 CI/CD 파이프라인 모니터링</button>
             <button class="dropdown-item" id="btn-open-aiprediction"> AI 버그 예측 모니터링</button>
             <button class="dropdown-item" id="btn-open-socialfeed"> 팀 소셜 피드 & 칭찬</button>
             <button class="dropdown-item" id="btn-open-raidshop"> 레이드 코인 상점</button>
@@ -415,6 +417,78 @@ function renderChartIfModalOpen() {
 
 function renderModals() {
   if (!activeModal) return '';
+
+  if (activeModal === 'releaseMilestone') {
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 540px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">🚀 v2.0 프로덕션 정기 릴리즈 마일스톤</h2>
+            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+
+          <div style="background: var(--inner-box-bg); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.35rem;">
+              <span>v2.0 배포 준비율: <strong>85% (17/20 버그 토벌)</strong></span>
+              <span style="color: var(--primary); font-weight: 700;">D-2 남음</span>
+            </div>
+            <div class="hp-bar-outer">
+              <div class="xp-bar-inner" style="width: 85%;"></div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem;">
+            <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.82rem;">✅ [보안] JWT 인증 토큰 갱신 버그 토벌</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub);">개발자 박지훈 완료</div>
+              </div>
+              <span class="badge badge-success">완료</span>
+            </div>
+
+            <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.82rem;">🔥 [결제] 결제 모듈 Memory Leak (BOSS RAID)</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub);">레이드 진행 중 (HP 400/1000)</div>
+              </div>
+              <span class="badge badge-warning">진행 중</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end;">
+            <button class="action-btn" id="btn-deploy-release">💥 v2.0 최종 배포 승인 & 전원 300 XP 수령</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (activeModal === 'slackBot') {
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 540px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">🤖 Slack / Teams 대화형 슬래시 명령 시뮬레이터</h2>
+            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+
+          <div style="background: var(--inner-box-bg); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 1rem;">
+            <div style="font-size: 0.78rem; color: var(--text-sub); margin-bottom: 0.35rem;">사용 가능한 Slack 슬래시 명령어 모음</div>
+            <code style="display: block; background: #000; color: #4ade80; padding: 0.45rem 0.65rem; border-radius: 4px; font-size: 0.78rem; margin-bottom: 0.35rem;">/bug-attack [몬스터ID] [PR-URL]</code>
+            <code style="display: block; background: #000; color: #38bdf8; padding: 0.45rem 0.65rem; border-radius: 4px; font-size: 0.78rem;">/bug-status (전장 몬스터 HP 실시간 조회)</code>
+          </div>
+
+          <div style="background: var(--inner-box-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+            <strong style="font-size: 0.82rem;">슬래시 명령 실시간 실행 테스트:</strong>
+            <div style="display: flex; gap: 0.35rem; margin-top: 0.45rem;">
+              <input type="text" class="form-input" id="slack-cmd-input" value="/bug-attack AUTH-401 https://github.com/org/repo/pull/142" style="flex: 1;" />
+              <button class="action-btn" id="btn-run-slack-cmd" style="padding: 0.35rem 0.75rem;">전송</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   if (activeModal === 'cicdPipeline') {
     return `
@@ -1285,6 +1359,35 @@ function attachEvents() {
     rpgDropdownMenu?.classList.remove('show');
   });
 
+  document.querySelector('#btn-open-releasemilestone')?.addEventListener('click', () => {
+    activeModal = 'releaseMilestone';
+    renderApp();
+  });
+
+  document.querySelector('#btn-deploy-release')?.addEventListener('click', () => {
+    soundFx.playVictorySound();
+    confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
+    userState.xp += 300;
+    saveState();
+    battleLogMessage = `🎉 [v2.0 배포 성공] 프로덕션 정기 릴리즈가 성공적으로 통합되어 전원에 300 XP 수령 보상이 지급되었습니다!`;
+    activeModal = null;
+    renderApp();
+  });
+
+  document.querySelector('#btn-open-slackbot')?.addEventListener('click', () => {
+    activeModal = 'slackBot';
+    renderApp();
+  });
+
+  document.querySelector('#btn-run-slack-cmd')?.addEventListener('click', () => {
+    const cmdText = (document.querySelector('#slack-cmd-input') as HTMLInputElement).value;
+    soundFx.playHitSound();
+    confetti({ particleCount: 40 });
+    battleLogMessage = `💬 [Slack Bot 응답] '${cmdText}' 명령으로 AUTH-401 몬스터에게 250 타격을 입혔습니다!`;
+    activeModal = null;
+    renderApp();
+  });
+
   document.querySelector('#btn-open-cicdpipeline')?.addEventListener('click', () => {
     activeModal = 'cicdPipeline';
     renderApp();
@@ -1318,7 +1421,7 @@ function attachEvents() {
     btn.addEventListener('click', () => {
       soundFx.playVictorySound();
       confetti({ particleCount: 50 });
-      battleLogMessage = `🛍️ [상점 구매 완료] 리워드 상품이 정상 교환되어 보상함으로 지급되었습니다!`;
+      battleLogMessage = ` [상점 구매 완료] 리워드 상품이 정상 교환되어 보상함으로 지급되었습니다!`;
       activeModal = null;
       renderApp();
     });
@@ -1333,7 +1436,7 @@ function attachEvents() {
     e.preventDefault();
     soundFx.playVictorySound();
     confetti({ particleCount: 50 });
-    battleLogMessage = `🔌 [API 연동 성공] 외부 이슈 트래커 동기화가 성공적으로 설정되었습니다!`;
+    battleLogMessage = ` [API 연동 성공] 외부 이슈 트래커 동기화가 성공적으로 설정되었습니다!`;
     activeModal = null;
     renderApp();
   });
@@ -1388,7 +1491,7 @@ function attachEvents() {
     saveState();
     soundFx.playHitSound();
     confetti({ particleCount: 50 });
-    battleLogMessage = `🚨 [신규 몬스터 출현] ${title} 버그 몬스터가 전장에 배치되었습니다!`;
+    battleLogMessage = ` [신규 몬스터 출현] ${title} 버그 몬스터가 전장에 배치되었습니다!`;
 
     activeModal = null;
     renderApp();
@@ -1419,7 +1522,7 @@ function attachEvents() {
       userState.xp += 50;
       soundFx.playVictorySound();
       confetti({ particleCount: 40 });
-      battleLogMessage = `📝 [${monster.title}] 사후 분석 회고가 기록되었습니다! (+50 XP 수령)`;
+      battleLogMessage = ` [${monster.title}] 사후 분석 회고가 기록되었습니다! (+50 XP 수령)`;
       saveState();
     }
 
@@ -1447,9 +1550,9 @@ function attachEvents() {
     if (coopBossState.currentHp === 0) {
       soundFx.playVictorySound();
       confetti({ particleCount: 150, spread: 100 });
-      alert(`🎉 [${coopBossState.name}] 레이드 완전 처치! 팀원 전체에게 [${coopBossState.rewardItem}] 보상이 수령되었습니다!`);
+      battleLogMessage = ` [${coopBossState.name}] 레이드 완전 처치! 팀원 전체에게 [${coopBossState.rewardItem}] 보상이 수령되었습니다!`;
     } else {
-      alert(`레이드 보스에게 -300 HP의 팀 합동 공격을 성공시켰습니다!`);
+      battleLogMessage = ` [${coopBossState.name}] 레이드 보스에게 -300 HP의 팀 합동 공격을 성공시켰습니다!`;
     }
     renderApp();
   });
@@ -1519,9 +1622,9 @@ function attachEvents() {
       userState.weapon.enhanceLevel += 1;
       userState.stats.productivity += 2;
       confetti({ particleCount: 80, spread: 60 });
-      alert(`강화 성공! [${userState.weapon.name}] 이 +${userState.weapon.enhanceLevel} 강화되었습니다! (공격력 스탯 +2 상승)`);
+      battleLogMessage = `강화 성공! [${userState.weapon.name}] 이 +${userState.weapon.enhanceLevel} 강화되었습니다! (공격력 스탯 +2 상승)`;
     } else {
-      alert(`강화 실패! 장비 레벨이 유지되었습니다.`);
+      battleLogMessage = `강화 실패! 장비 레벨이 유지되었습니다.`;
     }
     renderApp();
   });
@@ -1540,7 +1643,7 @@ function attachEvents() {
         userState.xp += quest.rewardXp;
         soundFx.playVictorySound();
         confetti({ particleCount: 50 });
-        alert(`[${quest.title}] 퀘스트 완료! +${quest.rewardXp} XP 획득`);
+        battleLogMessage = `[${quest.title}] 퀘스트 완료! +${quest.rewardXp} XP 획득`;
         renderApp();
       }
     });
@@ -1600,7 +1703,7 @@ function attachEvents() {
 
   document.querySelector('#btn-get-ai-hint')?.addEventListener('click', () => {
     const targetMonster = monstersState.find(m => m.id === attackTargetId);
-    alert(`🤖 [AI 디버깅 가이드 - ${targetMonster?.title}]\n\n추천 힌트:\n1. 소스코드 내 예외 처리(try-catch) 블록을 확인하세요.\n2. Unit Test 커버리지를 80% 이상 확보하여 PR을 생성하면 크리티컬 히트(2배 피해)가 발동합니다!`);
+    battleLogMessage = ` [AI 디버깅 가이드 - ${targetMonster?.title}]\n\n추천 힌트:\n1. 소스코드 내 예외 처리(try-catch) 블록을 확인하세요.\n2. Unit Test 커버리지를 80% 이상 확보하여 PR을 생성하면 크리티컬 히트(2배 피해)가 발동합니다!`;
   });
 
   document.querySelectorAll('.btn-use-item').forEach(btn => {
@@ -1615,9 +1718,8 @@ function attachEvents() {
           userState.hp = Math.min(userState.maxHp, userState.hp + 30);
           battleLogMessage = `[${item.name}] 사용으로 개발자의 체력(HP)이 +30 회복되었습니다!`;
         } else {
-          alert(`[${item.name}] 도구를 사용하였습니다.`);
+          battleLogMessage = `[${item.name}] 도구를 사용하였습니다.`;
         }
-
         userState.inventory.splice(itemIndex, 1);
         activeModal = null;
         renderApp();
