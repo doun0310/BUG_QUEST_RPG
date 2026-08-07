@@ -56,6 +56,28 @@
   --dq-window-border: #0284c7;
 }
 
+[data-theme="matrix"] {
+  --bg-color: #051409;
+  --header-bg: #0b2612;
+  --panel-bg: #0b2612;
+  --inner-box-bg: #11381b;
+  --input-bg: #11381b;
+  --text-main: #4ade80;
+  --text-sub: #86efac;
+  --panel-border: #166534;
+  --primary: #22c55e;
+  --primary-hover: #15803d;
+  --primary-light: rgba(34, 197, 94, 0.15);
+  --danger: #ef4444;
+  --danger-light: rgba(239, 68, 68, 0.15);
+  --warning: #eab308;
+  --warning-light: rgba(234, 179, 8, 0.15);
+  --success: #4ade80;
+  --success-light: rgba(74, 222, 128, 0.15);
+  --dq-window-bg: #051409;
+  --dq-window-border: #22c55e;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

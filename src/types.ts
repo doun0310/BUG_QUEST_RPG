@@ -80,6 +80,12 @@ export interface BugMonster {
   dueDate?: string; // Deadline
   isOverdue?: boolean;
   dialogue?: string;
+  postMortem?: {
+    category: string;
+    rootCause: string;
+    actionItem: string;
+    createdAt: string;
+  };
 }
 
 export interface InventoryItem {
