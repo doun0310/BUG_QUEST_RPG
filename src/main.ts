@@ -47,7 +47,7 @@ let lastHitDamageText: string | null = null;
 let isSkillActiveNextAttack: boolean = false;
 
 // Modal States
-let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | null = null;
+let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | null = null;
 let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
@@ -123,13 +123,15 @@ function renderApp() {
              RPG 메뉴 ▼
           </button>
           <div class="dropdown-menu" id="rpg-dropdown-menu">
-            <button class="dropdown-item" id="btn-open-socialfeed">💬 팀 소셜 피드 & 칭찬</button>
-            <button class="dropdown-item" id="btn-open-raidshop">🛍️ 레이드 코인 상점</button>
-            <button class="dropdown-item" id="btn-open-apisync">🔌 외부 API 연동 설정</button>
-            <button class="dropdown-item" id="btn-open-achievements">🏆 업적 & 칭호 (Achievements)</button>
+            <button class="dropdown-item" id="btn-open-cicdpipeline"> CI/CD 파이프라인 모니터링</button>
+            <button class="dropdown-item" id="btn-open-aiprediction"> AI 버그 예측 모니터링</button>
+            <button class="dropdown-item" id="btn-open-socialfeed"> 팀 소셜 피드 & 칭찬</button>
+            <button class="dropdown-item" id="btn-open-raidshop"> 레이드 코인 상점</button>
+            <button class="dropdown-item" id="btn-open-apisync"> 외부 API 연동 설정</button>
+            <button class="dropdown-item" id="btn-open-achievements"> 업적 & 칭호 (Achievements)</button>
             <button class="dropdown-item" id="btn-open-codex"> 몬스터 도감 (Codex)</button>
             <button class="dropdown-item" id="btn-open-execanalytics"> 엑세큐티브 분석 리포트</button>
-            <button class="dropdown-item" id="btn-open-coopboss"> 팀 협동 레이드</button>
+            <button class="dropdown-item" id="btn-open-coopboss"> 팀 협동 레이드</button>s
             <button class="dropdown-item" id="btn-open-seasonpass"> 시즌패스 (Tier ${userState.seasonPass.currentTier})</button>
             <button class="dropdown-item" id="btn-open-guildwar"> 길드 대항전</button>
             <button class="dropdown-item" id="btn-open-radar"> 육성 스탯 차트</button>
@@ -251,7 +253,7 @@ function renderApp() {
                     <div style="display: flex; gap: 0.35rem; align-items: center;">
                       <span style="color: var(--success); font-weight: 600;">토벌 완료</span>
                       <button class="action-btn action-btn-secondary btn-open-postmortem" data-id="${m.id}" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;">
-                        ${m.postMortem ? '📝 회고 조회' : '📝 사후 회고 작성 (+50 XP)'}
+                        ${m.postMortem ? ' 회고 조회' : ' 사후 회고 작성 (+50 XP)'}
                       </button>
                     </div>
                   `}
@@ -413,6 +415,92 @@ function renderChartIfModalOpen() {
 
 function renderModals() {
   if (!activeModal) return '';
+
+  if (activeModal === 'cicdPipeline') {
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 540px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">🚀 CI/CD 파이프라인 실시간 상태</h2>
+            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+
+          <div style="background: var(--inner-box-bg); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.35rem;">
+              <span>연동 워크플로우: <strong>GitHub Actions (#8841)</strong></span>
+              <span style="color: var(--success); font-weight: 700;">● SUCCESS</span>
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-sub);">최근 빌드: main 브랜치 PR #142 자동 검증 완료 (경과 시간: 1분 12초)</div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.55rem;">
+            <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.82rem;">1. Lint & TypeScript Compile</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub);">0 Errors / 0 Warnings</div>
+              </div>
+              <span class="badge badge-success">PASSED</span>
+            </div>
+
+            <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.82rem;">2. Unit & Integration Test Suite</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub);">48 / 48 Tests Passed (Coverage 94%)</div>
+              </div>
+              <span class="badge badge-success">PASSED</span>
+            </div>
+
+            <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.82rem;">3. RPG Auto-Damage Webhook Trigger</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub);">[PAY-909] 몬스터 체력 -500 HP 자동 차감 트리거발동</div>
+              </div>
+              <span class="badge badge-success">TRIGGERED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (activeModal === 'aiPrediction') {
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 540px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">🔮 AI 버그 발생 위험도 예측 분석기</h2>
+            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+
+          <div style="background: var(--inner-box-bg); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 1rem;">
+            <div style="font-size: 0.78rem; color: var(--text-sub); margin-bottom: 0.35rem;">전체 코드베이스 버그 위험 지수</div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <span style="font-size: 1.4rem; font-weight: 800; color: var(--warning);">38% (안정)</span>
+              <span style="font-size: 0.72rem; color: var(--success);">최근 24시간 동안 위험 12% 감소</span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.55rem;">
+            <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+              <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.2rem;">
+                <span>AuthMiddleware.ts (토큰 검증 모듈)</span>
+                <span style="color: var(--danger);">위험도 88% (높음)</span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-sub);">AI 진단: 야간 커밋 비중이 높고 테스트 커버리지가 45%로 낮아 잠재적 버그 출현 가능성 높음.</div>
+            </div>
+
+            <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+              <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.2rem;">
+                <span>PaymentGateway.ts (결제 API)</span>
+                <span style="color: var(--warning);">위험도 54% (보통)</span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-sub);">AI 진단: 외부 PG사 연동 타임아웃 예외 처리 보강 필요.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   if (activeModal === 'socialFeed') {
     return `
@@ -1195,6 +1283,16 @@ function attachEvents() {
 
   document.addEventListener('click', () => {
     rpgDropdownMenu?.classList.remove('show');
+  });
+
+  document.querySelector('#btn-open-cicdpipeline')?.addEventListener('click', () => {
+    activeModal = 'cicdPipeline';
+    renderApp();
+  });
+
+  document.querySelector('#btn-open-aiprediction')?.addEventListener('click', () => {
+    activeModal = 'aiPrediction';
+    renderApp();
   });
 
   document.querySelector('#btn-open-socialfeed')?.addEventListener('click', () => {
