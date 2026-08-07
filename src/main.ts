@@ -47,7 +47,7 @@ let lastHitDamageText: string | null = null;
 let isSkillActiveNextAttack: boolean = false;
 
 // Modal States
-let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | null = null;
+let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | null = null;
 let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
@@ -120,20 +120,24 @@ function renderApp() {
         <!-- Clean Dropdown Menu for all RPG Features -->
         <div class="dropdown-container">
           <button class="action-btn" id="btn-toggle-rpg-menu" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">
-            ⚙️ RPG 메뉴 ▼
+             RPG 메뉴 ▼
           </button>
           <div class="dropdown-menu" id="rpg-dropdown-menu">
-            <button class="dropdown-item" id="btn-open-codex">📖 몬스터 도감 (Codex)</button>
-            <button class="dropdown-item" id="btn-open-execanalytics">📈 엑세큐티브 분석 리포트</button>
-            <button class="dropdown-item" id="btn-open-coopboss">🐲 팀 협동 레이드</button>
-            <button class="dropdown-item" id="btn-open-seasonpass">🏆 시즌패스 (Tier ${userState.seasonPass.currentTier})</button>
-            <button class="dropdown-item" id="btn-open-guildwar">⚔️ 길드 대항전</button>
-            <button class="dropdown-item" id="btn-open-radar">📊 육성 스탯 차트</button>
-            <button class="dropdown-item" id="btn-open-simulator">🛡️ 예산 시뮬레이터</button>
-            <button class="dropdown-item" id="btn-open-pet">🐱 펫 Lv.${userState.pet.level}</button>
-            <button class="dropdown-item" id="btn-open-forge">🔨 장비 강화 +${userState.weapon.enhanceLevel}</button>
+            <button class="dropdown-item" id="btn-open-socialfeed">💬 팀 소셜 피드 & 칭찬</button>
+            <button class="dropdown-item" id="btn-open-raidshop">🛍️ 레이드 코인 상점</button>
+            <button class="dropdown-item" id="btn-open-apisync">🔌 외부 API 연동 설정</button>
+            <button class="dropdown-item" id="btn-open-achievements">🏆 업적 & 칭호 (Achievements)</button>
+            <button class="dropdown-item" id="btn-open-codex"> 몬스터 도감 (Codex)</button>
+            <button class="dropdown-item" id="btn-open-execanalytics"> 엑세큐티브 분석 리포트</button>
+            <button class="dropdown-item" id="btn-open-coopboss"> 팀 협동 레이드</button>
+            <button class="dropdown-item" id="btn-open-seasonpass"> 시즌패스 (Tier ${userState.seasonPass.currentTier})</button>
+            <button class="dropdown-item" id="btn-open-guildwar"> 길드 대항전</button>
+            <button class="dropdown-item" id="btn-open-radar"> 육성 스탯 차트</button>
+            <button class="dropdown-item" id="btn-open-simulator"> 예산 시뮬레이터</button>
+            <button class="dropdown-item" id="btn-open-pet"> 펫 Lv.${userState.pet.level}</button>
+            <button class="dropdown-item" id="btn-open-forge"> 장비 강화 +${userState.weapon.enhanceLevel}</button>
             <div style="border-top: 1px solid var(--panel-border); margin: 0.2rem 0;"></div>
-            <button class="dropdown-item" id="btn-toggle-sound">🔊 사운드 ${soundFx.getIsMuted() ? 'OFF' : 'ON'}</button>
+            <button class="dropdown-item" id="btn-toggle-sound"> 사운드 ${soundFx.getIsMuted() ? 'OFF' : 'ON'}</button>
           </div>
         </div>
 
@@ -409,6 +413,145 @@ function renderChartIfModalOpen() {
 
 function renderModals() {
   if (!activeModal) return '';
+
+  if (activeModal === 'socialFeed') {
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 520px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">💬 실시간 팀 소셜 피드 & 칭찬(Kudos)</h2>
+            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 320px; overflow-y: auto;">
+            <div style="background: var(--inner-box-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                <strong>🔥 개발자 박지훈</strong>
+                <span>방금 전</span>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-main); margin-bottom: 0.4rem;">
+                [PAY-909 결제 모듈 Memory Leak (BOSS RAID)] 몬스터에게 500 크리티컬 피해를 입혔습니다!
+              </p>
+              <button class="action-btn btn-send-kudos" style="padding: 0.2rem 0.55rem; font-size: 0.7rem;">👏 박수 보내기 (+10 Kudos)</button>
+            </div>
+
+            <div style="background: var(--inner-box-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                <strong>🔨 개발자 김민수</strong>
+                <span>10분 전</span>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-main); margin-bottom: 0.4rem;">
+                기계식 청축 키보드 +7 강화에 성공하였습니다! 🎉
+              </p>
+              <button class="action-btn btn-send-kudos" style="padding: 0.2rem 0.55rem; font-size: 0.7rem;">👏 박수 보내기 (+10 Kudos)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (activeModal === 'raidShop') {
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 520px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">🛍️ 보스 레이드 코인 교환 상점</h2>
+            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+
+          <div style="background: var(--inner-box-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 0.85rem; font-size: 0.82rem;">
+            보유 레이드 코인: <strong style="color: var(--warning); font-size: 1rem;">1,250 코인</strong>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.55rem;">
+            <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.85rem;">☕ 스타벅스 아메리카노 모바일 기프티콘</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.1rem;">실물 모바일 쿠폰 발송 (500 코인)</div>
+              </div>
+              <button class="action-btn btn-buy-shop-item" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">구매</button>
+            </div>
+
+            <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.85rem;">⚡ 크리티컬 2배 버프 포션</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.1rem;">다음 공격 피해 200% 증가 (300 코인)</div>
+              </div>
+              <button class="action-btn btn-buy-shop-item" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">구매</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (activeModal === 'apiSync') {
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 500px;">
+          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.85rem;">🔌 외부 이슈 트래커 REST API 동기화 설정</h2>
+          <form id="form-api-sync">
+            <div class="form-group">
+              <label>연동 연동 플랫폼 선택</label>
+              <select class="form-select" id="api-provider">
+                <option value="jira">Jira Software Cloud (Atlassian REST API v3)</option>
+                <option value="github">GitHub Issues / Pull Requests (GraphQL API)</option>
+                <option value="gitlab">GitLab Issue Board (REST API v4)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>API 엔드포인트 URL</label>
+              <input type="text" class="form-input" id="api-endpoint" value="https://company.atlassian.net/rest/api/3/issue" required />
+            </div>
+            <div class="form-group">
+              <label>Access Token / API Key</label>
+              <input type="password" class="form-input" id="api-token" value="bearer_tok_demo_99827164" required />
+            </div>
+            <div style="display: flex; gap: 0.35rem; justify-content: flex-end; margin-top: 0.85rem;">
+              <button type="button" class="action-btn action-btn-secondary" id="btn-close-modal">취소</button>
+              <button type="submit" class="action-btn">연동 테스트 & 동기화 실행</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+  }
+
+  if (activeModal === 'achievements') {
+    const achievementsList = [
+      { id: 'a1', title: '🏅 첫 버그 슬레이어', desc: '첫 번째 버그 몬스터를 성공적으로 토벌함', isUnlocked: true },
+      { id: 'a2', title: '🔥 콤보 연승의 지배자', desc: 'PR Merge 연속 3회 이상 콤보 달성', isUnlocked: userState.streakCount >= 3 },
+      { id: 'a3', title: '🔨 대장간의 전설', desc: '기계식 청축 키보드 +7 이상 강화 달성', isUnlocked: userState.weapon.enhanceLevel >= 7 },
+      { id: 'a4', title: '☕ 카페인 마스터', desc: '지친 개발자의 HP를 100까지 회복함', isUnlocked: userState.hp >= 100 },
+      { id: 'a5', title: '🐲 레이드 파티 리더', desc: '초월급 팀 협동 레이드 보스 타격 참여', isUnlocked: true }
+    ];
+
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 500px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">🏆 명예의 전당: 개발자 업적 & 칭호</h2>
+            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.55rem; max-height: 320px; overflow-y: auto;">
+            ${achievementsList.map(a => `
+              <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center; opacity: ${a.isUnlocked ? 1 : 0.5};">
+                <div>
+                  <div style="font-weight: 800; font-size: 0.85rem; color: ${a.isUnlocked ? 'var(--warning)' : 'var(--text-sub)'};">${a.title}</div>
+                  <div style="font-size: 0.73rem; color: var(--text-sub); margin-top: 0.1rem;">${a.desc}</div>
+                </div>
+                <div>
+                  ${a.isUnlocked ? '<span class="badge badge-warning">해금 완료</span>' : '<span class="badge">미해금</span>'}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   if (activeModal === 'codex') {
     const totalCount = monstersState.length;
@@ -1052,6 +1195,54 @@ function attachEvents() {
 
   document.addEventListener('click', () => {
     rpgDropdownMenu?.classList.remove('show');
+  });
+
+  document.querySelector('#btn-open-socialfeed')?.addEventListener('click', () => {
+    activeModal = 'socialFeed';
+    renderApp();
+  });
+
+  document.querySelectorAll('.btn-send-kudos').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      soundFx.playHitSound();
+      confetti({ particleCount: 30, spread: 40 });
+      (e.currentTarget as HTMLElement).innerText = '✅ Kudos 송부 완료!';
+      (e.currentTarget as HTMLElement).setAttribute('disabled', 'true');
+    });
+  });
+
+  document.querySelector('#btn-open-raidshop')?.addEventListener('click', () => {
+    activeModal = 'raidShop';
+    renderApp();
+  });
+
+  document.querySelectorAll('.btn-buy-shop-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      soundFx.playVictorySound();
+      confetti({ particleCount: 50 });
+      battleLogMessage = `🛍️ [상점 구매 완료] 리워드 상품이 정상 교환되어 보상함으로 지급되었습니다!`;
+      activeModal = null;
+      renderApp();
+    });
+  });
+
+  document.querySelector('#btn-open-apisync')?.addEventListener('click', () => {
+    activeModal = 'apiSync';
+    renderApp();
+  });
+
+  document.querySelector('#form-api-sync')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    soundFx.playVictorySound();
+    confetti({ particleCount: 50 });
+    battleLogMessage = `🔌 [API 연동 성공] 외부 이슈 트래커 동기화가 성공적으로 설정되었습니다!`;
+    activeModal = null;
+    renderApp();
+  });
+
+  document.querySelector('#btn-open-achievements')?.addEventListener('click', () => {
+    activeModal = 'achievements';
+    renderApp();
   });
 
   document.querySelector('#btn-open-codex')?.addEventListener('click', () => {
