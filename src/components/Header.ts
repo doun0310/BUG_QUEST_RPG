@@ -68,6 +68,8 @@ export function renderHeader(state: AppState): string {
             <button class="dropdown-item" id="btn-open-socialfeed">${iconLabel('chat', '팀 소셜 피드', '', 14)}</button>
             <button class="dropdown-item" id="btn-open-raidshop">${iconLabel('shop', '레이드 코인 상점', '', 14)}</button>
             <button class="dropdown-item" id="btn-open-apisync">${iconLabel('plug', '외부 API 연동', '', 14)}</button>
+            <button class="dropdown-item" id="btn-export-backup">${iconLabel('box', '데이터 백업 (JSON Export)', '', 14)}</button>
+            <button class="dropdown-item" id="btn-import-backup">${iconLabel('checklist', '데이터 복원 (JSON Import)', '', 14)}</button>
             <button class="dropdown-item" id="btn-open-achievements">${iconLabel('medal', '업적 &amp; 칭호', '', 14)}</button>
             <button class="dropdown-item" id="btn-open-codex">${iconLabel('book', '몬스터 도감', '', 14)}</button>
             <button class="dropdown-item" id="btn-open-execanalytics">${iconLabel('graph', '엑세큐티브 리포트', '', 14)}</button>

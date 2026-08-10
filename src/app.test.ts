@@ -3,6 +3,7 @@ import { calculateCapacity, mockTeamMembers } from './mockData';
 import { store } from './store';
 import { t, setLang } from './i18n';
 import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig } from './services/githubService';
+import { parseBackupFile } from './services/dataBackupService';
 
 describe('CMS Workload Capacity Calculations', () => {
   it('should correctly calculate total available and assigned hours for team members', () => {
@@ -79,5 +80,31 @@ describe('GitHub Integration Service', () => {
     const res = await verifyGitHubConfig(emptyConfig);
     expect(res.success).toBe(false);
     expect(res.message).toContain('Token');
+  });
+});
+
+describe('Data Backup & Restore Service', () => {
+  it('should validate JSON backup file content correctly', () => {
+    const validJson = JSON.stringify({
+      version: '1.2.0',
+      exportedAt: new Date().toISOString(),
+      userState: { name: '테스트 유저' },
+      monstersState: [{ id: 'm1', title: 'Test Monster' }],
+    });
+
+    const result = parseBackupFile(validJson);
+    expect(result.success).toBe(true);
+    expect(result.data?.userState.name).toBe('테스트 유저');
+  });
+
+  it('should reject invalid JSON format or missing required fields', () => {
+    const invalidJson = 'invalid json string';
+    const result1 = parseBackupFile(invalidJson);
+    expect(result1.success).toBe(false);
+
+    const missingFieldsJson = JSON.stringify({ version: '1.0' });
+    const result2 = parseBackupFile(missingFieldsJson);
+    expect(result2.success).toBe(false);
+    expect(result2.message).toContain('필수 요소');
   });
 });

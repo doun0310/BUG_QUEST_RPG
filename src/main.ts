@@ -5,7 +5,8 @@ import { soundFx } from './soundManager';
 import { showToast } from './toastManager';
 import { getLang, setLang } from './i18n';
 import { generateAIDebugGuide } from './aiService';
-import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig, mergeGitHubPullRequest } from './services/githubService';
+import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig, mergeGitHubPullRequest, fetchOpenPullRequests, type GitHubPullRequest } from './services/githubService';
+import { exportAppData, parseBackupFile } from './services/dataBackupService';
 import { icon } from './icons';
 import { renderHeader } from './components/Header';
 import { renderMonsterBoard } from './components/MonsterBoard';
@@ -30,18 +31,44 @@ import {
 } from './mockData';
 import type { VacationRequest, BugMonster, WebhookPayload, WeeklyQuest, TeamCoopBoss } from './types';
 
-let currentTheme: 'dark' | 'light' | 'matrix' = (localStorage.getItem('theme') as any) || 'dark';
+let currentTheme: 'dark' | 'light' | 'matrix' = 'dark';
+try {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light' || savedTheme === 'matrix' || savedTheme === 'dark') {
+    currentTheme = savedTheme;
+  }
+} catch {
+  // fallback to dark
+}
 
-let storedUser = localStorage.getItem('userState');
-let storedMonsters = localStorage.getItem('monstersState');
+let storedUser = null;
+let storedMonsters = null;
+try {
+  storedUser = localStorage.getItem('userState');
+  storedMonsters = localStorage.getItem('monstersState');
+} catch {
+  // fallback
+}
 
 let vacationsState: VacationRequest[] = [...mockVacations];
 let teamState = [...mockTeamMembers];
-let monstersState: BugMonster[] = storedMonsters ? JSON.parse(storedMonsters) : [...mockMonsters];
+let monstersState: BugMonster[] = [...mockMonsters];
 let webhooksState: WebhookPayload[] = [...mockWebhooks];
 let questsState: WeeklyQuest[] = [...mockWeeklyQuests];
-let userState = storedUser ? JSON.parse(storedUser) : { ...mockUser };
+let userState = { ...mockUser };
 let coopBossState: TeamCoopBoss = { ...mockTeamCoopBoss };
+
+try {
+  if (storedMonsters) monstersState = JSON.parse(storedMonsters);
+} catch {
+  monstersState = [...mockMonsters];
+}
+
+try {
+  if (storedUser) userState = JSON.parse(storedUser);
+} catch {
+  userState = { ...mockUser };
+}
 
 function saveState() {
   localStorage.setItem('userState', JSON.stringify(userState));
@@ -77,6 +104,10 @@ function applyTheme() {
   }
 }
 
+let renderModals: () => string;
+let attachEvents: () => void;
+
+
 function renderApp() {
   applyTheme();
 
@@ -95,34 +126,21 @@ function renderApp() {
     mockDailySummary
   } as any;
   
-  const appContainer = document.querySelector<HTMLDivElement>('#app')!;
+  const appContainer = document.querySelector<HTMLDivElement>('#app');
+  if (!appContainer) return;
   
-  let layoutContainer = document.getElementById('app-main-layout');
-  let modalsContainer = document.getElementById('app-modals');
-
-  if (!layoutContainer || !modalsContainer) {
-    appContainer.innerHTML = `
-      <div id="app-header-container">${renderHeader(state)}</div>
-      <div id="app-main-layout" style="display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(280px, 1fr); gap: 1.25rem; align-items: start;">
-        <section id="app-board-container" style="min-width: 0;">
-          ${renderMonsterBoard(state)}
-        </section>
-        <div id="app-sidebar-container">
-          ${renderSidebar(state)}
-        </div>
+  appContainer.innerHTML = `
+    <div id="app-header-container">${renderHeader(state)}</div>
+    <div id="app-main-layout" style="display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(280px, 1fr); gap: 1.25rem; align-items: start;">
+      <section id="app-board-container" style="min-width: 0;">
+        ${renderMonsterBoard(state)}
+      </section>
+      <div id="app-sidebar-container">
+        ${renderSidebar(state)}
       </div>
-      <div id="app-modals">${renderModals()}</div>
-    `;
-  } else {
-    const headerEl = document.getElementById('app-header-container');
-    const boardEl = document.getElementById('app-board-container');
-    const sidebarEl = document.getElementById('app-sidebar-container');
-    
-    if (headerEl) headerEl.innerHTML = renderHeader(state);
-    if (boardEl) boardEl.innerHTML = renderMonsterBoard(state);
-    if (sidebarEl) sidebarEl.innerHTML = renderSidebar(state);
-    modalsContainer.innerHTML = renderModals();
-  }
+    </div>
+    <div id="app-modals">${renderModals()}</div>
+  `;
 
   attachEvents();
   renderChartIfModalOpen();
@@ -296,9 +314,9 @@ function renderChartIfModalOpen() {
       }
     }, 50);
   }
-}
+let openPRsList: GitHubPullRequest[] = [];
 
-function renderModals() {
+renderModals = function renderModals() {
   if (!activeModal) return '';
 
   const state = {
@@ -311,6 +329,7 @@ function renderModals() {
     attackTargetId,
     lastLootReward,
     isSkillActiveNextAttack,
+    openPRs: openPRsList,
   } as any;
 
   if (activeModal === 'codex') return renderCodexModal(state);
@@ -1192,7 +1211,7 @@ function renderModals() {
   return '';
 }
 
-function attachEvents() {
+attachEvents = function attachEvents() {
   const rpgMenuBtn = document.querySelector('#btn-toggle-rpg-menu');
   const rpgDropdownMenu = document.querySelector('#rpg-dropdown-menu');
 
@@ -1636,6 +1655,64 @@ function attachEvents() {
     renderApp();
   });
 
+  // ─── Data Backup & Restore Handlers ───
+  document.querySelector('#btn-export-backup')?.addEventListener('click', () => {
+    exportAppData({ userState, monstersState, vacationsState, questsState });
+    showToast('📦 현재 전장 및 유저 데이터 백업 파일(.json)이 다운로드되었습니다.', 'success');
+  });
+
+  document.querySelector('#btn-import-backup')?.addEventListener('click', () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    fileInput.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const content = event.target?.result as string;
+          const result = parseBackupFile(content);
+          if (result.success && result.data) {
+            userState = result.data.userState;
+            monstersState = result.data.monstersState;
+            if (result.data.vacationsState) vacationsState = result.data.vacationsState;
+            if (result.data.questsState) questsState = result.data.questsState;
+            saveState();
+            showToast('✅ 백업 데이터 복원 성공! 전장 및 스탯이 업데이트되었습니다.', 'success');
+            battleLogMessage = `📦 백업 파일(${file.name})로부터 시스템 데이터가 성공적으로 복원되었습니다.`;
+            renderApp();
+          } else {
+            showToast(`❌ ${result.message}`, 'danger');
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    fileInput.click();
+  });
+
+  // ─── Live GitHub Fetch Open PRs Handler ───
+  document.querySelector('#btn-fetch-open-prs')?.addEventListener('click', async () => {
+    const ghConfig = getGitHubConfig();
+    showToast('🔎 open 상태인 GitHub PR 목록 조회 중...', 'warning');
+    const prs = await fetchOpenPullRequests(ghConfig);
+    if (prs.length === 0) {
+      showToast('열려있는 GitHub PR이 없거나 연동 권한을 확인해주세요.', 'info');
+    } else {
+      openPRsList = prs;
+      showToast(`✅ open 상태인 PR ${prs.length}개를 발견하였습니다!`, 'success');
+      renderApp();
+    }
+  });
+
+  document.querySelector('#select-open-pr')?.addEventListener('change', (e) => {
+    const prUrl = (e.target as HTMLSelectElement).value;
+    const prInput = document.querySelector('#attack-pr') as HTMLInputElement;
+    if (prInput && prUrl) {
+      prInput.value = prUrl;
+    }
+  });
+
   document.querySelector('#btn-close-modal')?.addEventListener('click', () => {
     activeModal = null;
     renderApp();
@@ -1807,6 +1884,7 @@ function attachEvents() {
         activeModal = 'lootBox';
         renderApp();
         
+        saveState();
         setTimeout(() => {
           hitMonsterId = null;
           lastHitDamageText = null;
@@ -1821,6 +1899,7 @@ function attachEvents() {
           renderApp();
         }, 600);
       }
+      saveState();
     }
 
     activeModal = null;
@@ -1923,4 +2002,9 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-renderApp();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => renderApp());
+} else {
+  renderApp();
+}
+}

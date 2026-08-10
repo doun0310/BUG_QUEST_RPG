@@ -1,9 +1,9 @@
 import type { AppState } from '../../store';
 import { icon } from '../../icons';
-import { getGitHubConfig } from '../../services/githubService';
+import { getGitHubConfig, type GitHubPullRequest } from '../../services/githubService';
 
-export function renderAttackModal(state: AppState): string {
-  const { monstersState, attackTargetId, isSkillActiveNextAttack, userState } = state;
+export function renderAttackModal(state: AppState & { openPRs?: GitHubPullRequest[] }): string {
+  const { monstersState, attackTargetId, isSkillActiveNextAttack, userState, openPRs = [] } = state;
   const targetMonster = monstersState.find(m => m.id === attackTargetId);
   const ghConfig = getGitHubConfig();
 
@@ -33,27 +33,45 @@ export function renderAttackModal(state: AppState): string {
           <div style="background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); color: var(--success); padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.73rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
             <span style="display: flex; align-items: center; gap: 0.35rem;">
               ${icon('check', 'color:var(--success)', 13)}
-              <span>GitHub 라이브 온라인 연동 활성화 (<strong>${ghConfig.owner}/${ghConfig.repo}</strong>)</span>
+              <span>GitHub 온라인 연동 (<strong>${ghConfig.owner}/${ghConfig.repo}</strong>)</span>
             </span>
-            <span class="badge badge-success" style="font-size: 0.65rem;">ONLINE API</span>
+            <button type="button" class="action-btn action-btn-secondary" id="btn-fetch-open-prs" style="padding: 0.15rem 0.45rem; font-size: 0.68rem; display: flex; align-items: center; gap: 0.25rem;">
+              ${icon('pr', 'color:var(--success)', 11)} 열린 PR 목록 불러오기
+            </button>
           </div>
         ` : `
           <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.25); color: var(--warning); padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.72rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
             <span style="display: flex; align-items: center; gap: 0.35rem;">
               ${icon('warning', 'color:var(--warning)', 12)}
-              <span>현재 Mock 시뮤레이션 모드입니다. (실제 GitHub 레포지토리 자동 머지 미연동)</span>
+              <span>현재 Mock 시뮬레이션 모드입니다.</span>
             </span>
             <button type="button" class="action-btn action-btn-secondary" id="btn-goto-apisync" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">GitHub 연동 설정</button>
           </div>
         `}
 
         <form id="form-attack" style="display: flex; flex-direction: column; gap: 0;">
+          ${openPRs.length > 0 ? `
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 0.3rem; color: var(--success);">
+                ${icon('pr', 'color:var(--success)', 12)} GitHub 열린 PR 선택 (${openPRs.length}개 발견)
+              </label>
+              <select class="form-select" id="select-open-pr" style="border-color: var(--success);">
+                ${openPRs.map(pr => `
+                  <option value="${pr.html_url}">
+                    #${pr.number} — ${pr.title} (by @${pr.user.login})
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+          ` : ''}
+
           <div class="form-group">
             <label style="display: flex; align-items: center; gap: 0.3rem;">
               ${icon('pr', '', 12)} Pull Request URL 또는 PR 번호
             </label>
-            <input type="text" class="form-input" id="attack-pr" value="${ghConfig.isEnabled && ghConfig.owner && ghConfig.repo ? `https://github.com/${ghConfig.owner}/${ghConfig.repo}/pull/1` : 'https://github.com/org/repo/pull/142'}" required />
+            <input type="text" class="form-input" id="attack-pr" value="${openPRs.length > 0 ? openPRs[0].html_url : ghConfig.isEnabled && ghConfig.owner && ghConfig.repo ? `https://github.com/${ghConfig.owner}/${ghConfig.repo}/pull/1` : 'https://github.com/org/repo/pull/142'}" required />
           </div>
+
           <div class="form-group">
             <label style="display: flex; align-items: center; gap: 0.3rem;">
               ${icon('target', '', 12)} 공격력 선택 (PR 커밋 크기)
