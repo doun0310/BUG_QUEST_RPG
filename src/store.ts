@@ -31,9 +31,11 @@ export interface AppState {
   lastLootReward: string | null;
 }
 
-const storedTheme = (localStorage.getItem('theme') as any) || 'dark';
-const storedUser = localStorage.getItem('userState');
-const storedMonsters = localStorage.getItem('monstersState');
+const isStorageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage !== null;
+
+const storedTheme = isStorageAvailable ? (localStorage.getItem('theme') as any) || 'dark' : 'dark';
+const storedUser = isStorageAvailable ? localStorage.getItem('userState') : null;
+const storedMonsters = isStorageAvailable ? localStorage.getItem('monstersState') : null;
 
 class Store {
   private state: AppState = {
@@ -82,9 +84,11 @@ class Store {
   }
 
   public saveLocalStorage() {
-    localStorage.setItem('theme', this.state.currentTheme);
-    localStorage.setItem('userState', JSON.stringify(this.state.userState));
-    localStorage.setItem('monstersState', JSON.stringify(this.state.monstersState));
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage !== null) {
+      localStorage.setItem('theme', this.state.currentTheme);
+      localStorage.setItem('userState', JSON.stringify(this.state.userState));
+      localStorage.setItem('monstersState', JSON.stringify(this.state.monstersState));
+    }
   }
 }
 

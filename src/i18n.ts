@@ -61,7 +61,9 @@ export const translations: Record<Lang, Record<string, string>> = {
   }
 };
 
-let currentLang: Lang = (localStorage.getItem('lang') as Lang) || 'ko';
+const isStorageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage !== null;
+
+let currentLang: Lang = (isStorageAvailable ? (localStorage.getItem('lang') as Lang) : null) || 'ko';
 
 export function getLang(): Lang {
   return currentLang;
@@ -69,7 +71,9 @@ export function getLang(): Lang {
 
 export function setLang(lang: Lang) {
   currentLang = lang;
-  localStorage.setItem('lang', lang);
+  if (isStorageAvailable) {
+    localStorage.setItem('lang', lang);
+  }
 }
 
 export function t(key: string): string {
