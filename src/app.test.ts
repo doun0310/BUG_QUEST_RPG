@@ -8,7 +8,7 @@ import { particleService } from './services/particleService';
 import { generateMonsterPreset } from './services/monsterPresetEngine';
 import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './services/webhookNotifier';
 import { parseLcovContent } from './services/lcovParser';
-import { createAccount, login, logout, switchAccount, isLoggedIn, getCurrentAccount, deleteAccount, lockSession, unlockSession, isSessionLocked } from './services/authService';
+import { createAccount, login, logout, switchAccount, isLoggedIn, getCurrentAccount, deleteAccount, lockSession, unlockSession, isSessionLocked, resetAuthStateForTesting } from './services/authService';
 
 describe('CMS Workload Capacity Calculations', () => {
   it('should correctly calculate total available and assigned hours for team members', () => {
@@ -180,6 +180,7 @@ end_of_record
 
 describe('Multi-Account Auth & Account Switching System', () => {
   beforeEach(() => {
+    resetAuthStateForTesting();
     logout();
   });
 

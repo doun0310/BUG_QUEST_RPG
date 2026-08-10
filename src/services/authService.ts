@@ -57,6 +57,17 @@ function removeItem(key: string): void {
   delete inMemoryStore[key];
 }
 
+export function resetAuthStateForTesting(): void {
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage) {
+      localStorage.clear();
+    }
+  } catch { /* fallback */ }
+  for (const k in inMemoryStore) {
+    delete inMemoryStore[k];
+  }
+}
+
 function loadAuthState(): AuthState {
   try {
     const raw = getItem(AUTH_KEY);
