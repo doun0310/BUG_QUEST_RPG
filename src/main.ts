@@ -1733,14 +1733,18 @@ attachEvents = function attachEvents() {
     renderApp();
   });
 
-  document.querySelector('#btn-open-webhook')?.addEventListener('click', () => {
-    activeModal = 'webhook';
-    renderApp();
+  document.querySelectorAll('#btn-open-webhook').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeModal = 'webhook';
+      renderApp();
+    });
   });
 
-  document.querySelector('#btn-leaderboard')?.addEventListener('click', () => {
-    activeModal = 'leaderboard';
-    renderApp();
+  document.querySelectorAll('#btn-leaderboard').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeModal = 'leaderboard';
+      renderApp();
+    });
   });
 
   document.querySelectorAll('.btn-attack-trigger').forEach(btn => {
@@ -1881,9 +1885,20 @@ attachEvents = function attachEvents() {
     }
   });
 
-  document.querySelector('#btn-close-modal')?.addEventListener('click', () => {
-    activeModal = null;
-    renderApp();
+  document.querySelectorAll('#btn-close-modal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeModal = null;
+      renderApp();
+    });
+  });
+
+  document.querySelectorAll('.modal-backdrop').forEach(bd => {
+    bd.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).classList.contains('modal-backdrop')) {
+        activeModal = null;
+        renderApp();
+      }
+    });
   });
 
   document.querySelector('#form-vacation')?.addEventListener('submit', (e) => {
