@@ -1201,7 +1201,7 @@ renderModals = function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 460px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
-            <h2 style="font-size: 1rem; font-weight: 700;">내 도구함</h2>
+            <h2 style="font-size: 1rem; font-weight: 700;">내 도구</h2>
             <span class="badge badge-success">${userState.name} 보유</span>
           </div>
 
@@ -1236,7 +1236,7 @@ renderModals = function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 580px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">📖 몬스터 도감 & 버그 토벌 전적 (Codex)</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700;">몬스터 도감 & 버그 토벌 전적 (Codex)</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -1340,7 +1340,7 @@ attachEvents = function attachEvents() {
     confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
     userState.xp += 300;
     saveState();
-    battleLogMessage = `🎉 [v2.0 배포 성공] 프로덕션 정기 릴리즈가 성공적으로 통합되어 전원에 300 XP 수령 보상이 지급되었습니다!`;
+    battleLogMessage = `[v2.0 배포 성공] 프로덕션 정기 릴리즈가 성공적으로 통합되어 전원에 300 XP 수령 보상이 지급되었습니다!`;
     activeModal = null;
     renderApp();
   });
@@ -1354,7 +1354,7 @@ attachEvents = function attachEvents() {
     const cmdText = (document.querySelector('#slack-cmd-input') as HTMLInputElement).value;
     soundFx.playHitSound();
     confetti({ particleCount: 40 });
-    battleLogMessage = `💬 [Slack Bot 응답] '${cmdText}' 명령으로 AUTH-401 몬스터에게 250 타격을 입혔습니다!`;
+    battleLogMessage = `[Slack Bot 응답] '${cmdText}' 명령으로 AUTH-401 몬스터에게 250 타격을 입혔습니다!`;
     activeModal = null;
     renderApp();
   });
@@ -1705,7 +1705,7 @@ attachEvents = function attachEvents() {
   document.querySelector('#btn-toggle-lang')?.addEventListener('click', () => {
     const nextLang = getLang() === 'ko' ? 'en' : 'ko';
     setLang(nextLang);
-    showToast(nextLang === 'ko' ? '🌐 한국어 모드로 전환되었습니다.' : '🌐 Switched to English mode.', 'info');
+    showToast(nextLang === 'ko' ? '한국어 모드로 전환되었습니다.' : 'Switched to English mode.', 'info');
     renderApp();
   });
 
@@ -2211,12 +2211,12 @@ attachLoginEvents = function attachLoginEvents() {
   });
 
   // Login Form Submit
-  document.querySelector('#form-login')?.addEventListener('submit', (e) => {
+  document.querySelector('#form-login')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = (document.querySelector('#login-username') as HTMLInputElement).value;
     const pin = (document.querySelector('#login-pin') as HTMLInputElement).value;
 
-    const res = login(username, pin);
+    const res = await login(username, pin);
     if (res.success) {
       loginErrorMsg = '';
       loginSuccessMsg = '';
@@ -2230,17 +2230,17 @@ attachLoginEvents = function attachLoginEvents() {
   });
 
   // Create Account Form Submit
-  document.querySelector('#form-create-account')?.addEventListener('submit', (e) => {
+  document.querySelector('#form-create-account')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = (document.querySelector('#new-acc-username') as HTMLInputElement).value;
     const displayName = (document.querySelector('#new-acc-displayname') as HTMLInputElement).value;
     const heroClass = (document.querySelector('#new-acc-class') as HTMLSelectElement).value as any;
     const pin = (document.querySelector('#new-acc-pin') as HTMLInputElement).value;
 
-    const res = createAccount(username, displayName, pin, heroClass);
+    const res = await createAccount(username, displayName, pin, heroClass);
     if (res.success) {
       // Auto login
-      login(username, pin);
+      await login(username, pin);
       loginErrorMsg = '';
       loginSuccessMsg = '';
       store.reloadFromLocalStorage();
@@ -2475,7 +2475,7 @@ function attachUserProfileModalEvents() {
   });
 
   // 프로필 수정 폼 제출
-  document.querySelector('#form-update-profile')?.addEventListener('submit', (e) => {
+  document.querySelector('#form-update-profile')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const displayName = (document.querySelector('#up-display-name') as HTMLInputElement)?.value;
     const heroClass = (document.querySelector('#up-hero-class') as HTMLSelectElement)?.value as any;
@@ -2484,7 +2484,7 @@ function attachUserProfileModalEvents() {
     const avatarBgColor = (document.querySelector('#up-avatar-bg') as HTMLInputElement)?.value;
     const avatarIconSymbol = (document.querySelector('#up-avatar-symbol') as HTMLInputElement)?.value;
 
-    const res = updateAccountProfile({
+    const res = await updateAccountProfile({
       displayName,
       heroClass,
       currentPin,

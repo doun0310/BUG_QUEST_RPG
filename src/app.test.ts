@@ -184,20 +184,20 @@ describe('Multi-Account Auth & Account Switching System', () => {
     logout();
   });
 
-  it('should handle account creation, login, logout, and account switching correctly', () => {
+  it('should handle account creation, login, logout, and account switching correctly', async () => {
     // 1. Create Account A
-    const createRes = createAccount('user_a', '유저A', '1234', '전사 (Frontend)');
+    const createRes = await createAccount('user_a', '유저A', '1234', '전사 (Frontend)');
     expect(createRes.success).toBe(true);
     expect(createRes.account?.displayName).toBe('유저A');
 
     // 2. Login User A
-    const loginRes = login('user_a', '1234');
+    const loginRes = await login('user_a', '1234');
     expect(loginRes.success).toBe(true);
     expect(isLoggedIn()).toBe(true);
     expect(getCurrentAccount()?.displayName).toBe('유저A');
 
     // 3. Create Account B
-    const createBRes = createAccount('user_b', '유저B', '5678', '마법사 (Backend)');
+    const createBRes = await createAccount('user_b', '유저B', '5678', '마법사 (Backend)');
     expect(createBRes.success).toBe(true);
 
     // 4. Switch Account to B
@@ -211,9 +211,9 @@ describe('Multi-Account Auth & Account Switching System', () => {
     expect(getCurrentAccount()).toBeNull();
   });
 
-  it('should handle session lock and unlock correctly', () => {
-    createAccount('lock_user', '잠금유저', '4321', '성기사 (QA)');
-    login('lock_user', '4321');
+  it('should handle session lock and unlock correctly', async () => {
+    await createAccount('lock_user', '잠금유저', '4321', '성기사 (QA)');
+    await login('lock_user', '4321');
 
     expect(isSessionLocked()).toBe(false);
     lockSession();
@@ -228,16 +228,16 @@ describe('Multi-Account Auth & Account Switching System', () => {
     expect(isSessionLocked()).toBe(false);
   });
 
-  it('should reject invalid PIN or duplicated username', () => {
-    createAccount('user_dup', '중복유저', '1111', '전사 (Frontend)');
+  it('should reject invalid PIN or duplicated username', async () => {
+    await createAccount('user_dup', '중복유저', '1111', '전사 (Frontend)');
     
     // Duplicate username attempt
-    const dupRes = createAccount('user_dup', '다른이름', '2222', '마법사 (Backend)');
+    const dupRes = await createAccount('user_dup', '다른이름', '2222', '마법사 (Backend)');
     expect(dupRes.success).toBe(false);
     expect(dupRes.message).toContain('이미 사용 중');
 
     // Wrong PIN login attempt
-    const wrongPinRes = login('user_dup', '9999');
+    const wrongPinRes = await login('user_dup', '9999');
     expect(wrongPinRes.success).toBe(false);
     expect(wrongPinRes.message).toContain('PIN이 올바르지 않습니다');
   });
