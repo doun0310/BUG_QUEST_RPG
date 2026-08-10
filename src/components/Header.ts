@@ -81,6 +81,9 @@ export function renderHeader(state: AppState): string {
             <button class="dropdown-item" id="btn-open-pet">${iconLabel('paw', `펫 Lv.${userState.pet.level}`, '', 14)}</button>
             <button class="dropdown-item" id="btn-open-forge">${iconLabel('hammer', `장비 강화 +${userState.weapon.enhanceLevel}`, '', 14)}</button>
             <div style="height: 1px; background: var(--panel-border); margin: 0.25rem 0.4rem;"></div>
+            <button class="dropdown-item" id="btn-switch-account" style="color: var(--sky);">${iconLabel('users', '다른 계정으로 전환', 'color:var(--sky)', 14)}</button>
+            <button class="dropdown-item" id="btn-logout" style="color: var(--danger);">${iconLabel('warning', '로그아웃', 'color:var(--danger)', 14)}</button>
+            <div style="height: 1px; background: var(--panel-border); margin: 0.25rem 0.4rem;"></div>
             <div style="padding: 0.4rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
               <span style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--text-muted);">
                 ${icon('volume', '', 13)} 볼륨

@@ -11,6 +11,9 @@ import { particleService } from './services/particleService';
 import { generateMonsterPreset } from './services/monsterPresetEngine';
 import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './services/webhookNotifier';
 import { parseLcovContent } from './services/lcovParser';
+import { isLoggedIn, login, logout, createAccount, switchAccount, saveCurrentGameStateToAccount, getCurrentAccount } from './services/authService';
+import { renderLoginScreen } from './components/LoginScreen';
+import { store } from './store';
 import { icon } from './icons';
 import { renderHeader } from './components/Header';
 import { renderMonsterBoard } from './components/MonsterBoard';
@@ -112,8 +115,21 @@ let renderModals: () => string;
 let attachEvents: () => void;
 
 
+let loginErrorMsg = '';
+let loginSuccessMsg = '';
+let attachLoginEvents: () => void;
+
 function renderApp() {
   applyTheme();
+
+  const appContainer = document.querySelector<HTMLDivElement>('#app');
+  if (!appContainer) return;
+
+  if (!isLoggedIn()) {
+    appContainer.innerHTML = renderLoginScreen(loginErrorMsg, loginSuccessMsg);
+    attachLoginEvents();
+    return;
+  }
 
   const state = {
     userState,
@@ -129,9 +145,6 @@ function renderApp() {
     mockBudget,
     mockDailySummary
   } as any;
-  
-  const appContainer = document.querySelector<HTMLDivElement>('#app');
-  if (!appContainer) return;
   
   appContainer.innerHTML = `
     <div id="app-header-container">${renderHeader(state)}</div>
@@ -2014,7 +2027,84 @@ attachEvents = function attachEvents() {
   document.querySelector('#btn-generate-ai')?.addEventListener('click', () => {
     showToast('AI 개발 요약 리포트가 최신화되었습니다.', 'info');
   });
+
+  document.querySelector('#btn-switch-account')?.addEventListener('click', () => {
+    logout();
+    loginErrorMsg = '';
+    loginSuccessMsg = '계정 전환을 위해 로그아웃되었습니다. 원하시는 계정으로 로그인해주세요.';
+    renderApp();
+  });
+
+  document.querySelector('#btn-logout')?.addEventListener('click', () => {
+    logout();
+    loginErrorMsg = '';
+    loginSuccessMsg = '성공적으로 로그아웃되었습니다.';
+    renderApp();
+  });
 }
+
+attachLoginEvents = function attachLoginEvents() {
+  // Account Card Items click
+  document.querySelectorAll('.account-card-item').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const username = (e.currentTarget as HTMLElement).getAttribute('data-username');
+      const inputEl = document.querySelector('#login-username') as HTMLInputElement;
+      const pinEl = document.querySelector('#login-pin') as HTMLInputElement;
+      if (inputEl) inputEl.value = username || '';
+      if (pinEl) pinEl.focus();
+    });
+  });
+
+  // Toggle Create Account Section
+  document.querySelector('#btn-toggle-create-acc')?.addEventListener('click', () => {
+    const sec = document.querySelector('#create-account-section') as HTMLElement;
+    if (sec) {
+      sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+    }
+  });
+
+  // Login Form Submit
+  document.querySelector('#form-login')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = (document.querySelector('#login-username') as HTMLInputElement).value;
+    const pin = (document.querySelector('#login-pin') as HTMLInputElement).value;
+
+    const res = login(username, pin);
+    if (res.success) {
+      loginErrorMsg = '';
+      loginSuccessMsg = '';
+      store.reloadFromLocalStorage();
+      showToast(res.message, 'success');
+      renderApp();
+    } else {
+      loginErrorMsg = res.message;
+      renderApp();
+    }
+  });
+
+  // Create Account Form Submit
+  document.querySelector('#form-create-account')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = (document.querySelector('#new-acc-username') as HTMLInputElement).value;
+    const displayName = (document.querySelector('#new-acc-displayname') as HTMLInputElement).value;
+    const heroClass = (document.querySelector('#new-acc-class') as HTMLSelectElement).value as any;
+    const pin = (document.querySelector('#new-acc-pin') as HTMLInputElement).value;
+
+    const res = createAccount(username, displayName, pin, heroClass);
+    if (res.success) {
+      // Auto login
+      login(username, pin);
+      loginErrorMsg = '';
+      loginSuccessMsg = '';
+      store.reloadFromLocalStorage();
+      showToast(res.message, 'success');
+      renderApp();
+    } else {
+      loginErrorMsg = res.message;
+      renderApp();
+    }
+  });
+};
 
 // Global Keyboard Shortcuts (A11y & UX)
 window.addEventListener('keydown', (e) => {

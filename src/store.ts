@@ -83,6 +83,17 @@ class Store {
     this.listeners.forEach(l => l());
   }
 
+  public reloadFromLocalStorage() {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage !== null) {
+      const u = localStorage.getItem('userState');
+      const m = localStorage.getItem('monstersState');
+      const t = localStorage.getItem('theme');
+      if (u) this.state.userState = JSON.parse(u);
+      if (m) this.state.monstersState = JSON.parse(m);
+      if (t) this.state.currentTheme = t as any;
+    }
+  }
+
   public saveLocalStorage() {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage !== null) {
       localStorage.setItem('theme', this.state.currentTheme);

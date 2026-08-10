@@ -8,6 +8,7 @@ import { particleService } from './services/particleService';
 import { generateMonsterPreset } from './services/monsterPresetEngine';
 import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './services/webhookNotifier';
 import { parseLcovContent } from './services/lcovParser';
+import { createAccount, login, logout, switchAccount, isLoggedIn, getCurrentAccount, deleteAccount } from './services/authService';
 
 describe('CMS Workload Capacity Calculations', () => {
   it('should correctly calculate total available and assigned hours for team members', () => {
@@ -144,7 +145,7 @@ describe('Live Webhook & LCOV Parser Services', () => {
     const config = getWebhookConfig();
     expect(config.isEnabled).toBe(false);
 
-    const saveRes = saveWebhookConfig({ slackUrl: 'https://hooks.slack.com/test', teamsUrl: '', isEnabled: true });
+    saveWebhookConfig({ slackUrl: 'https://hooks.slack.com/test', teamsUrl: '', isEnabled: true });
     expect(getWebhookConfig().slackUrl).toBe('https://hooks.slack.com/test');
 
     const disabledRes = await notifyMonsterDefeated({ slackUrl: '', teamsUrl: '', isEnabled: false }, 'Bug Monster', 100, 'User');
@@ -174,5 +175,52 @@ end_of_record
     expect(summary.linesFound).toBe(10);
     expect(summary.linesHit).toBe(8);
     expect(summary.coveragePercent).toBe(80); // (8/10) * 100 = 80%
+  });
+});
+
+describe('Multi-Account Auth & Account Switching System', () => {
+  beforeEach(() => {
+    logout();
+  });
+
+  it('should handle account creation, login, logout, and account switching correctly', () => {
+    // 1. Create Account A
+    const createRes = createAccount('user_a', '유저A', '1234', '전사 (Frontend)');
+    expect(createRes.success).toBe(true);
+    expect(createRes.account?.displayName).toBe('유저A');
+
+    // 2. Login User A
+    const loginRes = login('user_a', '1234');
+    expect(loginRes.success).toBe(true);
+    expect(isLoggedIn()).toBe(true);
+    expect(getCurrentAccount()?.displayName).toBe('유저A');
+
+    // 3. Create Account B
+    const createBRes = createAccount('user_b', '유저B', '5678', '마법사 (Backend)');
+    expect(createBRes.success).toBe(true);
+
+    // 4. Switch Account to B
+    const switchRes = switchAccount(createBRes.account!.id, '5678');
+    expect(switchRes.success).toBe(true);
+    expect(getCurrentAccount()?.displayName).toBe('유저B');
+
+    // 5. Logout
+    logout();
+    expect(isLoggedIn()).toBe(false);
+    expect(getCurrentAccount()).toBeNull();
+  });
+
+  it('should reject invalid PIN or duplicated username', () => {
+    createAccount('user_dup', '중복유저', '1111', '전사 (Frontend)');
+    
+    // Duplicate username attempt
+    const dupRes = createAccount('user_dup', '다른이름', '2222', '마법사 (Backend)');
+    expect(dupRes.success).toBe(false);
+    expect(dupRes.message).toContain('이미 사용 중');
+
+    // Wrong PIN login attempt
+    const wrongPinRes = login('user_dup', '9999');
+    expect(wrongPinRes.success).toBe(false);
+    expect(wrongPinRes.message).toContain('PIN이 올바르지 않습니다');
   });
 });
