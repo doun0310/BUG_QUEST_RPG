@@ -9,6 +9,8 @@ import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig, mergeGitHubPullR
 import { exportAppData, parseBackupFile } from './services/dataBackupService';
 import { particleService } from './services/particleService';
 import { generateMonsterPreset } from './services/monsterPresetEngine';
+import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './services/webhookNotifier';
+import { parseLcovContent } from './services/lcovParser';
 import { icon } from './icons';
 import { renderHeader } from './components/Header';
 import { renderMonsterBoard } from './components/MonsterBoard';
@@ -386,23 +388,43 @@ renderModals = function renderModals() {
   }
 
   if (activeModal === 'slackBot') {
+    const whConfig = getWebhookConfig();
     return `
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 540px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('slack', 'color:var(--primary-light)', 18)} Slack / Teams 챗봇 시뮬레이터</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('slack', 'color:var(--primary-light)', 18)} Slack / Teams 실시간 Webhook 연동</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
-          <div style="background: var(--inner-box-bg); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 1rem;">
-            <div style="font-size: 0.78rem; color: var(--text-sub); margin-bottom: 0.35rem;">사용 가능한 Slack 슬래시 명령어 모음</div>
-            <code style="display: block; background: #000; color: #4ade80; padding: 0.45rem 0.65rem; border-radius: 4px; font-size: 0.78rem; margin-bottom: 0.35rem;">/bug-attack [몬스터ID] [PR-URL]</code>
-            <code style="display: block; background: #000; color: #38bdf8; padding: 0.45rem 0.65rem; border-radius: 4px; font-size: 0.78rem;">/bug-status (전장 몬스터 HP 실시간 조회)</code>
-          </div>
+          <form id="form-webhook-config" style="margin-bottom: 1rem;">
+            <div class="form-group">
+              <label>Slack Incoming Webhook URL</label>
+              <input type="text" class="form-input" id="wh-slack-url" value="${whConfig.slackUrl}" placeholder="https://hooks.slack.com/services/..." />
+            </div>
+
+            <div class="form-group">
+              <label>Microsoft Teams Webhook URL</label>
+              <input type="text" class="form-input" id="wh-teams-url" value="${whConfig.teamsUrl}" placeholder="https://outlook.office.com/webhook/..." />
+            </div>
+
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; text-transform: none; font-size: 0.78rem; color: var(--text-main);">
+                <input type="checkbox" id="wh-enable" ${whConfig.isEnabled ? 'checked' : ''} style="accent-color: var(--primary); width: 15px; height: 15px;" />
+                <span>몬스터 토벌 시 Slack / Teams 메신저로 실시간 카드 알림 전송 활성화</span>
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
+              <button type="submit" class="action-btn" style="display: flex; align-items: center; gap: 0.35rem;">
+                ${icon('check', 'color:white', 13)} Webhook 설정 저장 &amp; 알림 테스트
+              </button>
+            </div>
+          </form>
 
           <div style="background: var(--inner-box-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--panel-border);">
-            <strong style="font-size: 0.82rem;">슬래시 명령 실시간 실행 테스트:</strong>
-            <div style="display: flex; gap: 0.35rem; margin-top: 0.45rem;">
+            <div style="font-size: 0.78rem; color: var(--text-sub); margin-bottom: 0.35rem;">슬래시 명령어 실시간 실행 테스트</div>
+            <div style="display: flex; gap: 0.35rem;">
               <input type="text" class="form-input" id="slack-cmd-input" value="/bug-attack AUTH-401 https://github.com/org/repo/pull/142" style="flex: 1;" />
               <button class="action-btn" id="btn-run-slack-cmd" style="padding: 0.35rem 0.75rem;">전송</button>
             </div>
@@ -700,11 +722,21 @@ renderModals = function renderModals() {
             </div>
           </div>
 
-          <div style="background: var(--inner-box-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--panel-border); font-size: 0.78rem;">
+          <div style="background: var(--inner-box-bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--panel-border); font-size: 0.78rem; margin-bottom: 0.85rem;">
             <strong style="color: var(--primary);">AI 요약 인사이트:</strong>
             <p style="color: var(--text-sub); margin-top: 0.2rem; line-height: 1.4;">
               팀의 개발 생산성이 전주 대비 +14% 향상되었습니다. SLA 마감 초과 비중이 7.5% 감소하여 서비스 안정성이 대폭 개선되고 있습니다.
             </p>
+          </div>
+
+          <div style="background: rgba(129, 140, 248, 0.08); border: 1px solid rgba(129, 140, 248, 0.25); padding: 0.75rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="font-size: 0.82rem; color: var(--primary-light);">🧪 LCOV 테스트 커버리지 파일 연동</strong>
+              <div style="font-size: 0.7rem; color: var(--text-sub);">lcov.info 파일을 파싱하여 방어력(Test Coverage: ${userState.stats.testCoverage}%) 스탯 자동 업데이트</div>
+            </div>
+            <button type="button" class="action-btn action-btn-secondary" id="btn-upload-lcov" style="padding: 0.3rem 0.65rem; font-size: 0.72rem; display: flex; align-items: center; gap: 0.3rem;">
+              ${icon('checklist', 'color:var(--primary-light)', 13)} lcov.info 업로드
+            </button>
           </div>
         </div>
       </div>
@@ -1371,6 +1403,49 @@ attachEvents = function attachEvents() {
     renderApp();
   });
 
+  document.querySelector('#form-webhook-config')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const slackUrl = (document.querySelector('#wh-slack-url') as HTMLInputElement).value;
+    const teamsUrl = (document.querySelector('#wh-teams-url') as HTMLInputElement).value;
+    const isEnabled = (document.querySelector('#wh-enable') as HTMLInputElement).checked;
+
+    const newConfig = { slackUrl, teamsUrl, isEnabled };
+    saveWebhookConfig(newConfig);
+
+    if (isEnabled) {
+      const res = await notifyMonsterDefeated(newConfig, '[테스트 알림] JWT Auth Token Leak Monster', 500, userState.name);
+      showToast(res.message, res.success ? 'success' : 'warning');
+    } else {
+      showToast('Webhook 설정이 저장되었습니다.', 'info');
+    }
+  });
+
+  document.querySelector('#btn-upload-lcov')?.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.info,.txt';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const content = event.target?.result as string;
+          const summary = parseLcovContent(content);
+          if (summary.coveragePercent > 0) {
+            userState.stats.testCoverage = summary.coveragePercent;
+            saveState();
+            showToast(`🧪 ${summary.message}`, 'success');
+            renderApp();
+          } else {
+            showToast(`⚠️ ${summary.message}`, 'warning');
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  });
+
   document.querySelectorAll('.btn-open-postmortem').forEach(btn => {
     btn.addEventListener('click', (e) => {
       selectedPostMortemMonsterId = (e.currentTarget as HTMLElement).getAttribute('data-id');
@@ -1867,6 +1942,12 @@ attachEvents = function attachEvents() {
         userState.xp += monster.rewardXp;
         userState.defeatedBugs += 1;
         userState.hp = Math.min(userState.maxHp, userState.hp + 10);
+
+        // Send live Slack & Teams incoming webhook notifications
+        const whConfig = getWebhookConfig();
+        if (whConfig.isEnabled) {
+          notifyMonsterDefeated(whConfig, monster.title, monster.rewardXp, userState.name);
+        }
 
         userState.pet.xp += 30;
         if (userState.pet.xp >= userState.pet.maxXp) {

@@ -6,6 +6,8 @@ import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig } from './service
 import { parseBackupFile } from './services/dataBackupService';
 import { particleService } from './services/particleService';
 import { generateMonsterPreset } from './services/monsterPresetEngine';
+import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './services/webhookNotifier';
+import { parseLcovContent } from './services/lcovParser';
 
 describe('CMS Workload Capacity Calculations', () => {
   it('should correctly calculate total available and assigned hours for team members', () => {
@@ -134,5 +136,43 @@ describe('Monster Auto-Preset Engine', () => {
     const secPreset = generateMonsterPreset('CORS 토큰 인증 실패 401 Error', 'Minor');
     expect(secPreset.elementTrait).toBe('Security');
     expect(secPreset.defenseTrait).toBe('Shield');
+  });
+});
+
+describe('Live Webhook & LCOV Parser Services', () => {
+  it('should manage Webhook config and handle disabled state gracefully', async () => {
+    const config = getWebhookConfig();
+    expect(config.isEnabled).toBe(false);
+
+    const saveRes = saveWebhookConfig({ slackUrl: 'https://hooks.slack.com/test', teamsUrl: '', isEnabled: true });
+    expect(getWebhookConfig().slackUrl).toBe('https://hooks.slack.com/test');
+
+    const disabledRes = await notifyMonsterDefeated({ slackUrl: '', teamsUrl: '', isEnabled: false }, 'Bug Monster', 100, 'User');
+    expect(disabledRes.success).toBe(false);
+  });
+
+  it('should parse LCOV info text and calculate line coverage percentage accurately', () => {
+    const sampleLcov = `
+TN:
+SF:/src/app.ts
+FNF:10
+FNH:8
+DA:1,1
+DA:2,1
+DA:3,0
+DA:4,1
+LF:4
+LH:3
+end_of_record
+SF:/src/utils.ts
+LF:6
+LH:5
+end_of_record
+`;
+    const summary = parseLcovContent(sampleLcov);
+    expect(summary.totalFiles).toBe(2);
+    expect(summary.linesFound).toBe(10);
+    expect(summary.linesHit).toBe(8);
+    expect(summary.coveragePercent).toBe(80); // (8/10) * 100 = 80%
   });
 });
