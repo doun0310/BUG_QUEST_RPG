@@ -314,6 +314,7 @@ function renderChartIfModalOpen() {
       }
     }, 50);
   }
+}
 let openPRsList: GitHubPullRequest[] = [];
 
 renderModals = function renderModals() {
@@ -2006,5 +2007,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => renderApp());
 } else {
   renderApp();
-}
 }
