@@ -306,6 +306,67 @@ export function saveCurrentGameStateToAccount(): void {
 }
 
 /**
+ * 현재 계정의 프로필 정보(표시 이름, 클래스, PIN, 아바타)를 수정합니다.
+ */
+export function updateAccountProfile(updates: {
+  displayName?: string;
+  heroClass?: UserProfile['heroClass'];
+  currentPin: string;
+  newPin?: string;
+  avatarBgColor?: string;
+  avatarIconSymbol?: string;
+}): { success: boolean; message: string; account?: Account } {
+  const state = loadAuthState();
+  const account = state.accounts.find(a => a.id === state.currentAccountId);
+
+  if (!account) {
+    return { success: false, message: '현재 로그인된 계정이 없습니다.' };
+  }
+
+  if (account.pin !== updates.currentPin) {
+    return { success: false, message: '현재 보안 PIN이 올바르지 않습니다.' };
+  }
+
+  if (updates.newPin) {
+    if (!/^\d{4}$/.test(updates.newPin)) {
+      return { success: false, message: '새 PIN은 정확히 4자리 숫자여야 합니다.' };
+    }
+    account.pin = updates.newPin;
+  }
+
+  if (updates.displayName && updates.displayName.trim()) {
+    const name = updates.displayName.trim();
+    account.displayName = name;
+    if (account.userState) {
+      account.userState.name = name;
+    }
+  }
+
+  if (updates.heroClass) {
+    account.heroClass = updates.heroClass;
+    if (account.userState) {
+      account.userState.heroClass = updates.heroClass;
+    }
+  }
+
+  if (updates.avatarBgColor || updates.avatarIconSymbol) {
+    account.avatar = {
+      bgColor: updates.avatarBgColor || account.avatar.bgColor,
+      iconSymbol: updates.avatarIconSymbol || account.avatar.iconSymbol,
+    };
+  }
+
+  saveAuthState(state);
+  syncAccountToStore(account);
+
+  return {
+    success: true,
+    message: '계정 정보가 성공적으로 수정되었습니다!',
+    account,
+  };
+}
+
+/**
  * 계정 상태를 메인 스토어 LocalStorage 키에 동기화합니다.
  */
 function syncAccountToStore(account: Account): void {

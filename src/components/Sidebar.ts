@@ -29,11 +29,14 @@ export function renderSidebar(state: AppState): string {
           <span class="badge badge-success" style="font-size: 0.65rem; padding: 0.15rem 0.45rem;">접속 중</span>
         </div>
 
-        <div style="display: flex; gap: 0.4rem; pt: 0.4rem; border-top: 1px solid rgba(255,255,255,0.08);">
-          <button class="action-btn action-btn-secondary" id="btn-sidebar-switch-acc" style="flex: 1; padding: 0.3rem; font-size: 0.72rem; justify-content: center; display: flex; align-items: center; gap: 0.25rem;">
-            ${icon('users', 'color:var(--sky)', 12)} 계정 전환
+        <div style="display: flex; gap: 0.3rem; pt: 0.4rem; border-top: 1px solid rgba(255,255,255,0.08);">
+          <button class="action-btn action-btn-secondary" id="btn-sidebar-edit-profile" style="flex: 1; padding: 0.3rem; font-size: 0.72rem; justify-content: center; display: flex; align-items: center; gap: 0.25rem;">
+            ${icon('users', 'color:var(--primary-light)', 12)} 프로필 수정
           </button>
-          <button class="action-btn action-btn-secondary" id="btn-sidebar-logout" style="padding: 0.3rem 0.6rem; font-size: 0.72rem; color: var(--danger); border-color: var(--danger-border); justify-content: center; display: flex; align-items: center; gap: 0.25rem;">
+          <button class="action-btn action-btn-secondary" id="btn-sidebar-switch-acc" style="padding: 0.3rem 0.5rem; font-size: 0.72rem; justify-content: center; display: flex; align-items: center; gap: 0.25rem;">
+            ${icon('users', 'color:var(--sky)', 12)} 전환
+          </button>
+          <button class="action-btn action-btn-secondary" id="btn-sidebar-logout" style="padding: 0.3rem 0.5rem; font-size: 0.72rem; color: var(--danger); border-color: var(--danger-border); justify-content: center; display: flex; align-items: center; gap: 0.25rem;">
             ${icon('warning', 'color:var(--danger)', 12)} 로그아웃
           </button>
         </div>

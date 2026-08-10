@@ -26,6 +26,9 @@ import { renderAttackModal } from './components/modals/AttackModal';
 import { renderCMSChartModal } from './components/modals/CMSChartModal';
 import { renderCreateMonsterModal } from './components/modals/CreateMonsterModal';
 import { renderTeamSettingsModal } from './components/modals/TeamSettingsModal';
+import { renderUserProfileModal } from './components/modals/UserProfileModal';
+import { updateAccountProfile } from './services/authService';
+
 import { 
   mockUser, 
   mockVacations, 
@@ -97,7 +100,7 @@ let lastHitDamageText: string | null = null;
 let isSkillActiveNextAttack: boolean = false;
 
 // Modal States
-let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'teamSettings' | null = null;
+let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'teamSettings' | 'userProfile' | null = null;
 let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
@@ -105,10 +108,12 @@ let lastLootReward: string | null = null;
 let burnChartInstance: Chart | null = null;
 let radarChartInstance: Chart | null = null;
 
-// 팀 설정 모달 상태
+// 팀 설정 및 프로필 모달 상태
 let editModalMembers: TeamMemberInput[] = [];
 let tsModalErrorMsg = '';
 let tsModalSuccessMsg = '';
+let upModalErrorMsg = '';
+let upModalSuccessMsg = '';
 let isRpgMenuOpen = false;
 
 function applyTheme() {
@@ -381,6 +386,7 @@ renderModals = function renderModals() {
   if (activeModal === 'cmsDetails') return renderCMSChartModal(state);
   if (activeModal === 'createMonster') return renderCreateMonsterModal(state);
   if (activeModal === 'teamSettings') return renderTeamSettingsModal(editModalMembers, tsModalErrorMsg, tsModalSuccessMsg);
+  if (activeModal === 'userProfile') return renderUserProfileModal(upModalErrorMsg, upModalSuccessMsg);
 
   if (activeModal === 'releaseMilestone') {
     return `
@@ -1287,9 +1293,12 @@ renderModals = function renderModals() {
 }
 
 attachEvents = function attachEvents() {
-  // 팀 설정 모달이 열려 있으면 해당 이벤트 핸들러 바인딩
   if (activeModal === 'teamSettings') {
     attachTeamSettingsModalEvents();
+    return;
+  }
+  if (activeModal === 'userProfile') {
+    attachUserProfileModalEvents();
     return;
   }
 
@@ -2083,6 +2092,16 @@ attachEvents = function attachEvents() {
     showToast('AI 개발 요약 리포트가 최신화되었습니다.', 'info');
   });
 
+  const openProfileModal = () => {
+    upModalErrorMsg = '';
+    upModalSuccessMsg = '';
+    activeModal = 'userProfile';
+    renderApp();
+  };
+
+  document.querySelector('#btn-edit-profile')?.addEventListener('click', openProfileModal);
+  document.querySelector('#btn-sidebar-edit-profile')?.addEventListener('click', openProfileModal);
+
   document.querySelector('#btn-switch-account')?.addEventListener('click', () => {
     logout();
     loginErrorMsg = '';
@@ -2388,8 +2407,91 @@ function attachTeamSettingsModalEvents() {
     tsModalErrorMsg = '';
     tsModalSuccessMsg = `✅ 설정이 저장되었습니다. 팀원 ${editModalMembers.length}명 반영 완료.`;
     showToast('⚙️ 팀 설정이 저장되었습니다!', 'success');
+  });
+}
+
+// ─── User Profile Modal Event Handler ──────────────────────────────────────
+function attachUserProfileModalEvents() {
+  const closeModal = () => {
+    activeModal = null;
+    upModalErrorMsg = '';
+    upModalSuccessMsg = '';
     renderApp();
-    setTimeout(attachTeamSettingsModalEvents, 0);
+  };
+
+  document.querySelector('#up-close')?.addEventListener('click', closeModal);
+  document.querySelector('#up-close-footer')?.addEventListener('click', closeModal);
+  document.querySelector('#modal-backdrop')?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).id === 'modal-backdrop') closeModal();
+  });
+
+  // 아바타 배경 프리셋 선택
+  document.querySelectorAll('.up-bg-preset-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const bg = (e.currentTarget as HTMLElement).getAttribute('data-bg');
+      if (!bg) return;
+      const preview = document.querySelector('#up-avatar-preview') as HTMLElement;
+      const hiddenInput = document.querySelector('#up-avatar-bg') as HTMLInputElement;
+      if (preview) preview.style.background = bg;
+      if (hiddenInput) hiddenInput.value = bg;
+
+      document.querySelectorAll('.up-bg-preset-btn').forEach(b => {
+        (b as HTMLElement).style.borderColor = (b as HTMLElement).getAttribute('data-bg') === bg ? 'white' : 'transparent';
+      });
+    });
+  });
+
+  // 아바타 아이콘 프리셋 선택
+  document.querySelectorAll('.up-icon-preset-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const symbol = (e.currentTarget as HTMLElement).getAttribute('data-symbol');
+      if (!symbol) return;
+      const preview = document.querySelector('#up-avatar-preview') as HTMLElement;
+      const hiddenInput = document.querySelector('#up-avatar-symbol') as HTMLInputElement;
+      if (preview) preview.textContent = symbol;
+      if (hiddenInput) hiddenInput.value = symbol;
+
+      document.querySelectorAll('.up-icon-preset-btn').forEach(b => {
+        const bSymbol = (b as HTMLElement).getAttribute('data-symbol');
+        (b as HTMLElement).style.background = bSymbol === symbol ? 'var(--primary-bg)' : 'var(--inner-box-bg)';
+        (b as HTMLElement).style.borderColor = bSymbol === symbol ? 'var(--primary)' : 'var(--panel-border)';
+      });
+    });
+  });
+
+  // 프로필 수정 폼 제출
+  document.querySelector('#form-update-profile')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const displayName = (document.querySelector('#up-display-name') as HTMLInputElement)?.value;
+    const heroClass = (document.querySelector('#up-hero-class') as HTMLSelectElement)?.value as any;
+    const currentPin = (document.querySelector('#up-current-pin') as HTMLInputElement)?.value;
+    const newPin = (document.querySelector('#up-new-pin') as HTMLInputElement)?.value;
+    const avatarBgColor = (document.querySelector('#up-avatar-bg') as HTMLInputElement)?.value;
+    const avatarIconSymbol = (document.querySelector('#up-avatar-symbol') as HTMLInputElement)?.value;
+
+    const res = updateAccountProfile({
+      displayName,
+      heroClass,
+      currentPin,
+      newPin: newPin || undefined,
+      avatarBgColor,
+      avatarIconSymbol,
+    });
+
+    if (res.success) {
+      store.reloadFromLocalStorage();
+      userState = { ...store.getState().userState };
+      upModalErrorMsg = '';
+      upModalSuccessMsg = res.message;
+      showToast('👤 프로필 수정이 완료되었습니다!', 'success');
+      renderApp();
+      setTimeout(attachUserProfileModalEvents, 0);
+    } else {
+      upModalErrorMsg = res.message;
+      upModalSuccessMsg = '';
+      renderApp();
+      setTimeout(attachUserProfileModalEvents, 0);
+    }
   });
 }
 
