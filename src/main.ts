@@ -2032,6 +2032,7 @@ attachEvents = function attachEvents() {
     logout();
     loginErrorMsg = '';
     loginSuccessMsg = '계정 전환을 위해 로그아웃되었습니다. 원하시는 계정으로 로그인해주세요.';
+    showToast('계정 전환을 위해 로그아웃되었습니다.', 'info');
     renderApp();
   });
 
@@ -2039,11 +2040,36 @@ attachEvents = function attachEvents() {
     logout();
     loginErrorMsg = '';
     loginSuccessMsg = '성공적으로 로그아웃되었습니다.';
+    showToast('로그아웃되었습니다.', 'info');
+    renderApp();
+  });
+
+  document.querySelector('#btn-sidebar-switch-acc')?.addEventListener('click', () => {
+    logout();
+    loginErrorMsg = '';
+    loginSuccessMsg = '계정 전환을 위해 로그아웃되었습니다.';
+    showToast('계정 전환 모드로 이동합니다.', 'info');
+    renderApp();
+  });
+
+  document.querySelector('#btn-sidebar-logout')?.addEventListener('click', () => {
+    logout();
+    loginErrorMsg = '';
+    loginSuccessMsg = '성공적으로 로그아웃되었습니다.';
+    showToast('성공적으로 로그아웃되었습니다.', 'info');
     renderApp();
   });
 }
 
 attachLoginEvents = function attachLoginEvents() {
+  document.querySelector('#btn-lock-logout')?.addEventListener('click', () => {
+    logout();
+    loginErrorMsg = '';
+    loginSuccessMsg = '성공적으로 로그아웃되었습니다.';
+    showToast('로그아웃되었습니다.', 'info');
+    renderApp();
+  });
+
   document.querySelector('#form-unlock-session')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const pin = (document.querySelector('#unlock-pin') as HTMLInputElement).value;

@@ -37,9 +37,15 @@ export function renderLoginScreen(errorMsg: string = '', successMsg: string = ''
             </button>
           </form>
 
-          <button type="button" id="btn-lock-switch-account" style="background: none; border: none; color: var(--text-muted); font-size: 0.78rem; cursor: pointer; text-decoration: underline;">
-            다른 계정으로 로그인
-          </button>
+          <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 0.5rem;">
+            <button type="button" id="btn-lock-switch-account" style="background: none; border: none; color: var(--primary-light); font-size: 0.78rem; cursor: pointer; text-decoration: underline;">
+              다른 계정으로 전환
+            </button>
+            <span style="color: var(--panel-border);">|</span>
+            <button type="button" id="btn-lock-logout" style="background: none; border: none; color: var(--danger); font-size: 0.78rem; cursor: pointer; text-decoration: underline;">
+              로그아웃
+            </button>
+          </div>
         </div>
       </div>
     `;

@@ -51,7 +51,7 @@ describe('Store & State Management', () => {
 describe('i18n Translation Manager', () => {
   it('should translate keys according to the selected language', () => {
     setLang('ko');
-    expect(t('appTitle')).toBe('BUG QUEST RPG');
+    expect(t('appTitle')).toBe('BUG TRACKER RPG');
     expect(t('attackBtn')).toBe('PR 공격 / 통합');
 
     setLang('en');

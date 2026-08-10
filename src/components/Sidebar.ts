@@ -3,12 +3,41 @@ import { calculateCapacity, mockDailySummary } from '../mockData';
 import { icon } from '../icons';
 
 export function renderSidebar(state: AppState): string {
-  const { teamState, vacationsState } = state;
+  const { userState, teamState, vacationsState } = state;
   const capacity = calculateCapacity(teamState);
   const loadPct = Math.min(100, (capacity.assignedHours / capacity.availableHours) * 100);
 
   return `
     <aside style="display: flex; flex-direction: column; gap: 1rem;">
+
+      <!-- ─── Current User Account Card ─── -->
+      <div class="card" style="border: 1px solid var(--primary-border); background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8));">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--primary-bg); border: 1px solid var(--primary-border); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+              👤
+            </div>
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">
+                ${userState.name}
+              </div>
+              <div style="font-size: 0.7rem; color: var(--primary-light); font-weight: 600;">
+                ${userState.heroClass} · Lv.${userState.level}
+              </div>
+            </div>
+          </div>
+          <span class="badge badge-success" style="font-size: 0.65rem; padding: 0.15rem 0.45rem;">접속 중</span>
+        </div>
+
+        <div style="display: flex; gap: 0.4rem; pt: 0.4rem; border-top: 1px solid rgba(255,255,255,0.08);">
+          <button class="action-btn action-btn-secondary" id="btn-sidebar-switch-acc" style="flex: 1; padding: 0.3rem; font-size: 0.72rem; justify-content: center; display: flex; align-items: center; gap: 0.25rem;">
+            ${icon('users', 'color:var(--sky)', 12)} 계정 전환
+          </button>
+          <button class="action-btn action-btn-secondary" id="btn-sidebar-logout" style="padding: 0.3rem 0.6rem; font-size: 0.72rem; color: var(--danger); border-color: var(--danger-border); justify-content: center; display: flex; align-items: center; gap: 0.25rem;">
+            ${icon('warning', 'color:var(--danger)', 12)} 로그아웃
+          </button>
+        </div>
+      </div>
 
       <!-- ─── Sprint Capacity ─── -->
       <div class="card">
