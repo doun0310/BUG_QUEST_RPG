@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { calculateCapacity, mockTeamMembers } from './mockData';
 import { store } from './store';
 import { t, setLang } from './i18n';
+import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig } from './services/githubService';
 
 describe('CMS Workload Capacity Calculations', () => {
   it('should correctly calculate total available and assigned hours for team members', () => {
@@ -50,5 +51,33 @@ describe('i18n Translation Manager', () => {
     setLang('en');
     expect(t('attackBtn')).toBe('PR Merge Attack');
     expect(t('weeklyQuestsBtn')).toBe('Weekly Quests');
+  });
+});
+
+describe('GitHub Integration Service', () => {
+  beforeEach(() => {
+    if (typeof localStorage !== 'undefined' && localStorage) {
+      localStorage.clear();
+    }
+  });
+
+  it('should manage GitHub config in localStorage', () => {
+    const defaultConfig = getGitHubConfig();
+    expect(defaultConfig.isEnabled).toBe(false);
+
+    const testConfig = { token: 'ghp_test123', owner: 'testuser', repo: 'testrepo', isEnabled: true };
+    saveGitHubConfig(testConfig);
+
+    const saved = getGitHubConfig();
+    expect(saved.token).toBe('ghp_test123');
+    expect(saved.owner).toBe('testuser');
+    expect(saved.isEnabled).toBe(true);
+  });
+
+  it('should fail verification if token or owner is missing', async () => {
+    const emptyConfig = { token: '', owner: '', repo: '', isEnabled: true };
+    const res = await verifyGitHubConfig(emptyConfig);
+    expect(res.success).toBe(false);
+    expect(res.message).toContain('Token');
   });
 });

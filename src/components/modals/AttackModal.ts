@@ -1,9 +1,11 @@
 import type { AppState } from '../../store';
 import { icon } from '../../icons';
+import { getGitHubConfig } from '../../services/githubService';
 
 export function renderAttackModal(state: AppState): string {
   const { monstersState, attackTargetId, isSkillActiveNextAttack, userState } = state;
   const targetMonster = monstersState.find(m => m.id === attackTargetId);
+  const ghConfig = getGitHubConfig();
 
   return `
     <div class="modal-backdrop" id="modal-backdrop">
@@ -27,12 +29,30 @@ export function renderAttackModal(state: AppState): string {
           </div>
         ` : ''}
 
+        ${ghConfig.isEnabled && ghConfig.token && ghConfig.owner && ghConfig.repo ? `
+          <div style="background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); color: var(--success); padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.73rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+            <span style="display: flex; align-items: center; gap: 0.35rem;">
+              ${icon('check', 'color:var(--success)', 13)}
+              <span>GitHub 라이브 온라인 연동 활성화 (<strong>${ghConfig.owner}/${ghConfig.repo}</strong>)</span>
+            </span>
+            <span class="badge badge-success" style="font-size: 0.65rem;">ONLINE API</span>
+          </div>
+        ` : `
+          <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.25); color: var(--warning); padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.72rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+            <span style="display: flex; align-items: center; gap: 0.35rem;">
+              ${icon('warning', 'color:var(--warning)', 12)}
+              <span>현재 Mock 시뮤레이션 모드입니다. (실제 GitHub 레포지토리 자동 머지 미연동)</span>
+            </span>
+            <button type="button" class="action-btn action-btn-secondary" id="btn-goto-apisync" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">GitHub 연동 설정</button>
+          </div>
+        `}
+
         <form id="form-attack" style="display: flex; flex-direction: column; gap: 0;">
           <div class="form-group">
             <label style="display: flex; align-items: center; gap: 0.3rem;">
-              ${icon('pr', '', 12)} Pull Request URL
+              ${icon('pr', '', 12)} Pull Request URL 또는 PR 번호
             </label>
-            <input type="text" class="form-input" id="attack-pr" value="https://github.com/org/repo/pull/142" required />
+            <input type="text" class="form-input" id="attack-pr" value="${ghConfig.isEnabled && ghConfig.owner && ghConfig.repo ? `https://github.com/${ghConfig.owner}/${ghConfig.repo}/pull/1` : 'https://github.com/org/repo/pull/142'}" required />
           </div>
           <div class="form-group">
             <label style="display: flex; align-items: center; gap: 0.3rem;">
@@ -57,7 +77,7 @@ export function renderAttackModal(state: AppState): string {
               ${icon('close', '', 13)} 취소
             </button>
             <button type="submit" class="action-btn action-btn-danger" style="min-width: 110px; justify-content: center; display: flex; align-items: center; gap: 0.4rem;">
-              ${icon('sword', 'color:white', 14)} 공격 실행
+              ${icon('sword', 'color:white', 14)} ${ghConfig.isEnabled ? '실제 GitHub PR 머지 & 공격' : '공격 실행'}
             </button>
           </div>
         </form>

@@ -5,6 +5,7 @@ import { soundFx } from './soundManager';
 import { showToast } from './toastManager';
 import { getLang, setLang } from './i18n';
 import { generateAIDebugGuide } from './aiService';
+import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig, mergeGitHubPullRequest } from './services/githubService';
 import { icon } from './icons';
 import { renderHeader } from './components/Header';
 import { renderMonsterBoard } from './components/MonsterBoard';
@@ -548,30 +549,60 @@ function renderModals() {
   }
 
   if (activeModal === 'apiSync') {
+    const ghConfig = getGitHubConfig();
     return `
       <div class="modal-backdrop" id="modal-backdrop">
-        <div class="modal-card" style="max-width: 500px;">
-          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.4rem;">${icon('plug', 'color:var(--primary-light)', 18)} 외부 API 동기화 설정</h2>
+        <div class="modal-card" style="max-width: 520px;">
+          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.4rem;">
+            ${icon('plug', 'color:var(--primary-light)', 18)} GitHub 및 외부 이슈 트래커 연동 설정
+          </h2>
+          <p style="font-size: 0.76rem; color: var(--text-sub); margin-bottom: 1rem;">
+            실제 GitHub 계정의 Personal Access Token(PAT)과 저장소를 등록하면, 게임 내에서 [PR 통합 공격] 실행 시 <strong>실제 GitHub 저장소의 Pull Request가 자동으로 머지</strong>됩니다.
+          </p>
+
           <form id="form-api-sync">
             <div class="form-group">
-              <label>연동 연동 플랫폼 선택</label>
+              <label>연동 플랫폼 선택</label>
               <select class="form-select" id="api-provider">
+                <option value="github" selected>GitHub (REST API v3 / Pull Request Auto-Merge)</option>
                 <option value="jira">Jira Software Cloud (Atlassian REST API v3)</option>
-                <option value="github">GitHub Issues / Pull Requests (GraphQL API)</option>
                 <option value="gitlab">GitLab Issue Board (REST API v4)</option>
               </select>
             </div>
+
             <div class="form-group">
-              <label>API 엔드포인트 URL</label>
-              <input type="text" class="form-input" id="api-endpoint" value="https://company.atlassian.net/rest/api/3/issue" required />
+              <label style="display: flex; align-items: center; gap: 0.3rem;">
+                ${icon('key', '', 12)} GitHub Personal Access Token (PAT)
+              </label>
+              <input type="password" class="form-input" id="gh-token" value="${ghConfig.token}" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" required />
+              <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.2rem;">
+                필요 권한: <code>repo</code> 또는 <code>pull_requests:write</code> (GitHub -> Settings -> Developer settings -> Tokens)
+              </div>
             </div>
-            <div class="form-group">
-              <label>Access Token / API Key</label>
-              <input type="password" class="form-input" id="api-token" value="bearer_tok_demo_99827164" required />
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;">
+              <div class="form-group">
+                <label>저장소 소유자 (Owner)</label>
+                <input type="text" class="form-input" id="gh-owner" value="${ghConfig.owner}" placeholder="e.g. octocat" required />
+              </div>
+              <div class="form-group">
+                <label>저장소 이름 (Repository)</label>
+                <input type="text" class="form-input" id="gh-repo" value="${ghConfig.repo}" placeholder="e.g. my-cool-project" required />
+              </div>
             </div>
-            <div style="display: flex; gap: 0.35rem; justify-content: flex-end; margin-top: 0.85rem;">
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; text-transform: none; font-size: 0.78rem; color: var(--text-main);">
+                <input type="checkbox" id="gh-enable" ${ghConfig.isEnabled ? 'checked' : ''} style="accent-color: var(--primary); width: 15px; height: 15px;" />
+                <span>실제 GitHub 자동 PR 머지 기능 활성화 (Uncheck 시 시뮬레이션 모드)</span>
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
               <button type="button" class="action-btn action-btn-secondary" id="btn-close-modal">취소</button>
-              <button type="submit" class="action-btn">연동 테스트 & 동기화 실행</button>
+              <button type="submit" class="action-btn" id="btn-save-gh-config" style="display: flex; align-items: center; gap: 0.4rem;">
+                ${icon('check', 'color:white', 13)} 연동 테스트 &amp; 저장
+              </button>
             </div>
           </form>
         </div>
@@ -1574,6 +1605,37 @@ function attachEvents() {
     });
   });
 
+  document.querySelector('#btn-goto-apisync')?.addEventListener('click', () => {
+    activeModal = 'apiSync';
+    renderApp();
+  });
+
+  document.querySelector('#form-api-sync')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = (document.querySelector('#gh-token') as HTMLInputElement)?.value.trim();
+    const owner = (document.querySelector('#gh-owner') as HTMLInputElement)?.value.trim();
+    const repo = (document.querySelector('#gh-repo') as HTMLInputElement)?.value.trim();
+    const isEnabled = (document.querySelector('#gh-enable') as HTMLInputElement)?.checked ?? false;
+
+    const newConfig = { token, owner, repo, isEnabled };
+
+    if (isEnabled && token) {
+      showToast('GitHub API 연동 확인 중...', 'warning');
+      const verifyResult = await verifyGitHubConfig(newConfig);
+      if (!verifyResult.success) {
+        showToast(`❌ ${verifyResult.message}`, 'danger');
+        return;
+      }
+      showToast(`✅ ${verifyResult.message}`, 'success');
+    } else {
+      showToast('GitHub API 설정이 저장되었습니다 (시뮬레이션 모드)', 'info');
+    }
+
+    saveGitHubConfig(newConfig);
+    activeModal = null;
+    renderApp();
+  });
+
   document.querySelector('#btn-close-modal')?.addEventListener('click', () => {
     activeModal = null;
     renderApp();
@@ -1603,12 +1665,40 @@ function attachEvents() {
     renderApp();
   });
 
-  document.querySelector('#form-attack')?.addEventListener('submit', (e) => {
+  document.querySelector('#form-attack')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     let baseDamage = parseInt((document.querySelector('#attack-damage') as HTMLSelectElement).value, 10);
+    const prInput = (document.querySelector('#attack-pr') as HTMLInputElement)?.value || '';
     const monster = monstersState.find(m => m.id === attackTargetId);
     
     if (monster && monster.status === 'Active') {
+      const ghConfig = getGitHubConfig();
+
+      // Check if real GitHub integration is enabled
+      if (ghConfig.isEnabled && ghConfig.token && ghConfig.owner && ghConfig.repo) {
+        // Extract PR number from URL (e.g., https://github.com/owner/repo/pull/142 or 142)
+        const match = prInput.match(/pull\/(\d+)/) || prInput.match(/^(\d+)$/);
+        if (!match) {
+          showToast('올바른 GitHub PR URL 또는 번호를 입력해주세요. (예: https://github.com/org/repo/pull/142)', 'warning');
+          return;
+        }
+        const prNumber = parseInt(match[1], 10);
+
+        showToast(`🚀 GitHub PR #${prNumber} 머지 요청 전송 중...`, 'warning');
+
+        const mergeRes = await mergeGitHubPullRequest(ghConfig, prNumber, `Merge PR #${prNumber} via Bug Tracker RPG strike on [${monster.title}]`);
+
+        if (!mergeRes.success) {
+          showToast(`❌ GitHub Merge 실패: ${mergeRes.message}`, 'danger');
+          battleLogMessage = `⚠️ [GitHub API 경고] PR #${prNumber} 온라인 머지 실패: ${mergeRes.message}`;
+          renderApp();
+          return;
+        }
+
+        showToast(`🎉 GitHub PR #${prNumber} 온라인 머지 성공! (${mergeRes.message})`, 'success');
+        monster.prUrl = `https://github.com/${ghConfig.owner}/${ghConfig.repo}/pull/${prNumber}`;
+      }
+
       const isCritical = isSkillActiveNextAttack || Math.random() > 0.6;
       
       if (isSkillActiveNextAttack) {
