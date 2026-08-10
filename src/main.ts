@@ -86,7 +86,7 @@ let simExtraDevs: number = 0;
 let simExtraVacationDays: number = 0;
 
 let bugFilter: 'all' | 'active' | 'defeated' = 'all';
-let battleLogMessage: string = '버그 트래커 전장에 오신 것을 환영합니다! 몬스터를 타격하여 PR을 통합하세요.';
+let battleLogMessage: string = '버그 퀘스트 전장에 오신 것을 환영합니다! 몬스터를 타격하여 PR을 통합하세요.';
 
 let hitMonsterId: string | null = null;
 let lastHitDamageText: string | null = null;
@@ -385,7 +385,7 @@ renderModals = function renderModals() {
 
             <div style="background: var(--inner-box-bg); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <strong style="font-size: 0.82rem;">🔥 [결제] 결제 모듈 Memory Leak (BOSS RAID)</strong>
+                <strong style="font-size: 0.82rem;">[결제] 결제 모듈 Memory Leak (BOSS RAID)</strong>
                 <div style="font-size: 0.72rem; color: var(--text-sub);">레이드 진행 중 (HP 400/1000)</div>
               </div>
               <span class="badge badge-warning">진행 중</span>
@@ -393,7 +393,7 @@ renderModals = function renderModals() {
           </div>
 
           <div style="display: flex; justify-content: flex-end;">
-            <button class="action-btn" id="btn-deploy-release">💥 v2.0 최종 배포 승인 & 전원 300 XP 수령</button>
+            <button class="action-btn" id="btn-deploy-release">v2.0 최종 배포 승인 & 전원 300 XP 수령</button>
           </div>
         </div>
       </div>
@@ -669,11 +669,11 @@ renderModals = function renderModals() {
 
   if (activeModal === 'achievements') {
     const achievementsList = [
-      { id: 'a1', title: '🏅 첫 버그 슬레이어', desc: '첫 번째 버그 몬스터를 성공적으로 토벌함', isUnlocked: true },
-      { id: 'a2', title: '🔥 콤보 연승의 지배자', desc: 'PR Merge 연속 3회 이상 콤보 달성', isUnlocked: userState.streakCount >= 3 },
-      { id: 'a3', title: '🔨 대장간의 전설', desc: '기계식 청축 키보드 +7 이상 강화 달성', isUnlocked: userState.weapon.enhanceLevel >= 7 },
-      { id: 'a4', title: '☕ 카페인 마스터', desc: '지친 개발자의 HP를 100까지 회복함', isUnlocked: userState.hp >= 100 },
-      { id: 'a5', title: '🐲 레이드 파티 리더', desc: '초월급 팀 협동 레이드 보스 타격 참여', isUnlocked: true }
+      { id: 'a1', title: '첫 버그 슬레이어', desc: '첫 번째 버그 몬스터를 성공적으로 토벌함', isUnlocked: true },
+      { id: 'a2', title: '콤보 연승의 지배자', desc: 'PR Merge 연속 3회 이상 콤보 달성', isUnlocked: userState.streakCount >= 3 },
+      { id: 'a3', title: '대장간의 전설', desc: '기계식 청축 키보드 +7 이상 강화 달성', isUnlocked: userState.weapon.enhanceLevel >= 7 },
+      { id: 'a4', title: '카페인 마스터', desc: '지친 개발자의 HP를 100까지 회복함', isUnlocked: userState.hp >= 100 },
+      { id: 'a5', title: '레이드 파티 리더', desc: '초월급 팀 협동 레이드 보스 타격 참여', isUnlocked: true }
     ];
 
     return `
@@ -1349,7 +1349,7 @@ attachEvents = function attachEvents() {
     e.preventDefault();
     soundFx.playVictorySound();
     confetti({ particleCount: 50 });
-    battleLogMessage = ` [API 연동 성공] 외부 이슈 트래커 동기화가 성공적으로 설정되었습니다!`;
+    battleLogMessage = ` [API 연동 성공] 외부 이슈 트래커와의 동기화가 성공적으로 설정되었습니다!`;
     activeModal = null;
     renderApp();
   });
@@ -1691,7 +1691,7 @@ attachEvents = function attachEvents() {
     const targetMonster = monstersState.find(m => m.id === attackTargetId);
     if (targetMonster) {
       const aiReport = await generateAIDebugGuide(targetMonster);
-      battleLogMessage = `🤖 [AI 디버깅 가이드 - ${targetMonster.title}]\n\n📌 진단 요약: ${aiReport.summary}\n🔍 추정 원인: ${aiReport.rootCauseHypothesis}\n💡 권장 조치사항:\n${aiReport.recommendedActionItems.map((item, idx) => `${idx + 1}. ${item}`).join('\n')}\n🧪 테스트 가이드: ${aiReport.unitTestRecommendation}\n⏱️ 예상 조치 소요시간: 약 ${aiReport.estimatedFixTimeHours}시간`;
+      battleLogMessage = `[AI 디버깅 가이드 - ${targetMonster.title}]\n\n📌 진단 요약: ${aiReport.summary}\n🔍 추정 원인: ${aiReport.rootCauseHypothesis}\n💡 권장 조치사항:\n${aiReport.recommendedActionItems.map((item, idx) => `${idx + 1}. ${item}`).join('\n')}\n🧪 테스트 가이드: ${aiReport.unitTestRecommendation}\n⏱️ 예상 조치 소요시간: 약 ${aiReport.estimatedFixTimeHours}시간`;
       renderApp();
     }
   });
@@ -1762,7 +1762,7 @@ attachEvents = function attachEvents() {
   // ─── Data Backup & Restore Handlers ───
   document.querySelector('#btn-export-backup')?.addEventListener('click', () => {
     exportAppData({ userState, monstersState, vacationsState, questsState });
-    showToast('📦 현재 전장 및 유저 데이터 백업 파일(.json)이 다운로드되었습니다.', 'success');
+    showToast('현재 전장 및 유저 데이터 백업 파일(.json)이 다운로드되었습니다.', 'success');
   });
 
   document.querySelector('#btn-import-backup')?.addEventListener('click', () => {
@@ -1782,8 +1782,8 @@ attachEvents = function attachEvents() {
             if (result.data.vacationsState) vacationsState = result.data.vacationsState;
             if (result.data.questsState) questsState = result.data.questsState;
             saveState();
-            showToast('✅ 백업 데이터 복원 성공! 전장 및 스탯이 업데이트되었습니다.', 'success');
-            battleLogMessage = `📦 백업 파일(${file.name})로부터 시스템 데이터가 성공적으로 복원되었습니다.`;
+            showToast('백업 데이터 복원 성공! 전장 및 스탯이 업데이트되었습니다.', 'success');
+            battleLogMessage = `백업 파일(${file.name})로부터 시스템 데이터가 성공적으로 복원되었습니다.`;
             renderApp();
           } else {
             showToast(`❌ ${result.message}`, 'danger');
@@ -1804,7 +1804,7 @@ attachEvents = function attachEvents() {
       showToast('열려있는 GitHub PR이 없거나 연동 권한을 확인해주세요.', 'info');
     } else {
       openPRsList = prs;
-      showToast(`✅ open 상태인 PR ${prs.length}개를 발견하였습니다!`, 'success');
+      showToast(`open 상태인 PR ${prs.length}개를 발견하였습니다!`, 'success');
       renderApp();
     }
   });
@@ -1867,7 +1867,7 @@ attachEvents = function attachEvents() {
 
         showToast(`🚀 GitHub PR #${prNumber} 머지 요청 전송 중...`, 'warning');
 
-        const mergeRes = await mergeGitHubPullRequest(ghConfig, prNumber, `Merge PR #${prNumber} via Bug Tracker RPG strike on [${monster.title}]`);
+        const mergeRes = await mergeGitHubPullRequest(ghConfig, prNumber, `Merge PR #${prNumber} via Bug Quest RPG strike on [${monster.title}]`);
 
         if (!mergeRes.success) {
           showToast(`❌ GitHub Merge 실패: ${mergeRes.message}`, 'danger');
