@@ -109,6 +109,7 @@ let radarChartInstance: Chart | null = null;
 let editModalMembers: TeamMemberInput[] = [];
 let tsModalErrorMsg = '';
 let tsModalSuccessMsg = '';
+let isRpgMenuOpen = false;
 
 function applyTheme() {
   if (currentTheme === 'light') {
@@ -1295,12 +1296,28 @@ attachEvents = function attachEvents() {
   const rpgMenuBtn = document.querySelector('#btn-toggle-rpg-menu');
   const rpgDropdownMenu = document.querySelector('#rpg-dropdown-menu');
 
+  if (isRpgMenuOpen && rpgDropdownMenu) {
+    rpgDropdownMenu.classList.add('show');
+  }
+
   rpgMenuBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
-    rpgDropdownMenu?.classList.toggle('show');
+    isRpgMenuOpen = !isRpgMenuOpen;
+    rpgDropdownMenu?.classList.toggle('show', isRpgMenuOpen);
+  });
+
+  rpgDropdownMenu?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const target = e.target as HTMLElement;
+    const item = target.closest('.dropdown-item');
+    if (item && item.id !== 'btn-toggle-sound') {
+      isRpgMenuOpen = false;
+      rpgDropdownMenu.classList.remove('show');
+    }
   });
 
   document.addEventListener('click', () => {
+    isRpgMenuOpen = false;
     rpgDropdownMenu?.classList.remove('show');
   });
 
@@ -1660,14 +1677,20 @@ attachEvents = function attachEvents() {
     renderApp();
   });
 
-  document.querySelector('#btn-toggle-sound')?.addEventListener('click', () => {
+  document.querySelector('#btn-toggle-sound')?.addEventListener('click', (e) => {
+    e.stopPropagation();
     soundFx.toggleMute();
     renderApp();
   });
 
-  document.querySelector('#sound-volume-range')?.addEventListener('input', (e) => {
+  const volumeRange = document.querySelector('#sound-volume-range');
+  volumeRange?.addEventListener('input', (e) => {
+    e.stopPropagation();
     const val = parseInt((e.target as HTMLInputElement).value, 10) / 100;
     soundFx.setVolume(val);
+  });
+  volumeRange?.addEventListener('click', (e) => {
+    e.stopPropagation();
   });
 
   document.querySelector('#btn-toggle-lang')?.addEventListener('click', () => {
