@@ -62,7 +62,7 @@ export function renderLoginScreen(errorMsg: string = '', successMsg: string = ''
             ${icon('sword', 'color:var(--primary-light)', 30)}
           </div>
           <h1 style="font-size: 1.45rem; font-weight: 900; letter-spacing: -0.02em; background: linear-gradient(135deg, #a5b4fc 0%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-            BUG TRACKER RPG
+            BUG QUEST RPG
           </h1>
           <p style="font-size: 0.82rem; color: var(--text-sub); margin-top: 0.25rem;">
             개발팀 프로필 계정을 선택하고 버그 레이드 전장에 참여하세요

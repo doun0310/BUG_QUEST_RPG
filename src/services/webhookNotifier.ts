@@ -66,7 +66,7 @@ export async function notifyMonsterDefeated(
   }
 
   const payload = {
-    text: `🎉 *[BUG TRACKER RPG]* 버그 몬스터 토벌 완료!`,
+    text: `🎉 *[BUG QUEST RPG]* 버그 몬스터 토벌 완료!`,
     attachments: [
       {
         color: '#34d399',
@@ -76,7 +76,7 @@ export async function notifyMonsterDefeated(
           { title: '획득 보상', value: `+${rewardXp} XP`, short: true },
           { title: '상태', value: 'Slain (Defeated)', short: true }
         ],
-        footer: 'Bug Tracker RPG & CMS Automator'
+        footer: 'Bug Quest RPG & CMS Automator'
       }
     ]
   };
@@ -98,7 +98,7 @@ export async function notifyMonsterDefeated(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           '@type': 'MessageCard',
-          summary: `[BUG TRACKER RPG] ${monsterTitle} 토벌 완료`,
+          summary: `[BUG QUEST RPG] ${monsterTitle} 토벌 완료`,
           themeColor: '34D399',
           title: `🎉 몬스터 토벌 완료: ${monsterTitle}`,
           text: `**토벌자**: ${slayerName} | **보상**: +${rewardXp} XP`

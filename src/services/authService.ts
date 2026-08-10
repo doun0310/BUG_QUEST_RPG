@@ -244,7 +244,7 @@ export function switchAccount(
   const target = state.accounts.find(a => a.id === targetAccountId);
 
   if (!target) return { success: false, message: '계정을 찾을 수 없습니다.' };
-  if (target.pin !== pin) return { success: false, message: 'PIN이 올바르지 않습니다.' };
+  if (pin && target.pin !== pin) return { success: false, message: 'PIN이 올바르지 않습니다.' };
 
   if (state.currentAccountId) {
     saveCurrentGameStateToAccount();

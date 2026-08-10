@@ -16,7 +16,7 @@ export function renderHeader(state: AppState): string {
       <div style="display: flex; align-items: center; gap: 1rem;">
         <div>
           <h1 class="logo-title" style="display: flex; align-items: center; gap: 0.4rem;">
-            ${icon('bug', 'color:var(--primary-light)', 18)} BUG TRACKER RPG
+            ${icon('bug', 'color:var(--primary-light)', 18)} BUG QUEST RPG
           </h1>
           <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem; display: flex; align-items: center; gap: 0.4rem;">
             ${icon('target', 'color:var(--text-muted)', 12)} ${userState.name}

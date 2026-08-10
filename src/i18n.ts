@@ -2,7 +2,7 @@ export type Lang = 'ko' | 'en';
 
 export const translations: Record<Lang, Record<string, string>> = {
   ko: {
-    appTitle: 'BUG TRACKER RPG',
+    appTitle: 'BUG QUEST RPG',
     developer: '개발자',
     combo: 'COMBO',
     battleLogTitle: '[ BATTLE LOG ]',
@@ -31,7 +31,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     themeMatrix: '매트릭스'
   },
   en: {
-    appTitle: 'BUG TRACKER RPG',
+    appTitle: 'BUG QUEST RPG',
     developer: 'Dev',
     combo: 'COMBO',
     battleLogTitle: '[ BATTLE LOG ]',
