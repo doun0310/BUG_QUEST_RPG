@@ -11,7 +11,7 @@ import { particleService } from './services/particleService';
 import { generateMonsterPreset } from './services/monsterPresetEngine';
 import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './services/webhookNotifier';
 import { parseLcovContent } from './services/lcovParser';
-import { isLoggedIn, login, logout, createAccount, switchAccount, saveCurrentGameStateToAccount, getCurrentAccount } from './services/authService';
+import { isLoggedIn, login, logout, createAccount, switchAccount, saveCurrentGameStateToAccount, getCurrentAccount, lockSession, unlockSession, isSessionLocked } from './services/authService';
 import { renderLoginScreen } from './components/LoginScreen';
 import { store } from './store';
 import { icon } from './icons';
@@ -125,7 +125,7 @@ function renderApp() {
   const appContainer = document.querySelector<HTMLDivElement>('#app');
   if (!appContainer) return;
 
-  if (!isLoggedIn()) {
+  if (!isLoggedIn() || isSessionLocked()) {
     appContainer.innerHTML = renderLoginScreen(loginErrorMsg, loginSuccessMsg);
     attachLoginEvents();
     return;
@@ -2044,6 +2044,28 @@ attachEvents = function attachEvents() {
 }
 
 attachLoginEvents = function attachLoginEvents() {
+  document.querySelector('#form-unlock-session')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const pin = (document.querySelector('#unlock-pin') as HTMLInputElement).value;
+    const res = unlockSession(pin);
+    if (res.success) {
+      loginErrorMsg = '';
+      loginSuccessMsg = '';
+      showToast(res.message, 'success');
+      renderApp();
+    } else {
+      loginErrorMsg = res.message;
+      renderApp();
+    }
+  });
+
+  document.querySelector('#btn-lock-switch-account')?.addEventListener('click', () => {
+    logout();
+    loginErrorMsg = '';
+    loginSuccessMsg = '다른 계정으로 로그인해주세요.';
+    renderApp();
+  });
+
   // Account Card Items click
   document.querySelectorAll('.account-card-item').forEach(card => {
     card.addEventListener('click', (e) => {
@@ -2119,6 +2141,15 @@ window.addEventListener('keydown', (e) => {
   // Prevent shortcuts when typing in inputs/textareas
   const targetTag = (e.target as HTMLElement)?.tagName;
   if (targetTag === 'INPUT' || targetTag === 'TEXTAREA' || targetTag === 'SELECT') {
+    return;
+  }
+
+  // Ctrl+L or Cmd+L: Lock Session
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) {
+    e.preventDefault();
+    lockSession();
+    renderApp();
+    showToast('🔒 화면 세션이 잠겼습니다.', 'info');
     return;
   }
 

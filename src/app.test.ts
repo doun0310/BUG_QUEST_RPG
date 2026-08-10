@@ -8,7 +8,7 @@ import { particleService } from './services/particleService';
 import { generateMonsterPreset } from './services/monsterPresetEngine';
 import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './services/webhookNotifier';
 import { parseLcovContent } from './services/lcovParser';
-import { createAccount, login, logout, switchAccount, isLoggedIn, getCurrentAccount, deleteAccount } from './services/authService';
+import { createAccount, login, logout, switchAccount, isLoggedIn, getCurrentAccount, deleteAccount, lockSession, unlockSession, isSessionLocked } from './services/authService';
 
 describe('CMS Workload Capacity Calculations', () => {
   it('should correctly calculate total available and assigned hours for team members', () => {
@@ -208,6 +208,23 @@ describe('Multi-Account Auth & Account Switching System', () => {
     logout();
     expect(isLoggedIn()).toBe(false);
     expect(getCurrentAccount()).toBeNull();
+  });
+
+  it('should handle session lock and unlock correctly', () => {
+    createAccount('lock_user', '잠금유저', '4321', '성기사 (QA)');
+    login('lock_user', '4321');
+
+    expect(isSessionLocked()).toBe(false);
+    lockSession();
+    expect(isSessionLocked()).toBe(true);
+
+    const wrongRes = unlockSession('0000');
+    expect(wrongRes.success).toBe(false);
+    expect(isSessionLocked()).toBe(true);
+
+    const rightRes = unlockSession('4321');
+    expect(rightRes.success).toBe(true);
+    expect(isSessionLocked()).toBe(false);
   });
 
   it('should reject invalid PIN or duplicated username', () => {

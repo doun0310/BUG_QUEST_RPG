@@ -2,11 +2,17 @@ import type { UserProfile } from '../types';
 import { mockUser, mockMonsters } from '../mockData';
 import type { BugMonster } from '../types';
 
+export interface AccountAvatar {
+  bgColor: string; // e.g. 'linear-gradient(135deg, #6366f1, #38bdf8)'
+  iconSymbol: string; // e.g. '⚡', '💻', '🛡️', '👾', '🚀'
+}
+
 export interface Account {
   id: string;
   username: string;
   displayName: string;
-  pin: string; // 4-digit PIN (stored plaintext — local-only app)
+  pin: string; // Plaintext or hashed PIN
+  avatar: AccountAvatar;
   heroClass: UserProfile['heroClass'];
   createdAt: string;
   lastLoginAt: string;
@@ -17,11 +23,11 @@ export interface Account {
 
 export interface AuthState {
   currentAccountId: string | null;
+  isLocked: boolean; // 화면 잠금 여부
   accounts: Account[];
 }
 
 const AUTH_KEY = 'bug_tracker_auth';
-
 const inMemoryStore: Record<string, string> = {};
 
 function getItem(key: string): string | null {
@@ -54,9 +60,16 @@ function removeItem(key: string): void {
 function loadAuthState(): AuthState {
   try {
     const raw = getItem(AUTH_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        currentAccountId: parsed.currentAccountId || null,
+        isLocked: parsed.isLocked || false,
+        accounts: parsed.accounts || [],
+      };
+    }
   } catch { /* fallback */ }
-  return { currentAccountId: null, accounts: [] };
+  return { currentAccountId: null, isLocked: false, accounts: [] };
 }
 
 function saveAuthState(state: AuthState): void {
@@ -74,6 +87,33 @@ export function isLoggedIn(): boolean {
   return !!currentAccountId && accounts.some(a => a.id === currentAccountId);
 }
 
+export function isSessionLocked(): boolean {
+  const { currentAccountId, isLocked } = loadAuthState();
+  return !!currentAccountId && isLocked;
+}
+
+export function lockSession(): void {
+  const state = loadAuthState();
+  if (state.currentAccountId) {
+    state.isLocked = true;
+    saveAuthState(state);
+  }
+}
+
+export function unlockSession(pin: string): { success: boolean; message: string } {
+  const state = loadAuthState();
+  const account = state.accounts.find(a => a.id === state.currentAccountId);
+  if (!account) return { success: false, message: '로그인된 계정이 없습니다.' };
+
+  if (account.pin !== pin) {
+    return { success: false, message: '보안 PIN이 올바르지 않습니다.' };
+  }
+
+  state.isLocked = false;
+  saveAuthState(state);
+  return { success: true, message: '화면 잠금이 해제되었습니다.' };
+}
+
 export function getCurrentAccount(): Account | null {
   const { currentAccountId, accounts } = loadAuthState();
   return accounts.find(a => a.id === currentAccountId) ?? null;
@@ -83,6 +123,12 @@ export function getAllAccounts(): Account[] {
   return loadAuthState().accounts;
 }
 
+const DEFAULT_AVATARS: Record<string, AccountAvatar> = {
+  '전사 (Frontend)': { bgColor: 'linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)', iconSymbol: '🎨' },
+  '마법사 (Backend)': { bgColor: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)', iconSymbol: '💻' },
+  '성기사 (QA)': { bgColor: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', iconSymbol: '🛡️' },
+};
+
 /**
  * 신규 계정 생성
  */
@@ -90,7 +136,8 @@ export function createAccount(
   username: string,
   displayName: string,
   pin: string,
-  heroClass: UserProfile['heroClass']
+  heroClass: UserProfile['heroClass'],
+  customAvatar?: AccountAvatar
 ): { success: boolean; message: string; account?: Account } {
   const state = loadAuthState();
 
@@ -103,6 +150,8 @@ export function createAccount(
   if (state.accounts.some(a => a.username.toLowerCase() === username.toLowerCase())) {
     return { success: false, message: `사용자명 "${username}"은(는) 이미 사용 중입니다.` };
   }
+
+  const avatar = customAvatar || DEFAULT_AVATARS[heroClass] || { bgColor: 'linear-gradient(135deg, #6366f1, #38bdf8)', iconSymbol: '⚔️' };
 
   const newUserState: UserProfile = {
     ...mockUser,
@@ -123,6 +172,7 @@ export function createAccount(
     username,
     displayName,
     pin,
+    avatar,
     heroClass,
     createdAt: new Date().toISOString(),
     lastLoginAt: new Date().toISOString(),
@@ -156,6 +206,7 @@ export function login(
 
   account.lastLoginAt = new Date().toISOString();
   state.currentAccountId = account.id;
+  state.isLocked = false;
   saveAuthState(state);
 
   // 해당 계정 상태를 메인 스토어 LocalStorage 키에 반영
@@ -165,26 +216,25 @@ export function login(
 }
 
 /**
- * 로그아웃: 현재 세션을 계정에 저장하고 로그아웃
+ * 로그아웃
  */
 export function logout(): void {
   const state = loadAuthState();
   if (!state.currentAccountId) return;
 
-  // 현재 게임 상태를 계정에 저장
   saveCurrentGameStateToAccount();
 
   state.currentAccountId = null;
+  state.isLocked = false;
   saveAuthState(state);
 
-  // 메인 스토어 캐시 초기화
   removeItem('userState');
   removeItem('monstersState');
   removeItem('theme');
 }
 
 /**
- * 계정 전환: 현재 계정 상태를 저장 후 다른 계정으로 전환
+ * 계정 전환
  */
 export function switchAccount(
   targetAccountId: string,
@@ -196,13 +246,13 @@ export function switchAccount(
   if (!target) return { success: false, message: '계정을 찾을 수 없습니다.' };
   if (target.pin !== pin) return { success: false, message: 'PIN이 올바르지 않습니다.' };
 
-  // 현재 계정 상태 저장
   if (state.currentAccountId) {
     saveCurrentGameStateToAccount();
   }
 
   target.lastLoginAt = new Date().toISOString();
   state.currentAccountId = targetAccountId;
+  state.isLocked = false;
   saveAuthState(state);
 
   syncAccountToStore(target);
@@ -222,6 +272,7 @@ export function deleteAccount(accountId: string, pin: string): { success: boolea
 
   if (state.currentAccountId === accountId) {
     state.currentAccountId = null;
+    state.isLocked = false;
     removeItem('userState');
     removeItem('monstersState');
     removeItem('theme');
