@@ -4,6 +4,8 @@ import Chart from 'chart.js/auto';
 import { soundFx } from './soundManager';
 import { showToast } from './toastManager';
 import { getLang, setLang } from './i18n';
+import { generateAIDebugGuide } from './aiService';
+import { icon } from './icons';
 import { renderHeader } from './components/Header';
 import { renderMonsterBoard } from './components/MonsterBoard';
 import { renderSidebar } from './components/Sidebar';
@@ -94,22 +96,32 @@ function renderApp() {
   
   const appContainer = document.querySelector<HTMLDivElement>('#app')!;
   
-  appContainer.innerHTML = `
-    ${renderHeader(state)}
+  let layoutContainer = document.getElementById('app-main-layout');
+  let modalsContainer = document.getElementById('app-modals');
 
-    <!-- Main Layout: Grid 2.3 : 1 -->
-    <div style="display: grid; grid-template-columns: 2.3fr 1fr; gap: 1rem;">
-      <!-- MAIN SECTION -->
-      <section>
-        ${renderMonsterBoard(state)}
-      </section>
-
-      <!-- SIDEBAR SECTION -->
-      ${renderSidebar(state)}
-    </div>
-
-    ${renderModals()}
-  `;
+  if (!layoutContainer || !modalsContainer) {
+    appContainer.innerHTML = `
+      <div id="app-header-container">${renderHeader(state)}</div>
+      <div id="app-main-layout" style="display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(280px, 1fr); gap: 1.25rem; align-items: start;">
+        <section id="app-board-container" style="min-width: 0;">
+          ${renderMonsterBoard(state)}
+        </section>
+        <div id="app-sidebar-container">
+          ${renderSidebar(state)}
+        </div>
+      </div>
+      <div id="app-modals">${renderModals()}</div>
+    `;
+  } else {
+    const headerEl = document.getElementById('app-header-container');
+    const boardEl = document.getElementById('app-board-container');
+    const sidebarEl = document.getElementById('app-sidebar-container');
+    
+    if (headerEl) headerEl.innerHTML = renderHeader(state);
+    if (boardEl) boardEl.innerHTML = renderMonsterBoard(state);
+    if (sidebarEl) sidebarEl.innerHTML = renderSidebar(state);
+    modalsContainer.innerHTML = renderModals();
+  }
 
   attachEvents();
   renderChartIfModalOpen();
@@ -125,17 +137,17 @@ function renderChartIfModalOpen() {
         }
 
         const chartCtx = ctx.getContext('2d');
-        let idealGradient = '#38bdf8';
-        let actualGradient = '#fb7185';
+        let idealGradient: any = '#38bdf8';
+        let actualGradient: any = '#fb7185';
 
         if (chartCtx) {
-          idealGradient = chartCtx.createLinearGradient(0, 0, 0, 250) as any;
-          (idealGradient as any).addColorStop(0, 'rgba(56, 189, 248, 0.4)');
-          (idealGradient as any).addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+          idealGradient = chartCtx.createLinearGradient(0, 0, 0, 250);
+          idealGradient.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+          idealGradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
 
-          actualGradient = chartCtx.createLinearGradient(0, 0, 0, 250) as any;
-          (actualGradient as any).addColorStop(0, 'rgba(251, 113, 133, 0.5)');
-          (actualGradient as any).addColorStop(1, 'rgba(251, 113, 133, 0.0)');
+          actualGradient = chartCtx.createLinearGradient(0, 0, 0, 250);
+          actualGradient.addColorStop(0, 'rgba(251, 113, 133, 0.5)');
+          actualGradient.addColorStop(1, 'rgba(251, 113, 133, 0.0)');
         }
 
         burnChartInstance = new Chart(ctx, {
@@ -310,7 +322,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 540px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">🚀 v2.0 프로덕션 정기 릴리즈 마일스톤</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('flag', 'color:var(--primary-light)', 18)} v2.0 릴리즈 배포 마일스톤</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -355,7 +367,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 540px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">🤖 Slack / Teams 대화형 슬래시 명령 시뮬레이터</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('slack', 'color:var(--primary-light)', 18)} Slack / Teams 챗봇 시뮬레이터</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -382,7 +394,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 540px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">🚀 CI/CD 파이프라인 실시간 상태</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('rocket', 'color:var(--primary-light)', 18)} CI/CD 파이프라인 실시간 상태</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -429,7 +441,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 540px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">🔮 AI 버그 발생 위험도 예측 분석기</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('brain', 'color:var(--primary-light)', 18)} AI 버그 위험도 예측 분석기</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -468,7 +480,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 520px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">💬 실시간 팀 소셜 피드 & 칭찬(Kudos)</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('chat', 'color:var(--primary-light)', 18)} 팀 소셜 피드 & 칭찬 (Kudos)</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -505,7 +517,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 520px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">🛍️ 보스 레이드 코인 교환 상점</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('shop', 'color:var(--warning)', 18)} 보스 레이드 코인 교환 상점</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -539,7 +551,7 @@ function renderModals() {
     return `
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 500px;">
-          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.85rem;">🔌 외부 이슈 트래커 REST API 동기화 설정</h2>
+          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.4rem;">${icon('plug', 'color:var(--primary-light)', 18)} 외부 API 동기화 설정</h2>
           <form id="form-api-sync">
             <div class="form-group">
               <label>연동 연동 플랫폼 선택</label>
@@ -580,7 +592,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 500px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">🏆 명예의 전당: 개발자 업적 & 칭호</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('medal', 'color:var(--warning)', 18)} 명예의 전당: 업적 & 칭호</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -609,7 +621,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 540px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">📈 경영진/PM 종합 엑세큐티브 리포트</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('graph', 'color:var(--success)', 18)} 엑세큐티브 종합 리포트</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -651,7 +663,7 @@ function renderModals() {
     return `
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card">
-          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.6rem;">📝 버그 사후 분석 리포트 (Post-Mortem)</h2>
+          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem;">${icon('book', 'color:var(--primary-light)', 18)} 버그 사후 분석 리포트 (Post-Mortem)</h2>
           <p style="font-size: 0.82rem; color: var(--text-sub); margin-bottom: 0.85rem;">
             대상 버그: <strong>${targetM?.title}</strong>
           </p>
@@ -746,7 +758,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 500px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">🏆 월간 개발 시즌패스</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('ticket', 'color:var(--warning)', 18)} 월간 개발 시즌패스</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -782,7 +794,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 480px; text-align: center;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">⚔️ 팀 간 길드 대항전 (Dev Guild War)</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('guild', 'color:var(--danger)', 18)} 팀 간 길드 대항전 (Dev Guild War)</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -817,7 +829,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 480px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">📊 개별 개발자 능력치 레이더 차트</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('radar', 'color:var(--sky)', 18)} 개별 개발자 스탯 레이더 차트</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -842,7 +854,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 520px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">🛡️ CMS 예산 & 가동률 모의 시뮬레이터</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('flask', 'color:var(--primary-light)', 18)} CMS 예산 & 가동률 시뮬레이터</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -903,7 +915,7 @@ function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 500px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">주간 개발자 퀘스트</h2>
+            <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('checklist', 'color:var(--primary-light)', 18)} 주간 개발자 퀘스트</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
 
@@ -1521,9 +1533,13 @@ function attachEvents() {
     });
   });
 
-  document.querySelector('#btn-get-ai-hint')?.addEventListener('click', () => {
+  document.querySelector('#btn-get-ai-hint')?.addEventListener('click', async () => {
     const targetMonster = monstersState.find(m => m.id === attackTargetId);
-    battleLogMessage = ` [AI 디버깅 가이드 - ${targetMonster?.title}]\n\n추천 힌트:\n1. 소스코드 내 예외 처리(try-catch) 블록을 확인하세요.\n2. Unit Test 커버리지를 80% 이상 확보하여 PR을 생성하면 크리티컬 히트(2배 피해)가 발동합니다!`;
+    if (targetMonster) {
+      const aiReport = await generateAIDebugGuide(targetMonster);
+      battleLogMessage = `🤖 [AI 디버깅 가이드 - ${targetMonster.title}]\n\n📌 진단 요약: ${aiReport.summary}\n🔍 추정 원인: ${aiReport.rootCauseHypothesis}\n💡 권장 조치사항:\n${aiReport.recommendedActionItems.map((item, idx) => `${idx + 1}. ${item}`).join('\n')}\n🧪 테스트 가이드: ${aiReport.unitTestRecommendation}\n⏱️ 예상 조치 소요시간: 약 ${aiReport.estimatedFixTimeHours}시간`;
+      renderApp();
+    }
   });
 
   document.querySelectorAll('.btn-use-item').forEach(btn => {

@@ -1,85 +1,108 @@
 import { soundFx } from '../soundManager';
 import type { AppState } from '../store';
 import { getLang } from '../i18n';
+import { icon, iconLabel } from '../icons';
 
 export function renderHeader(state: AppState): string {
   const { userState, currentTheme } = state;
+  const hpPct = (userState.hp / userState.maxHp) * 100;
+  const xpPct = (userState.xp / userState.maxXp) * 100;
+  const themeIcon = currentTheme === 'dark' ? icon('moon', 'color:var(--primary-light)') : currentTheme === 'light' ? icon('sun', 'color:var(--warning)') : icon('matrix', 'color:var(--success)');
+  const themeLabel = currentTheme === 'dark' ? '다크' : currentTheme === 'light' ? '라이트' : '매트릭스';
 
   return `
     <header>
-      <div>
-        <h1 class="logo-title">BUG TRACKER RPG</h1>
-        <div style="font-size: 0.78rem; color: var(--text-sub); margin-top: 0.1rem;">
-          개발자 <strong>${userState.name}</strong> | 콤보: <strong style="color: var(--warning);">${userState.streakCount} COMBO</strong>
+      <!-- Logo + Identity -->
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div>
+          <h1 class="logo-title" style="display: flex; align-items: center; gap: 0.4rem;">
+            ${icon('bug', 'color:var(--primary-light)', 18)} BUG TRACKER RPG
+          </h1>
+          <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem; display: flex; align-items: center; gap: 0.4rem;">
+            ${icon('target', 'color:var(--text-muted)', 12)} ${userState.name}
+            <span style="color: var(--panel-border);">·</span>
+            ${icon('lightning', 'color:var(--warning)', 12)} <span style="color: var(--warning); font-weight: 700;">${userState.streakCount} COMBO</span>
+          </div>
         </div>
       </div>
 
-      <!-- Clean Action Badges & Stats Bar -->
+      <!-- Stat Bars & Controls -->
       <div class="user-badge-container">
-        <!-- Developer HP Bar -->
+
+        <!-- HP Bar -->
         <div class="stat-bar-box">
-          <div style="display: flex; justify-content: space-between; font-size: 0.72rem;">
-            <span style="color: var(--danger); font-weight: 700;">HP ${userState.hp}/${userState.maxHp}</span>
+          <div style="display: flex; justify-content: space-between; font-size: 0.67rem; margin-bottom: 0.18rem; align-items: center; gap: 0.25rem;">
+            ${icon('fire', 'color:var(--danger)', 11)} <span style="color: var(--danger); font-weight: 700; flex: 1;">${userState.hp}/${userState.maxHp}</span>
           </div>
           <div class="hp-bar-outer">
-            <div style="width: ${(userState.hp / userState.maxHp) * 100}%; height: 100%; background: var(--danger); border-radius: 3px;"></div>
+            <div class="hp-bar-inner" style="width: ${hpPct}%;"></div>
           </div>
         </div>
 
-        <!-- Developer XP Bar -->
+        <!-- XP Bar -->
         <div class="stat-bar-box">
-          <div style="display: flex; justify-content: space-between; font-size: 0.72rem;">
-            <span style="color: var(--primary); font-weight: 700;">Lv.${userState.level} (${userState.xp}/${userState.maxXp})</span>
+          <div style="display: flex; justify-content: space-between; font-size: 0.67rem; margin-bottom: 0.18rem; align-items: center; gap: 0.25rem;">
+            ${icon('crystal', 'color:var(--primary-light)', 11)} <span style="color: var(--primary-light); font-weight: 700; flex: 1;">Lv.${userState.level} · ${userState.xp}xp</span>
           </div>
           <div class="hp-bar-outer">
-            <div class="xp-bar-inner" style="width: ${(userState.xp / userState.maxXp) * 100}%;"></div>
+            <div class="xp-bar-inner" style="width: ${xpPct}%;"></div>
           </div>
         </div>
 
-        <!-- Inventory Pill Button -->
+        <!-- Inventory -->
         <button class="toolbar-pill-btn" id="btn-open-inventory">
-          보상함 (${userState.inventory.length})
+          ${icon('box', '', 14)} 보상함
+          <span style="background: var(--primary-bg); color: var(--primary-light); font-size: 0.63rem; padding: 0 0.32rem; border-radius: 99px; font-weight: 700; margin-left: 0.1rem;">${userState.inventory.length}</span>
         </button>
 
-        <!-- Clean Dropdown Menu for all RPG Features -->
+        <!-- RPG Features Dropdown -->
         <div class="dropdown-container">
-          <button class="action-btn" id="btn-toggle-rpg-menu" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">
-             RPG 메뉴 ▼
+          <button class="action-btn" id="btn-toggle-rpg-menu" style="font-size: 0.73rem; padding: 0.42rem 0.85rem; border-radius: 99px; display: flex; align-items: center; gap: 0.4rem;">
+            ${icon('sword', '', 14)} RPG 메뉴
           </button>
           <div class="dropdown-menu" id="rpg-dropdown-menu">
-            <button class="dropdown-item" id="btn-open-releasemilestone">🚀 v2.0 릴리즈 배포 마일스톤</button>
-            <button class="dropdown-item" id="btn-open-slackbot">🤖 Slack / Teams 챗봇 연동</button>
-            <button class="dropdown-item" id="btn-open-cicdpipeline">🚀 CI/CD 파이프라인 모니터링</button>
-            <button class="dropdown-item" id="btn-open-aiprediction"> AI 버그 예측 모니터링</button>
-            <button class="dropdown-item" id="btn-open-socialfeed"> 팀 소셜 피드 & 칭찬</button>
-            <button class="dropdown-item" id="btn-open-raidshop"> 레이드 코인 상점</button>
-            <button class="dropdown-item" id="btn-open-apisync"> 외부 API 연동 설정</button>
-            <button class="dropdown-item" id="btn-open-achievements"> 업적 & 칭호 (Achievements)</button>
-            <button class="dropdown-item" id="btn-open-codex"> 몬스터 도감 (Codex)</button>
-            <button class="dropdown-item" id="btn-open-execanalytics"> 엑세큐티브 분석 리포트</button>
-            <button class="dropdown-item" id="btn-open-coopboss"> 팀 협동 레이드</button>
-            <button class="dropdown-item" id="btn-open-seasonpass"> 시즌패스 (Tier ${userState.seasonPass.currentTier})</button>
-            <button class="dropdown-item" id="btn-open-guildwar"> 길드 대항전</button>
-            <button class="dropdown-item" id="btn-open-radar"> 육성 스탯 차트</button>
-            <button class="dropdown-item" id="btn-open-simulator"> 예산 시뮬레이터</button>
-            <button class="dropdown-item" id="btn-open-pet"> 펫 Lv.${userState.pet.level}</button>
-            <button class="dropdown-item" id="btn-open-forge"> 장비 강화 +${userState.weapon.enhanceLevel}</button>
-            <div style="border-top: 1px solid var(--panel-border); margin: 0.2rem 0;"></div>
-            <div style="padding: 0.4rem 0.8rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-main);">
-              <span>🔊 볼륨:</span>
-              <input type="range" id="sound-volume-range" min="0" max="100" value="${Math.round(soundFx.getVolume() * 100)}" style="width: 80px; accent-color: var(--primary); cursor: pointer;" />
+            <button class="dropdown-item" id="btn-open-releasemilestone">${iconLabel('flag', '릴리즈 배포 마일스톤', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-slackbot">${iconLabel('slack', 'Slack / Teams 챗봇', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-cicdpipeline">${iconLabel('rocket', 'CI/CD 파이프라인', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-aiprediction">${iconLabel('brain', 'AI 버그 예측', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-socialfeed">${iconLabel('chat', '팀 소셜 피드', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-raidshop">${iconLabel('shop', '레이드 코인 상점', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-apisync">${iconLabel('plug', '외부 API 연동', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-achievements">${iconLabel('medal', '업적 &amp; 칭호', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-codex">${iconLabel('book', '몬스터 도감', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-execanalytics">${iconLabel('graph', '엑세큐티브 리포트', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-coopboss">${iconLabel('users', '팀 협동 레이드', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-seasonpass">${iconLabel('ticket', `시즌패스 (Tier ${userState.seasonPass.currentTier})`, '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-guildwar">${iconLabel('guild', '길드 대항전', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-radar">${iconLabel('radar', '육성 스탯 차트', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-simulator">${iconLabel('flask', '예산 시뮬레이터', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-pet">${iconLabel('paw', `펫 Lv.${userState.pet.level}`, '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-forge">${iconLabel('hammer', `장비 강화 +${userState.weapon.enhanceLevel}`, '', 14)}</button>
+            <div style="height: 1px; background: var(--panel-border); margin: 0.25rem 0.4rem;"></div>
+            <div style="padding: 0.4rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+              <span style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--text-muted);">
+                ${icon('volume', '', 13)} 볼륨
+              </span>
+              <input type="range" id="sound-volume-range" min="0" max="100"
+                value="${Math.round(soundFx.getVolume() * 100)}"
+                style="width: 72px; accent-color: var(--primary); cursor: pointer;" />
             </div>
-            <button class="dropdown-item" id="btn-toggle-sound"> 사운드 ${soundFx.getIsMuted() ? 'OFF' : 'ON'}</button>
+            <button class="dropdown-item" id="btn-toggle-sound">
+              ${soundFx.getIsMuted()
+                ? iconLabel('mute', '사운드 OFF', '', 14)
+                : iconLabel('volume', '사운드 ON', '', 14)}
+            </button>
           </div>
         </div>
 
-        <button class="theme-toggle-btn" id="btn-toggle-lang" style="font-size: 0.75rem; padding: 0.4rem 0.65rem; background: var(--inner-box-bg); border: 1px solid var(--panel-border);">
-          🌐 ${getLang() === 'ko' ? '한국어' : 'English'}
+        <!-- Language & Theme Toggles -->
+        <button class="toolbar-pill-btn" id="btn-toggle-lang" style="display: flex; align-items: center; gap: 0.35rem;">
+          ${icon('globe', '', 14)} ${getLang() === 'ko' ? '한국어' : 'English'}
+        </button>
+        <button class="toolbar-pill-btn" id="btn-toggle-theme" style="display: flex; align-items: center; gap: 0.35rem;">
+          ${themeIcon} ${themeLabel}
         </button>
 
-        <button class="theme-toggle-btn" id="btn-toggle-theme" style="font-size: 0.75rem; padding: 0.4rem 0.65rem;">
-          테마: ${currentTheme === 'dark' ? '다크' : currentTheme === 'light' ? '라이트' : '매트릭스'}
-        </button>
       </div>
     </header>
   `;
