@@ -2,6 +2,15 @@ import './style.css';
 import confetti from 'canvas-confetti';
 import Chart from 'chart.js/auto';
 import { soundFx } from './soundManager';
+import { showToast } from './toastManager';
+import { getLang, setLang } from './i18n';
+import { renderHeader } from './components/Header';
+import { renderMonsterBoard } from './components/MonsterBoard';
+import { renderSidebar } from './components/Sidebar';
+import { renderCodexModal } from './components/modals/CodexModal';
+import { renderAttackModal } from './components/modals/AttackModal';
+import { renderCMSChartModal } from './components/modals/CMSChartModal';
+import { renderCreateMonsterModal } from './components/modals/CreateMonsterModal';
 import { 
   mockUser, 
   mockVacations, 
@@ -68,261 +77,35 @@ function applyTheme() {
 function renderApp() {
   applyTheme();
 
-  const capacity = calculateCapacity(teamState);
-  const activeBugs = monstersState.filter(m => m.status === 'Active').length;
-  const defeatedBugs = monstersState.filter(m => m.status === 'Defeated').length;
-
-  const filteredMonsters = monstersState.filter(m => {
-    if (bugFilter === 'active') return m.status === 'Active';
-    if (bugFilter === 'defeated') return m.status === 'Defeated';
-    return true;
-  });
-
+  const state = {
+    userState,
+    teamState,
+    monstersState,
+    vacationsState,
+    bugFilter,
+    battleLogMessage,
+    isSkillActiveNextAttack,
+    hitMonsterId,
+    lastHitDamageText,
+    calculateCapacity,
+    mockBudget,
+    mockDailySummary
+  } as any;
+  
   const appContainer = document.querySelector<HTMLDivElement>('#app')!;
   
   appContainer.innerHTML = `
-    <!-- Top Header & Hero Status Toolbar -->
-    <header>
-      <div>
-        <h1 class="logo-title">BUG TRACKER RPG</h1>
-        <div style="font-size: 0.78rem; color: var(--text-sub); margin-top: 0.1rem;">
-          개발자 <strong>${userState.name}</strong> | 콤보: <strong style="color: var(--warning);">${userState.streakCount} COMBO</strong>
-        </div>
-      </div>
-
-      <!-- Clean Action Badges & Stats Bar -->
-      <div class="user-badge-container">
-        <!-- Developer HP Bar -->
-        <div class="stat-bar-box">
-          <div style="display: flex; justify-content: space-between; font-size: 0.72rem;">
-            <span style="color: var(--danger); font-weight: 700;">HP ${userState.hp}/${userState.maxHp}</span>
-          </div>
-          <div class="hp-bar-outer">
-            <div style="width: ${(userState.hp / userState.maxHp) * 100}%; height: 100%; background: var(--danger); border-radius: 3px;"></div>
-          </div>
-        </div>
-
-        <!-- Developer XP Bar -->
-        <div class="stat-bar-box">
-          <div style="display: flex; justify-content: space-between; font-size: 0.72rem;">
-            <span style="color: var(--primary); font-weight: 700;">Lv.${userState.level} (${userState.xp}/${userState.maxXp})</span>
-          </div>
-          <div class="hp-bar-outer">
-            <div class="xp-bar-inner" style="width: ${(userState.xp / userState.maxXp) * 100}%;"></div>
-          </div>
-        </div>
-
-        <!-- Inventory Pill Button -->
-        <button class="toolbar-pill-btn" id="btn-open-inventory">
-          보상함 (${userState.inventory.length})
-        </button>
-
-        <!-- Clean Dropdown Menu for all RPG Features -->
-        <div class="dropdown-container">
-          <button class="action-btn" id="btn-toggle-rpg-menu" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">
-             RPG 메뉴 ▼
-          </button>
-          <div class="dropdown-menu" id="rpg-dropdown-menu">
-            <button class="dropdown-item" id="btn-open-releasemilestone">🚀 v2.0 릴리즈 배포 마일스톤</button>
-            <button class="dropdown-item" id="btn-open-slackbot">🤖 Slack / Teams 챗봇 연동</button>
-            <button class="dropdown-item" id="btn-open-cicdpipeline">🚀 CI/CD 파이프라인 모니터링</button>
-            <button class="dropdown-item" id="btn-open-aiprediction"> AI 버그 예측 모니터링</button>
-            <button class="dropdown-item" id="btn-open-socialfeed"> 팀 소셜 피드 & 칭찬</button>
-            <button class="dropdown-item" id="btn-open-raidshop"> 레이드 코인 상점</button>
-            <button class="dropdown-item" id="btn-open-apisync"> 외부 API 연동 설정</button>
-            <button class="dropdown-item" id="btn-open-achievements"> 업적 & 칭호 (Achievements)</button>
-            <button class="dropdown-item" id="btn-open-codex"> 몬스터 도감 (Codex)</button>
-            <button class="dropdown-item" id="btn-open-execanalytics"> 엑세큐티브 분석 리포트</button>
-            <button class="dropdown-item" id="btn-open-coopboss"> 팀 협동 레이드</button>s
-            <button class="dropdown-item" id="btn-open-seasonpass"> 시즌패스 (Tier ${userState.seasonPass.currentTier})</button>
-            <button class="dropdown-item" id="btn-open-guildwar"> 길드 대항전</button>
-            <button class="dropdown-item" id="btn-open-radar"> 육성 스탯 차트</button>
-            <button class="dropdown-item" id="btn-open-simulator"> 예산 시뮬레이터</button>
-            <button class="dropdown-item" id="btn-open-pet"> 펫 Lv.${userState.pet.level}</button>
-            <button class="dropdown-item" id="btn-open-forge"> 장비 강화 +${userState.weapon.enhanceLevel}</button>
-            <div style="border-top: 1px solid var(--panel-border); margin: 0.2rem 0;"></div>
-            <div style="padding: 0.4rem 0.8rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-main);">
-              <span>🔊 볼륨:</span>
-              <input type="range" id="sound-volume-range" min="0" max="100" value="${Math.round(soundFx.getVolume() * 100)}" style="width: 80px; accent-color: var(--primary); cursor: pointer;" />
-            </div>
-            <button class="dropdown-item" id="btn-toggle-sound"> 사운드 ${soundFx.getIsMuted() ? 'OFF' : 'ON'}</button>
-          </div>
-        </div>
-
-        <button class="theme-toggle-btn" id="btn-toggle-theme" style="font-size: 0.75rem; padding: 0.4rem 0.65rem;">
-          테마: ${currentTheme === 'dark' ? '다크' : currentTheme === 'light' ? '라이트' : '매트릭스'}
-        </button>
-      </div>
-    </header>
+    ${renderHeader(state)}
 
     <!-- Main Layout: Grid 2.3 : 1 -->
     <div style="display: grid; grid-template-columns: 2.3fr 1fr; gap: 1rem;">
-      
       <!-- MAIN SECTION -->
       <section>
-        <!-- Battle Log Box -->
-        <div class="dq-window" style="margin-bottom: 0.85rem;">
-          <div class="dq-text" style="color: #38bdf8; margin-bottom: 0.25rem;">[ BATTLE LOG ]</div>
-          <div style="font-size: 0.85rem; color: #ffffff;" id="dq-battle-log">
-            ${battleLogMessage}
-          </div>
-        </div>
-
-        <!-- Control Bar -->
-        <div class="card" style="margin-bottom: 0.85rem;">
-          <div class="card-header" style="margin-bottom: 0.65rem;">
-            <div>
-              <h2 class="card-title">몬스터 토벌 전장 (출현 ${activeBugs} / 토벌 ${defeatedBugs})</h2>
-            </div>
-            <div style="display: flex; gap: 0.35rem;">
-              <button class="action-btn" id="btn-open-create-monster" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">+ 몬스터 발견 등록</button>
-              <button class="action-btn action-btn-secondary" id="btn-open-quests" style="padding: 0.3rem 0.6rem;">주간 퀘스트</button>
-              <button class="action-btn action-btn-secondary" id="btn-open-webhook" style="padding: 0.3rem 0.6rem;">Webhook Log</button>
-              <button class="action-btn action-btn-secondary" id="btn-leaderboard" style="padding: 0.3rem 0.6rem;">기여도 랭킹</button>
-            </div>
-          </div>
-
-          <!-- Hero Skill & Filter Toolbar -->
-          <div style="display: flex; justify-content: space-between; align-items: center; background: var(--inner-box-bg); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
-            <div style="font-size: 0.78rem;">
-              <span style="font-weight: 700; color: var(--primary);">${userState.activeSkill.name}</span>
-              <span style="color: var(--text-sub); margin-left: 0.3rem;">(AI 코드 품질 검수 인가)</span>
-            </div>
-            
-            <div style="display: flex; gap: 0.35rem;">
-              <button class="action-btn ${isSkillActiveNextAttack ? 'action-btn-danger' : ''}" id="btn-activate-skill" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;">
-                ${isSkillActiveNextAttack ? '스킬 발동!' : '스킬 준비'}
-              </button>
-              <button class="action-btn ${bugFilter === 'all' ? '' : 'action-btn-secondary'}" id="filter-all" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;">전체</button>
-              <button class="action-btn ${bugFilter === 'active' ? '' : 'action-btn-secondary'}" id="filter-active" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;">출현 중</button>
-              <button class="action-btn ${bugFilter === 'defeated' ? '' : 'action-btn-secondary'}" id="filter-defeated" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;">토벌 완료</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Monster Grid Cards -->
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          ${filteredMonsters.map(m => {
-            const isHit = hitMonsterId === m.id;
-            return `
-              <div class="card monster-card-animated" style="border-left: 4px solid ${m.isOverdue ? 'var(--danger)' : m.isBoss ? 'var(--danger)' : m.severity === 'Major' ? 'var(--warning)' : 'var(--primary)'};">
-                
-                <div class="dq-monster-container">
-                  <img src="${m.monsterImage || '/cyber_bug.jpg'}" alt="Monster" class="dq-monster-img ${m.status === 'Defeated' ? 'dq-monster-defeated' : ''} ${isHit ? 'hit-animation' : ''}" />
-                  
-                  ${isHit && lastHitDamageText ? `
-                    <div class="damage-float-text ${lastHitDamageText.includes('CRITICAL') || lastHitDamageText.includes('2X') ? 'critical' : ''}">${lastHitDamageText}</div>
-                  ` : ''}
-
-                  <div style="flex: 1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
-                      <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--text-main);">
-                        ${m.title}
-                      </h3>
-                      <span class="badge ${m.status === 'Defeated' ? 'badge-success' : 'badge-danger'}">
-                        ${m.status === 'Defeated' ? '토벌 완료' : m.severity}
-                      </span>
-                    </div>
-
-                    ${m.dialogue && m.status === 'Active' ? `
-                      <div style="background: rgba(56, 189, 248, 0.1); border-left: 3px solid var(--primary); padding: 0.25rem 0.5rem; font-size: 0.72rem; color: var(--primary); font-style: italic; margin-bottom: 0.3rem;">
-                        💬 몬스터 피격 대사: "${m.dialogue}"
-                      </div>
-                    ` : ''}
-
-                    ${m.dueDate ? `
-                      <div style="font-size: 0.72rem; color: ${m.isOverdue ? 'var(--danger)' : 'var(--text-sub)'}; margin-bottom: 0.3rem;">
-                        ${m.isOverdue ? `[경고] 마감시간 초과 반격! (개발자 HP -30 피격됨)` : `마감기한: ${m.dueDate}`}
-                      </div>
-                    ` : ''}
-
-                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 0.2rem;">
-                      <span>HP: <strong>${m.currentHp} / ${m.maxHp}</strong></span>
-                      <span style="color: var(--text-sub);">담당: ${m.assignee}</span>
-                    </div>
-                    <div class="hp-bar-outer">
-                      <div class="hp-bar-inner" style="width: ${(m.currentHp / m.maxHp) * 100}%;"></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-top: 0.35rem;">
-                  <div>
-                    <span style="color: var(--warning); font-weight: 600;">보상: +${m.rewardXp} XP</span>
-                    ${m.prUrl ? `<a href="${m.prUrl}" target="_blank" style="color: var(--primary); margin-left: 0.5rem; text-decoration: none;">PR 링크</a>` : ''}
-                  </div>
-                  ${m.status === 'Active' ? `
-                    <button class="action-btn action-btn-danger btn-attack-trigger" data-id="${m.id}" style="padding: 0.35rem 0.7rem; font-size: 0.75rem;">
-                      PR Merge 공격 (코드 검증 연동)
-                    </button>
-                  ` : `
-                    <div style="display: flex; gap: 0.35rem; align-items: center;">
-                      <span style="color: var(--success); font-weight: 600;">토벌 완료</span>
-                      <button class="action-btn action-btn-secondary btn-open-postmortem" data-id="${m.id}" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;">
-                        ${m.postMortem ? ' 회고 조회' : ' 사후 회고 작성 (+50 XP)'}
-                      </button>
-                    </div>
-                  `}
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
+        ${renderMonsterBoard(state)}
       </section>
 
-      <!-- SIDEBAR -->
-      <aside style="display: flex; flex-direction: column; gap: 0.75rem;">
-        
-        <div class="card">
-          <div class="card-header" style="margin-bottom: 0.4rem;">
-            <h3 class="card-title" style="font-size: 0.85rem;">CMS 가동률 요약</h3>
-            <button class="action-btn action-btn-secondary" id="btn-open-cms-details" style="padding: 0.2rem 0.45rem; font-size: 0.7rem;">상세보기</button>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.78rem;">
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sub);">팀 가동률:</span>
-              <strong style="color: ${capacity.isOverloaded ? 'var(--danger)' : 'var(--success)'};">${capacity.assignedHours}h / ${capacity.availableHours}h</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sub);">예산 소진율:</span>
-              <strong style="color: var(--warning);">${mockBudget.actualBurnRate}% (35일차)</strong>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header" style="margin-bottom: 0.4rem;">
-            <h3 class="card-title" style="font-size: 0.85rem;">휴가 현황 (HP 회복)</h3>
-            <button class="action-btn action-btn-secondary" id="btn-open-vacation-modal" style="padding: 0.2rem 0.45rem; font-size: 0.7rem;">+ 신청</button>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 0.3rem;">
-            ${vacationsState.slice(0, 3).map(v => `
-              <div style="font-size: 0.75rem; display: flex; justify-content: space-between; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.2rem;">
-                <span><strong>${v.userName}</strong> (${v.type})</span>
-                <span style="color: var(--text-sub);">${v.startDate.substring(5)}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header" style="margin-bottom: 0.4rem;">
-            <h3 class="card-title" style="font-size: 0.85rem;">오늘의 개발 요약</h3>
-            <button class="action-btn" id="btn-generate-ai" style="padding: 0.2rem 0.45rem; font-size: 0.7rem;">갱신</button>
-          </div>
-          <div style="font-size: 0.75rem; color: var(--text-sub);">
-            <div style="margin-bottom: 0.30rem;">
-              <strong style="color: var(--success);">완료:</strong>
-              <div style="font-size: 0.72rem; color: var(--text-main); margin-top: 0.1rem;">${mockDailySummary.doneToday[0]}</div>
-            </div>
-            <div>
-              <strong style="color: var(--primary);">예정:</strong>
-              <div style="font-size: 0.72rem; color: var(--text-main); margin-top: 0.1rem;">${mockDailySummary.planTomorrow[0]}</div>
-            </div>
-          </div>
-        </div>
-
-      </aside>
+      <!-- SIDEBAR SECTION -->
+      ${renderSidebar(state)}
     </div>
 
     ${renderModals()}
@@ -504,6 +287,23 @@ function renderChartIfModalOpen() {
 
 function renderModals() {
   if (!activeModal) return '';
+
+  const state = {
+    userState,
+    teamState,
+    monstersState,
+    vacationsState,
+    activeModal,
+    selectedPostMortemMonsterId,
+    attackTargetId,
+    lastLootReward,
+    isSkillActiveNextAttack,
+  } as any;
+
+  if (activeModal === 'codex') return renderCodexModal(state);
+  if (activeModal === 'attack') return renderAttackModal(state);
+  if (activeModal === 'cmsDetails') return renderCMSChartModal(state);
+  if (activeModal === 'createMonster') return renderCreateMonsterModal(state);
 
   if (activeModal === 'releaseMilestone') {
     return `
@@ -802,46 +602,7 @@ function renderModals() {
     `;
   }
 
-  if (activeModal === 'codex') {
-    const totalCount = monstersState.length;
-    const defeatedCount = monstersState.filter(m => m.status === 'Defeated').length;
-    const completionRate = Math.round((defeatedCount / Math.max(1, totalCount)) * 100);
 
-    return `
-      <div class="modal-backdrop" id="modal-backdrop">
-        <div class="modal-card" style="max-width: 520px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">📖 버그 몬스터 도감 (Codex)</h2>
-            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
-          </div>
-
-          <div style="background: var(--inner-box-bg); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 1rem;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.35rem;">
-              <span>몬스터 수집 달성률: <strong>${completionRate}% (${defeatedCount}/${totalCount})</strong></span>
-              <span style="color: var(--warning); font-weight: 700;">${completionRate === 100 ? '🎉 영구 공격력 +10% 발동' : '100% 수집 시 공격력 +10%'}</span>
-            </div>
-            <div class="hp-bar-outer">
-              <div class="xp-bar-inner" style="width: ${completionRate}%;"></div>
-            </div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 280px; overflow-y: auto;">
-            ${monstersState.map(m => `
-              <div style="display: flex; align-items: center; gap: 0.75rem; background: var(--inner-box-bg); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border); opacity: ${m.status === 'Defeated' ? 1 : 0.6};">
-                <img src="${m.monsterImage || '/cyber_bug.jpg'}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; ${m.status === 'Active' ? 'filter: grayscale(100%);' : ''}" />
-                <div style="flex: 1;">
-                  <div style="font-weight: 700; font-size: 0.82rem; color: var(--text-main);">${m.title}</div>
-                  <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.1rem;">
-                    ${m.status === 'Defeated' ? `✅ 토벌 완료 (약점: PR Unit Test)` : `🔒 미수집 (출현 중)`}
-                  </div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>
-    `;
-  }
 
   if (activeModal === 'execAnalytics') {
     return `
@@ -943,50 +704,7 @@ function renderModals() {
     `;
   }
 
-  if (activeModal === 'createMonster') {
-    return `
-      <div class="modal-backdrop" id="modal-backdrop">
-        <div class="modal-card">
-          <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.85rem;">📝 신규 버그 몬스터 등록 (Create Issue)</h2>
-          <form id="form-create-monster">
-            <div class="form-group">
-              <label>몬스터/버그 이슈 제목</label>
-              <input type="text" class="form-input" id="new-monster-title" placeholder="e.g. AUTH-502 토큰 만료 무한 루프" required />
-            </div>
-            <div class="form-group">
-              <label>위험도 (Severity)</label>
-              <select class="form-select" id="new-monster-severity">
-                <option value="Critical">Critical (HP 1000 / 보상 500 XP)</option>
-                <option value="Major">Major (HP 500 / 보상 250 XP)</option>
-                <option value="Minor" selected>Minor (HP 200 / 보상 100 XP)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>담당 개발자</label>
-              <input type="text" class="form-input" id="new-monster-assignee" value="${userState.name}" required />
-            </div>
-            <div class="form-group">
-              <label>마감기한 (SLA Deadline)</label>
-              <input type="text" class="form-input" id="new-monster-duedate" value="오늘 22:00 마감" required />
-            </div>
-            <div class="form-group">
-              <label>몬스터 외형 아트워크</label>
-              <select class="form-select" id="new-monster-image">
-                <option value="/pixel_slime.jpg">픽셀 블루 슬라임</option>
-                <option value="/cyber_golem.jpg">사이버 메카 골렘 (보스)</option>
-                <option value="/cyber_bug.jpg" selected>네온 사이버 버그</option>
-                <option value="/shadow_boss.jpg">다크 섀도우 보스</option>
-              </select>
-            </div>
-            <div style="display: flex; gap: 0.35rem; justify-content: flex-end; margin-top: 0.85rem;">
-              <button type="button" class="action-btn action-btn-secondary" id="btn-close-modal">취소</button>
-              <button type="submit" class="action-btn">몬스터 전장 출현</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
-  }
+
 
   if (activeModal === 'coopBoss') {
     return `
@@ -1158,29 +876,7 @@ function renderModals() {
     `;
   }
 
-  if (activeModal === 'cmsDetails') {
-    return `
-      <div class="modal-backdrop" id="modal-backdrop">
-        <div class="modal-card" style="max-width: 600px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h2 style="font-size: 1.05rem; font-weight: 700;">📊 CMS 예산 소진 곡선 (Chart.js 시각화)</h2>
-            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
-          </div>
-          
-          <div style="background: var(--inner-box-bg); padding: 1rem; border-radius: 6px; border: 1px solid var(--panel-border); margin-bottom: 1rem;">
-            <canvas id="burnChartCanvas" style="max-height: 240px;"></canvas>
-          </div>
 
-          <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.78rem;">
-            <div style="display: flex; justify-content: space-between; background: var(--inner-box-bg); padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border);">
-              <span>총 예산: ₩${mockBudget.totalBudget.toLocaleString()}</span>
-              <span>현재 소진액: ₩${mockBudget.spentBudget.toLocaleString()} (${mockBudget.actualBurnRate}%)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
 
   if (activeModal === 'forge') {
     return `
@@ -1290,49 +986,7 @@ function renderModals() {
     `;
   }
 
-  if (activeModal === 'attack') {
-    const targetMonster = monstersState.find(m => m.id === attackTargetId);
-    return `
-      <div class="modal-backdrop" id="modal-backdrop">
-        <div class="modal-card dq-window">
-          <h2 class="dq-text" style="color: var(--danger); margin-bottom: 0.35rem;">
-            [ ATTACK: PR MERGE STRIKE ]
-          </h2>
-          <p style="font-size: 0.82rem; color: #ffffff; margin-bottom: 0.75rem;">
-            타격 대상: <strong>${targetMonster?.title}</strong>
-          </p>
-          ${isSkillActiveNextAttack ? `
-            <div style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.75rem;">
-              ${userState.activeSkill.name} 스킬 적용! (2배 데미지)
-            </div>
-          ` : ''}
-          <form id="form-attack">
-            <div class="form-group">
-              <label style="color: #ffffff;">Pull Request URL</label>
-              <input type="text" class="form-input" id="attack-pr" value="https://github.com/org/repo/pull/142" required />
-            </div>
-            <div class="form-group">
-              <label style="color: #ffffff;">공격력 선택 (PR 커밋 크기)</label>
-              <select class="form-select" id="attack-damage">
-                <option value="100">소형 PR (-100 HP)</option>
-                <option value="250">중형 PR (-250 HP)</option>
-                <option value="500">대형 PR (-500 HP)</option>
-              </select>
-            </div>
-            <div style="margin-bottom: 0.85rem;">
-              <button type="button" class="action-btn action-btn-secondary" id="btn-get-ai-hint" style="width: 100%; justify-content: center; font-size: 0.75rem;">
-                🤖 AI 힌트 및 디버깅 가이드 자동 생성
-              </button>
-            </div>
-            <div style="display: flex; gap: 0.35rem; justify-content: flex-end; margin-top: 0.85rem;">
-              <button type="button" class="action-btn action-btn-secondary" id="btn-close-modal">취소</button>
-              <button type="submit" class="action-btn action-btn-danger">공격 실행</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
-  }
+
 
   if (activeModal === 'webhook') {
     return `
@@ -1818,6 +1472,13 @@ function attachEvents() {
     soundFx.setVolume(val);
   });
 
+  document.querySelector('#btn-toggle-lang')?.addEventListener('click', () => {
+    const nextLang = getLang() === 'ko' ? 'en' : 'ko';
+    setLang(nextLang);
+    showToast(nextLang === 'ko' ? '🌐 한국어 모드로 전환되었습니다.' : '🌐 Switched to English mode.', 'info');
+    renderApp();
+  });
+
   document.querySelector('#btn-toggle-theme')?.addEventListener('click', () => {
     if (currentTheme === 'dark') currentTheme = 'light';
     else if (currentTheme === 'light') currentTheme = 'matrix';
@@ -1883,6 +1544,17 @@ function attachEvents() {
         activeModal = null;
         renderApp();
       }
+    });
+  });
+
+  document.querySelectorAll('.btn-send-kudos').forEach(btn => {
+    btn.addEventListener('click', () => {
+      soundFx.playVictorySound();
+      confetti({ particleCount: 60, spread: 60 });
+      showToast('👏 동료에게 칭찬(Kudos +10)과 박수를 보냈습니다!', 'success');
+      userState.xp += 10;
+      saveState();
+      renderApp();
     });
   });
 
@@ -2050,7 +1722,98 @@ function attachEvents() {
   });
 
   document.querySelector('#btn-generate-ai')?.addEventListener('click', () => {
-    alert('AI 개발 요약 리포트가 최신화되었습니다.');
+    showToast('AI 개발 요약 리포트가 최신화되었습니다.', 'info');
+  });
+}
+
+// Global Keyboard Shortcuts (A11y & UX)
+window.addEventListener('keydown', (e) => {
+  // ESC: Close Modal
+  if (e.key === 'Escape' && activeModal) {
+    activeModal = null;
+    renderApp();
+    showToast('모달을 닫았습니다.', 'info', 1500);
+    return;
+  }
+
+  // Prevent shortcuts when typing in inputs/textareas
+  const targetTag = (e.target as HTMLElement)?.tagName;
+  if (targetTag === 'INPUT' || targetTag === 'TEXTAREA' || targetTag === 'SELECT') {
+    return;
+  }
+
+  // Key S: Skill Activate Toggle
+  if (e.key === 's' || e.key === 'S' || e.key === 'ㄴ') {
+    isSkillActiveNextAttack = !isSkillActiveNextAttack;
+    if (isSkillActiveNextAttack) {
+      battleLogMessage = `[${userState.activeSkill.name}] 스킬 단축키(S)로 준비 완료!`;
+      showToast(`⚡ ${userState.activeSkill.name} 스킬이 발동 준비되었습니다!`, 'warning');
+    } else {
+      battleLogMessage = `스킬 사용이 취소되었습니다.`;
+      showToast('스킬 발동이 취소되었습니다.', 'info');
+    }
+    renderApp();
+  }
+
+  // Key A: Open Attack Modal for active monster
+  if (e.key === 'a' || e.key === 'A' || e.key === 'ㅁ') {
+    const activeMonster = monstersState.find(m => m.status === 'Active');
+    if (activeMonster) {
+      attackTargetId = activeMonster.id;
+      activeModal = 'attack';
+      renderApp();
+      showToast(`⚔️ [${activeMonster.title}] 타격 모달 오픈 (단축키 A)`, 'info');
+    }
+  }
+
+  // Key M: Mute Sound Toggle
+  if (e.key === 'm' || e.key === 'M' || e.key === 'ㅡ') {
+    const isMuted = soundFx.toggleMute();
+    renderApp();
+    showToast(isMuted ? '🔇 사운드 음소거 설정' : '🔊 사운드 음소거 해제', 'info');
+  }
+});
+
+// Real-Time Simulated Webhook Push Events (Every 25 seconds)
+setInterval(() => {
+  const authors = ['김개발', '이백엔드', '박풀스택', '최디자인', 'AI-Bot'];
+  const eventTypes: ('pull_request_merged' | 'issue_opened' | 'commit_pushed')[] = ['pull_request_merged', 'issue_opened', 'commit_pushed'];
+  const repos = ['org/cms-core', 'org/rpg-backend', 'org/ai-engine'];
+  
+  const randomAuthor = authors[Math.floor(Math.random() * authors.length)];
+  const randomEvent = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+  const randomRepo = repos[Math.floor(Math.random() * repos.length)];
+
+  const eventMessages = {
+    pull_request_merged: `PR #${Math.floor(Math.random() * 200 + 100)}가 main 브랜치에 성공적으로 병합되었습니다!`,
+    issue_opened: `새로운 버그 이슈가 신규로 감지 등록되었습니다.`,
+    commit_pushed: `main 브랜치에 신규 커밋이 푸시되었습니다.`
+  };
+
+  const newWebhook: WebhookPayload = {
+    id: 'wh-sim-' + Date.now(),
+    eventType: randomEvent,
+    repository: randomRepo,
+    author: randomAuthor,
+    branch: 'main',
+    timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+    summary: `[실시간 연동] ${eventMessages[randomEvent]}`
+  };
+
+  webhooksState.unshift(newWebhook);
+  if (webhooksState.length > 20) webhooksState.pop();
+
+  showToast(`🔔 [Git Event] ${randomAuthor}: ${eventMessages[randomEvent]}`, 'success', 4000);
+}, 25000);
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      console.log('PWA Service Worker registered:', reg.scope);
+    }).catch(err => {
+      console.warn('PWA Service Worker registration failed:', err);
+    });
   });
 }
 

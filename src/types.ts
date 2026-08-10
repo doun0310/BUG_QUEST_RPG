@@ -79,6 +79,8 @@ export interface BugMonster {
   monsterImage?: string;
   dueDate?: string; // Deadline
   isOverdue?: boolean;
+  isEnraged?: boolean; // 광포화 상태
+  elementTrait?: 'Frontend' | 'Backend' | 'Database' | 'Security'; // 속성 시스템
   dialogue?: string;
   postMortem?: {
     category: string;

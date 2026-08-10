@@ -190,6 +190,7 @@ export const mockMonsters: BugMonster[] = [
     status: 'Active', 
     prUrl: 'https://github.com/org/repo/pull/104',
     defenseTrait: 'Dodge',
+    elementTrait: 'Security',
     monsterImage: '/pixel_slime.jpg',
     dueDate: '오늘 18:00 마감 (⏳ 2시간 남음)',
     dialogue: '크윽... 세미콜론 하나 안 붙였다고 이런 데미지가?!'
@@ -206,10 +207,12 @@ export const mockMonsters: BugMonster[] = [
     status: 'Active', 
     prUrl: 'https://github.com/org/repo/pull/112',
     defenseTrait: 'Shield',
+    elementTrait: 'Backend',
+    isEnraged: true,
     monsterImage: '/cyber_golem.jpg',
-    dueDate: '어제 마감 초과 (⚠️ 몬스터 반격 발동!)',
+    dueDate: '어제 마감 초과 (⚠️ 몬스터 광포화 반격 발동!)',
     isOverdue: true,
-    dialogue: '후후... 금요일 퇴근 10분 전에 찾아온 널포인터다!'
+    dialogue: '후후... 마감시간을 넘겼다! 분노의 광포화 상태를 보여주마!'
   },
   { 
     id: 'b4', 
@@ -223,6 +226,7 @@ export const mockMonsters: BugMonster[] = [
     status: 'Active', 
     prUrl: 'https://github.com/org/repo/pull/118',
     defenseTrait: 'Dodge',
+    elementTrait: 'Database',
     monsterImage: '/shadow_boss.jpg',
     dueDate: '내일 12:00 마감',
     dialogue: '트랜잭션 락을 해제하지 않는 이상 날 잡을 수 없을 걸!'
@@ -239,6 +243,7 @@ export const mockMonsters: BugMonster[] = [
     status: 'Active', 
     prUrl: 'https://github.com/org/repo/pull/120',
     defenseTrait: 'Dodge',
+    elementTrait: 'Frontend',
     monsterImage: '/cyber_bug.jpg',
     dueDate: '오늘 20:00 마감',
     dialogue: 'z-index: 999999로 모든 버튼을 가려버리겠다!'
