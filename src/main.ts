@@ -13,6 +13,9 @@ import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './se
 import { parseLcovContent } from './services/lcovParser';
 import { isLoggedIn, login, logout, createAccount, switchAccount, saveCurrentGameStateToAccount, getCurrentAccount, lockSession, unlockSession, isSessionLocked } from './services/authService';
 import { renderLoginScreen } from './components/LoginScreen';
+import { renderOnboardingWizard, type WizardStep } from './components/OnboardingWizard';
+import { isOnboardingComplete, completeOnboarding, loadTeamSettings, saveTeamSettings, resetOnboarding, toTeamMemberCapacity } from './services/teamSettingsService';
+import type { TeamMemberInput } from './types';
 import { store } from './store';
 import { icon } from './icons';
 import { renderHeader } from './components/Header';
@@ -22,6 +25,7 @@ import { renderCodexModal } from './components/modals/CodexModal';
 import { renderAttackModal } from './components/modals/AttackModal';
 import { renderCMSChartModal } from './components/modals/CMSChartModal';
 import { renderCreateMonsterModal } from './components/modals/CreateMonsterModal';
+import { renderTeamSettingsModal } from './components/modals/TeamSettingsModal';
 import { 
   mockUser, 
   mockVacations, 
@@ -93,13 +97,18 @@ let lastHitDamageText: string | null = null;
 let isSkillActiveNextAttack: boolean = false;
 
 // Modal States
-let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | null = null;
+let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'teamSettings' | null = null;
 let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
 
 let burnChartInstance: Chart | null = null;
 let radarChartInstance: Chart | null = null;
+
+// 팀 설정 모달 상태
+let editModalMembers: TeamMemberInput[] = [];
+let tsModalErrorMsg = '';
+let tsModalSuccessMsg = '';
 
 function applyTheme() {
   if (currentTheme === 'light') {
@@ -119,6 +128,13 @@ let loginErrorMsg = '';
 let loginSuccessMsg = '';
 let attachLoginEvents: () => void;
 
+// ─── Onboarding Wizard State ────────────────────────────────────────────────
+let isOnboardingActive = false;
+let wizardStep: WizardStep = 1;
+let wizardMembers: TeamMemberInput[] = [];
+let wizardErrorMsg = '';
+let attachWizardEvents: () => void;
+
 function renderApp() {
   applyTheme();
 
@@ -130,6 +146,15 @@ function renderApp() {
     attachLoginEvents();
     return;
   }
+
+  // 온보딩 미완료 시 위저드 표시
+  if (!isOnboardingComplete()) {
+    isOnboardingActive = true;
+    appContainer.innerHTML = renderOnboardingWizard(wizardStep, wizardMembers, wizardErrorMsg);
+    attachWizardEvents();
+    return;
+  }
+  isOnboardingActive = false;
 
   const state = {
     userState,
@@ -354,6 +379,7 @@ renderModals = function renderModals() {
   if (activeModal === 'attack') return renderAttackModal(state);
   if (activeModal === 'cmsDetails') return renderCMSChartModal(state);
   if (activeModal === 'createMonster') return renderCreateMonsterModal(state);
+  if (activeModal === 'teamSettings') return renderTeamSettingsModal(editModalMembers, tsModalErrorMsg, tsModalSuccessMsg);
 
   if (activeModal === 'releaseMilestone') {
     return `
@@ -611,7 +637,7 @@ renderModals = function renderModals() {
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 520px;">
           <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.4rem;">
-            ${icon('plug', 'color:var(--primary-light)', 18)} GitHub 및 외부 이슈 트래커 연동 설정
+            ${icon('plug', 'color:var(--primary-light)', 18)} GitHub 및 외부 이슈 연동 설정
           </h2>
           <p style="font-size: 0.76rem; color: var(--text-sub); margin-bottom: 1rem;">
             실제 GitHub 계정의 Personal Access Token(PAT)과 저장소를 등록하면, 게임 내에서 [PR 통합 공격] 실행 시 <strong>실제 GitHub 저장소의 Pull Request가 자동으로 머지</strong>됩니다.
@@ -1260,6 +1286,12 @@ renderModals = function renderModals() {
 }
 
 attachEvents = function attachEvents() {
+  // 팀 설정 모달이 열려 있으면 해당 이벤트 핸들러 바인딩
+  if (activeModal === 'teamSettings') {
+    attachTeamSettingsModalEvents();
+    return;
+  }
+
   const rpgMenuBtn = document.querySelector('#btn-toggle-rpg-menu');
   const rpgDropdownMenu = document.querySelector('#rpg-dropdown-menu');
 
@@ -1349,7 +1381,7 @@ attachEvents = function attachEvents() {
     e.preventDefault();
     soundFx.playVictorySound();
     confetti({ particleCount: 50 });
-    battleLogMessage = ` [API 연동 성공] 외부 이슈 트래커와의 동기화가 성공적으로 설정되었습니다!`;
+    battleLogMessage = ` [API 연동 성공] 외부 이슈와의 동기화가 성공적으로 설정되었습니다!`;
     activeModal = null;
     renderApp();
   });
@@ -2044,6 +2076,16 @@ attachEvents = function attachEvents() {
     renderApp();
   });
 
+  document.querySelector('#btn-team-settings')?.addEventListener('click', () => {
+    // 팀 설정 모달 오픈 (위저드 없이 인라인 편집)
+    const cfg = loadTeamSettings();
+    editModalMembers = cfg.members ? cfg.members.map(m => ({ ...m })) : [];
+    tsModalErrorMsg = '';
+    tsModalSuccessMsg = '';
+    activeModal = 'teamSettings';
+    renderApp();
+  });
+
   document.querySelector('#btn-sidebar-switch-acc')?.addEventListener('click', () => {
     logout();
     loginErrorMsg = '';
@@ -2149,6 +2191,352 @@ attachLoginEvents = function attachLoginEvents() {
       renderApp();
     } else {
       loginErrorMsg = res.message;
+      renderApp();
+    }
+  });
+};
+
+// ─── Team Settings Modal Event Handler ──────────────────────────────────────
+function attachTeamSettingsModalEvents() {
+  // 닫기
+  const closeModal = () => {
+    activeModal = null;
+    tsModalErrorMsg = '';
+    tsModalSuccessMsg = '';
+    renderApp();
+  };
+  document.querySelector('#ts-close')?.addEventListener('click', closeModal);
+  document.querySelector('#ts-close-footer')?.addEventListener('click', closeModal);
+  document.querySelector('#modal-backdrop')?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).id === 'modal-backdrop') closeModal();
+  });
+
+  // 팀원 삭제
+  document.querySelectorAll('.ts-remove-member').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-idx') || '0', 10);
+      editModalMembers.splice(idx, 1);
+      tsModalErrorMsg = '';
+      tsModalSuccessMsg = '';
+      renderApp();
+      setTimeout(attachTeamSettingsModalEvents, 0);
+    });
+  });
+
+  // 팀원 이름 인라인 수정
+  document.querySelectorAll('.ts-member-name').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-idx') || '0', 10);
+      const val = (e.target as HTMLInputElement).value.trim();
+      if (val && editModalMembers[idx]) editModalMembers[idx].name = val;
+    });
+  });
+
+  // 팀원 역할 인라인 수정
+  document.querySelectorAll('.ts-member-role').forEach(sel => {
+    sel.addEventListener('change', (e) => {
+      const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-idx') || '0', 10);
+      if (editModalMembers[idx]) {
+        editModalMembers[idx].role = (e.target as HTMLSelectElement).value as TeamMemberInput['role'];
+        // 이모지 업데이트를 위해 partial re-render
+        renderApp();
+        setTimeout(attachTeamSettingsModalEvents, 0);
+      }
+    });
+  });
+
+  // 팀원 근무시간 인라인 수정
+  document.querySelectorAll('.ts-member-hours').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-idx') || '0', 10);
+      const val = parseInt((e.target as HTMLInputElement).value || '8', 10);
+      if (editModalMembers[idx]) editModalMembers[idx].workingHoursPerDay = Math.min(12, Math.max(1, val));
+    });
+  });
+
+  // 팀원 집중 비율 인라인 수정
+  document.querySelectorAll('.ts-member-ratio').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-idx') || '0', 10);
+      const val = parseInt((e.target as HTMLInputElement).value || '70', 10);
+      if (editModalMembers[idx]) editModalMembers[idx].deepWorkRatio = Math.min(0.9, Math.max(0.4, val / 100));
+    });
+  });
+
+  // 팀원 추가
+  document.querySelector('#ts-add-member')?.addEventListener('click', () => {
+    const name = (document.querySelector('#ts-new-name') as HTMLInputElement)?.value?.trim();
+    const role = (document.querySelector('#ts-new-role') as HTMLSelectElement)?.value as TeamMemberInput['role'];
+    const hours = parseInt((document.querySelector('#ts-new-hours') as HTMLInputElement)?.value || '8', 10);
+    const ratio = parseInt((document.querySelector('#ts-new-ratio') as HTMLInputElement)?.value || '70', 10);
+
+    if (!name) {
+      tsModalErrorMsg = '팀원 이름을 입력해주세요.';
+      tsModalSuccessMsg = '';
+      renderApp();
+      setTimeout(attachTeamSettingsModalEvents, 0);
+      return;
+    }
+    if (editModalMembers.find(m => m.name === name)) {
+      tsModalErrorMsg = `"${name}"은(는) 이미 등록된 팀원입니다.`;
+      tsModalSuccessMsg = '';
+      renderApp();
+      setTimeout(attachTeamSettingsModalEvents, 0);
+      return;
+    }
+    editModalMembers.push({
+      id: 'tm-' + Date.now(),
+      name,
+      role,
+      workingHoursPerDay: Math.min(12, Math.max(1, hours)),
+      deepWorkRatio: Math.min(0.9, Math.max(0.4, ratio / 100)),
+    });
+    tsModalErrorMsg = '';
+    tsModalSuccessMsg = '';
+    renderApp();
+    setTimeout(attachTeamSettingsModalEvents, 0);
+  });
+
+  // 스프린트 빠른 선택
+  document.querySelectorAll('.ts-sprint-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const days = parseInt((e.currentTarget as HTMLElement).getAttribute('data-days') || '10', 10);
+      const input = document.querySelector('#ts-sprint-days') as HTMLInputElement;
+      if (input) input.value = String(days);
+      document.querySelectorAll('.ts-sprint-btn').forEach(b => {
+        const bDays = parseInt((b as HTMLElement).getAttribute('data-days') || '0', 10);
+        (b as HTMLElement).style.background = bDays === days ? 'var(--primary-bg)' : 'var(--inner-box-bg)';
+        (b as HTMLElement).style.borderColor = bDays === days ? 'var(--primary)' : 'var(--panel-border)';
+        (b as HTMLElement).style.color = bDays === days ? 'var(--primary-light)' : 'var(--text-sub)';
+      });
+    });
+  });
+
+  // 예산 미리보기
+  document.querySelector('#ts-total-budget')?.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value || '0', 10);
+    const el = document.querySelector('#ts-budget-preview');
+    if (el) el.textContent = `= ${val.toLocaleString('ko-KR')}원 (${(val / 100000000).toFixed(2)}억원)`;
+  });
+
+  // 저장
+  document.querySelector('#ts-save')?.addEventListener('click', () => {
+    const teamName = (document.querySelector('#ts-team-name') as HTMLInputElement)?.value?.trim();
+    const projectName = (document.querySelector('#ts-project-name') as HTMLInputElement)?.value?.trim();
+    const startDate = (document.querySelector('#ts-start-date') as HTMLInputElement)?.value;
+    const projectDays = parseInt((document.querySelector('#ts-project-days') as HTMLInputElement)?.value || '60', 10);
+    const sprintDays = parseInt((document.querySelector('#ts-sprint-days') as HTMLInputElement)?.value || '10', 10);
+    const totalBudget = parseInt((document.querySelector('#ts-total-budget') as HTMLInputElement)?.value || '0', 10);
+    const guildA = (document.querySelector('#ts-guild-a') as HTMLInputElement)?.value?.trim();
+    const guildB = (document.querySelector('#ts-guild-b') as HTMLInputElement)?.value?.trim();
+
+    if (!teamName || !projectName) {
+      tsModalErrorMsg = '팀 이름과 프로젝트 이름은 필수 입력 항목입니다.';
+      tsModalSuccessMsg = '';
+      renderApp();
+      setTimeout(attachTeamSettingsModalEvents, 0);
+      return;
+    }
+    if (editModalMembers.length === 0) {
+      tsModalErrorMsg = '최소 1명 이상의 팀원이 필요합니다.';
+      tsModalSuccessMsg = '';
+      renderApp();
+      setTimeout(attachTeamSettingsModalEvents, 0);
+      return;
+    }
+
+    // 저장
+    saveTeamSettings({
+      teamName,
+      projectName,
+      projectStartDate: startDate,
+      projectDurationDays: projectDays,
+      sprintDays,
+      totalBudget,
+      guildAName: guildA || '프론트엔드 길드',
+      guildBName: guildB || '백엔드 길드',
+      members: editModalMembers,
+    });
+
+    // Store & 로컬 teamState 즉시 동기화
+    store.reloadFromTeamSettings();
+    teamState = toTeamMemberCapacity(editModalMembers, sprintDays);
+
+    tsModalErrorMsg = '';
+    tsModalSuccessMsg = `✅ 설정이 저장되었습니다. 팀원 ${editModalMembers.length}명 반영 완료.`;
+    showToast('⚙️ 팀 설정이 저장되었습니다!', 'success');
+    renderApp();
+    setTimeout(attachTeamSettingsModalEvents, 0);
+  });
+}
+
+// ─── Onboarding Wizard Event Handler ────────────────────────────────────────
+attachWizardEvents = function attachWizardEvents() {
+
+  // 다음 버튼
+  document.querySelector('#btn-wizard-next')?.addEventListener('click', () => {
+    wizardErrorMsg = '';
+
+    if (wizardStep === 1) {
+      const teamName = (document.querySelector('#wizard-team-name') as HTMLInputElement)?.value?.trim();
+      const projectName = (document.querySelector('#wizard-project-name') as HTMLInputElement)?.value?.trim();
+      const startDate = (document.querySelector('#wizard-start-date') as HTMLInputElement)?.value;
+      const projectDays = parseInt((document.querySelector('#wizard-project-days') as HTMLInputElement)?.value || '60', 10);
+
+      if (!teamName || !projectName) {
+        wizardErrorMsg = '팀 이름과 프로젝트 이름은 필수 입력 항목입니다.';
+        renderApp();
+        return;
+      }
+      saveTeamSettings({ teamName, projectName, projectStartDate: startDate, projectDurationDays: projectDays });
+      wizardStep = 2;
+
+    } else if (wizardStep === 2) {
+      if (wizardMembers.length === 0) {
+        wizardErrorMsg = '최소 1명 이상의 팀원을 등록해주세요.';
+        renderApp();
+        return;
+      }
+      wizardStep = 3;
+
+    } else if (wizardStep === 3) {
+      const sprintDays = parseInt((document.querySelector('#wizard-sprint-days') as HTMLInputElement)?.value || '10', 10);
+      const totalBudget = parseInt((document.querySelector('#wizard-total-budget') as HTMLInputElement)?.value || '50000000', 10);
+      saveTeamSettings({ sprintDays, totalBudget });
+      wizardStep = 4;
+    }
+
+    renderApp();
+  });
+
+  // 이전 버튼
+  document.querySelector('#btn-wizard-back')?.addEventListener('click', () => {
+    wizardErrorMsg = '';
+    if (wizardStep > 1) {
+      wizardStep = (wizardStep - 1) as WizardStep;
+      renderApp();
+    }
+  });
+
+  // 팀원 추가 버튼
+  document.querySelector('#btn-add-wizard-member')?.addEventListener('click', () => {
+    const name = (document.querySelector('#new-member-name') as HTMLInputElement)?.value?.trim();
+    const role = (document.querySelector('#new-member-role') as HTMLSelectElement)?.value as TeamMemberInput['role'];
+    const hours = parseInt((document.querySelector('#new-member-hours') as HTMLInputElement)?.value || '8', 10);
+    const ratio = parseInt((document.querySelector('#new-member-ratio') as HTMLInputElement)?.value || '70', 10);
+
+    if (!name) {
+      wizardErrorMsg = '팀원 이름을 입력해주세요.';
+      renderApp();
+      return;
+    }
+    if (wizardMembers.find(m => m.name === name)) {
+      wizardErrorMsg = `"${name}"은 이미 등록된 팀원입니다.`;
+      renderApp();
+      return;
+    }
+    wizardMembers.push({
+      id: 'tm-' + Date.now(),
+      name,
+      role,
+      workingHoursPerDay: Math.min(12, Math.max(1, hours)),
+      deepWorkRatio: Math.min(0.9, Math.max(0.4, ratio / 100)),
+    });
+    wizardErrorMsg = '';
+    renderApp();
+  });
+
+  // 팀원 삭제 버튼들
+  document.querySelectorAll('.wizard-remove-member').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-idx') || '0', 10);
+      wizardMembers.splice(idx, 1);
+      renderApp();
+    });
+  });
+
+  // 스프린트 빠른 선택 버튼들
+  document.querySelectorAll('.wizard-sprint-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const days = parseInt((e.currentTarget as HTMLElement).getAttribute('data-days') || '10', 10);
+      const hiddenInput = document.querySelector('#wizard-sprint-days') as HTMLInputElement;
+      if (hiddenInput) hiddenInput.value = String(days);
+      document.querySelectorAll('.wizard-sprint-btn').forEach(b => {
+        const bDays = parseInt((b as HTMLElement).getAttribute('data-days') || '0', 10);
+        (b as HTMLElement).style.background = bDays === days ? 'var(--primary-bg)' : 'var(--inner-box-bg)';
+        (b as HTMLElement).style.borderColor = bDays === days ? 'var(--primary)' : 'var(--panel-border)';
+        (b as HTMLElement).style.color = bDays === days ? 'var(--primary-light)' : 'var(--text-sub)';
+      });
+    });
+  });
+
+  // 커스텀 스프린트 입력
+  document.querySelector('#wizard-sprint-custom')?.addEventListener('input', (e) => {
+    const val = (e.target as HTMLInputElement).value;
+    const hiddenInput = document.querySelector('#wizard-sprint-days') as HTMLInputElement;
+    if (hiddenInput && val) hiddenInput.value = val;
+  });
+
+  // 예산 미리보기
+  document.querySelector('#wizard-total-budget')?.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value || '0', 10);
+    const preview = document.querySelector('#wizard-budget-preview');
+    if (preview) {
+      preview.textContent = `= ${val.toLocaleString('ko-KR')}원 (${(val / 100000000).toFixed(2)}억원)`;
+    }
+  });
+
+  // 완료 버튼
+  document.querySelector('#btn-wizard-complete')?.addEventListener('click', () => {
+    const guildA = (document.querySelector('#wizard-guild-a') as HTMLInputElement)?.value?.trim() || '프론트엔드 길드';
+    const guildB = (document.querySelector('#wizard-guild-b') as HTMLInputElement)?.value?.trim() || '백엔드 길드';
+
+    const finalSettings = loadTeamSettings();
+    completeOnboarding({
+      ...finalSettings,
+      members: wizardMembers,
+      guildAName: guildA,
+      guildBName: guildB,
+    });
+
+    // Store에 팀 설정 반영
+    store.reloadFromTeamSettings();
+
+    // 로컬 teamState도 즉시 동기화
+    teamState = toTeamMemberCapacity(wizardMembers, finalSettings.sprintDays);
+
+    wizardStep = 1;
+    wizardErrorMsg = '';
+    isOnboardingActive = false;
+
+    showToast('🎉 팀 설정 완료! BUG QUEST RPG 전장에 오신 것을 환영합니다!', 'success', 4000);
+    renderApp();
+  });
+
+  // 4단계 설정 요약 업데이트
+  const summaryEl = document.querySelector('#wizard-final-summary');
+  if (summaryEl && wizardStep === 4) {
+    const cfg = loadTeamSettings();
+    summaryEl.innerHTML = [
+      `🏰 팀: <strong>${cfg.teamName || '(미입력)'}</strong>`,
+      `📁 프로젝트: <strong>${cfg.projectName || '(미입력)'}</strong>`,
+      `👥 팀원: <strong>${wizardMembers.length}명</strong> 등록됨`,
+      `📅 스프린트: <strong>${cfg.sprintDays}일</strong> / 전체 기간: <strong>${cfg.projectDurationDays}일</strong>`,
+      `💰 총 예산: <strong>${(cfg.totalBudget || 0).toLocaleString('ko-KR')}원</strong>`,
+    ].map(s => `<div>${s}</div>`).join('');
+  }
+
+  // 건너뛰기
+  document.querySelector('#btn-wizard-skip')?.addEventListener('click', () => {
+    if (confirm('지금 건너뛰면 기본 Mock 데이터로 시작됩니다.\n나중에 헤더의 ⚙️ 설정 버튼에서 팀 정보를 설정할 수 있습니다.\n\n건너뛰시겠습니까?')) {
+      completeOnboarding({
+        ...loadTeamSettings(),
+        members: wizardMembers,
+        teamName: '내 팀',
+        projectName: 'BUG QUEST RPG 프로젝트',
+      });
+      isOnboardingActive = false;
+      wizardStep = 1;
       renderApp();
     }
   });

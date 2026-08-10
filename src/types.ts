@@ -203,5 +203,25 @@ export interface UserProfile {
   seasonPass: SeasonPass;
 }
 
+export interface TeamMemberInput {
+  id: string;
+  name: string;
+  role: '전사 (Frontend)' | '마법사 (Backend)' | '성기사 (QA)' | '궁수 (DevOps)' | '힐러 (PM)';
+  workingHoursPerDay: number;
+  deepWorkRatio: number; // 0.5 ~ 0.9
+}
 
-
+export interface TeamSettings {
+  isConfigured: boolean;         // 온보딩 완료 여부
+  teamName: string;              // 팀/프로젝트 이름
+  projectName: string;           // 프로젝트 명칭
+  guildAName: string;            // 길드 A 이름 (Frontend/공격형)
+  guildBName: string;            // 길드 B 이름 (Backend/수비형)
+  sprintDays: number;            // 스프린트 기간 (일)
+  totalBudget: number;           // 프로젝트 총 예산 (원)
+  projectDurationDays: number;   // 프로젝트 전체 기간 (일)
+  projectStartDate: string;      // 프로젝트 시작일 (ISO)
+  members: TeamMemberInput[];    // 팀원 목록
+  configuredAt: string;          // 최초 설정 완료 시각
+  lastUpdatedAt: string;         // 마지막 설정 수정 시각
+}

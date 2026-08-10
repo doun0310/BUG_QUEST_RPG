@@ -8,6 +8,7 @@ import {
   mockWeeklyQuests, 
   mockTeamCoopBoss 
 } from './mockData';
+import { loadTeamSettings, toTeamMemberCapacity, buildProjectBudget } from './services/teamSettingsService';
 
 export interface AppState {
   currentTheme: 'dark' | 'light' | 'matrix';
@@ -37,20 +38,26 @@ const storedTheme = isStorageAvailable ? (localStorage.getItem('theme') as any) 
 const storedUser = isStorageAvailable ? localStorage.getItem('userState') : null;
 const storedMonsters = isStorageAvailable ? localStorage.getItem('monstersState') : null;
 
+// 팀 설정 기반 동적 초기화
+const teamCfg = loadTeamSettings();
+const dynamicTeamState = teamCfg.isConfigured && teamCfg.members.length > 0
+  ? toTeamMemberCapacity(teamCfg.members, teamCfg.sprintDays)
+  : [...mockTeamMembers];
+
 class Store {
   private state: AppState = {
     currentTheme: storedTheme,
     userState: storedUser ? JSON.parse(storedUser) : { ...mockUser },
     monstersState: storedMonsters ? JSON.parse(storedMonsters) : [...mockMonsters],
     vacationsState: [...mockVacations],
-    teamState: [...mockTeamMembers],
+    teamState: dynamicTeamState,
     webhooksState: [...mockWebhooks],
     questsState: [...mockWeeklyQuests],
     coopBossState: { ...mockTeamCoopBoss },
     simExtraDevs: 0,
     simExtraVacationDays: 0,
     bugFilter: 'all',
-    battleLogMessage: '버그 트래커 전장에 오신 것을 환영합니다! 몬스터를 타격하여 PR을 통합하세요.',
+    battleLogMessage: '버그 퀘스트 전장에 오신 것을 환영합니다! 몬스터를 타격하여 PR을 통합하세요.',
     hitMonsterId: null,
     lastHitDamageText: null,
     isSkillActiveNextAttack: false,
@@ -100,6 +107,15 @@ class Store {
       localStorage.setItem('userState', JSON.stringify(this.state.userState));
       localStorage.setItem('monstersState', JSON.stringify(this.state.monstersState));
     }
+  }
+
+  /** 온보딩 완료 후 팀 설정을 스토어에 반영 */
+  public reloadFromTeamSettings() {
+    const cfg = loadTeamSettings();
+    if (cfg.isConfigured && cfg.members.length > 0) {
+      this.state.teamState = toTeamMemberCapacity(cfg.members, cfg.sprintDays);
+    }
+    this.notify();
   }
 }
 
