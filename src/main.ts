@@ -7,6 +7,8 @@ import { getLang, setLang } from './i18n';
 import { generateAIDebugGuide } from './aiService';
 import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig, mergeGitHubPullRequest, fetchOpenPullRequests, type GitHubPullRequest } from './services/githubService';
 import { exportAppData, parseBackupFile } from './services/dataBackupService';
+import { particleService } from './services/particleService';
+import { generateMonsterPreset } from './services/monsterPresetEngine';
 import { icon } from './icons';
 import { renderHeader } from './components/Header';
 import { renderMonsterBoard } from './components/MonsterBoard';
@@ -1333,10 +1335,13 @@ attachEvents = function attachEvents() {
     const severity = (document.querySelector('#new-monster-severity') as HTMLSelectElement).value as 'Critical' | 'Major' | 'Minor';
     const assignee = (document.querySelector('#new-monster-assignee') as HTMLInputElement).value;
     const dueDate = (document.querySelector('#new-monster-duedate') as HTMLInputElement).value;
-    const monsterImage = (document.querySelector('#new-monster-image') as HTMLSelectElement).value;
+    const selectedImage = (document.querySelector('#new-monster-image') as HTMLSelectElement)?.value;
 
     const hpMap: Record<'Critical' | 'Major' | 'Minor', number> = { Critical: 1000, Major: 500, Minor: 200 };
     const xpMap: Record<'Critical' | 'Major' | 'Minor', number> = { Critical: 500, Major: 250, Minor: 100 };
+
+    // 100% Automatic preset generation based on bug context & title keywords
+    const autoPreset = generateMonsterPreset(title, severity);
 
     const newMonster: BugMonster = {
       id: 'b-' + (monstersState.length + 1),
@@ -1347,10 +1352,13 @@ attachEvents = function attachEvents() {
       rewardXp: xpMap[severity],
       assignee,
       status: 'Active',
-      monsterImage,
+      monsterImage: selectedImage || autoPreset.monsterImage,
       dueDate,
       isBoss: severity === 'Critical',
-      dialogue: '새롭게 출현한 버그 몬스터다! 무찌르고 PR을 통합하라!'
+      elementTrait: autoPreset.elementTrait,
+      dialogue: autoPreset.dialogue,
+      defenseTrait: autoPreset.defenseTrait,
+      traitDescription: autoPreset.traitDescription,
     };
 
     monstersState.unshift(newMonster);
@@ -1482,14 +1490,21 @@ attachEvents = function attachEvents() {
     renderApp();
   });
 
-  document.querySelector('#btn-do-enhance')?.addEventListener('click', () => {
+  document.querySelector('#btn-do-enhance')?.addEventListener('click', (e: Event) => {
     soundFx.playEnhanceSound();
+    const mouseEvt = e as MouseEvent;
+    const x = mouseEvt.clientX || window.innerWidth / 2;
+    const y = mouseEvt.clientY || window.innerHeight / 2;
+
     if (Math.random() < 0.7) {
       userState.weapon.enhanceLevel += 1;
       userState.stats.productivity += 2;
       confetti({ particleCount: 80, spread: 60 });
+      particleService.triggerExplosion(x, y, '#fbbf24', 30);
+      particleService.spawnFloatingText(x, y - 30, `✨ ENHANCE SUCCESS! +${userState.weapon.enhanceLevel}`, '#fbbf24', 20);
       battleLogMessage = `강화 성공! [${userState.weapon.name}] 이 +${userState.weapon.enhanceLevel} 강화되었습니다! (공격력 스탯 +2 상승)`;
     } else {
+      particleService.spawnFloatingText(x, y - 30, '⚡ ENHANCE FAILED', '#f87171', 18);
       battleLogMessage = `강화 실패! 장비 레벨이 유지되었습니다.`;
     }
     renderApp();
@@ -1796,8 +1811,16 @@ attachEvents = function attachEvents() {
         isSkillActiveNextAttack = false;
       }
 
+      // Spawn dynamic particle explosion & floating text
+      const screenCenterX = window.innerWidth / 2;
+      const screenCenterY = window.innerHeight / 2;
+      const particleColor = isCritical ? '#a855f7' : '#38bdf8';
+      particleService.triggerExplosion(screenCenterX, screenCenterY, particleColor, isCritical ? 40 : 25);
+      particleService.spawnFloatingText(screenCenterX, screenCenterY - 40, isCritical ? `💥 CRITICAL! -${baseDamage} HP` : `⚔️ -${baseDamage} HP`, isCritical ? '#f43f5e' : '#fbbf24', isCritical ? 24 : 18);
+
       if (monster.defenseTrait === 'Dodge' && Math.random() < 0.2) {
         soundFx.playDodgeSound();
+        particleService.spawnFloatingText(screenCenterX, screenCenterY - 40, '💨 DODGE!', '#94a3b8', 20);
         battleLogMessage = `[${monster.title}] 몬스터가 회피 스킬을 사용하여 데미지를 입지 않았습니다!`;
         hitMonsterId = monster.id;
         lastHitDamageText = `DODGE!`;

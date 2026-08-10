@@ -4,6 +4,8 @@ import { store } from './store';
 import { t, setLang } from './i18n';
 import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig } from './services/githubService';
 import { parseBackupFile } from './services/dataBackupService';
+import { particleService } from './services/particleService';
+import { generateMonsterPreset } from './services/monsterPresetEngine';
 
 describe('CMS Workload Capacity Calculations', () => {
   it('should correctly calculate total available and assigned hours for team members', () => {
@@ -106,5 +108,31 @@ describe('Data Backup & Restore Service', () => {
     const result2 = parseBackupFile(missingFieldsJson);
     expect(result2.success).toBe(false);
     expect(result2.message).toContain('필수 요소');
+  });
+});
+
+describe('Particle Effect & Sound FX Engine', () => {
+  it('should safely trigger explosion and spawn floating text in non-DOM/SSR environment without throwing errors', () => {
+    expect(() => {
+      particleService.triggerExplosion(100, 100, '#38bdf8', 10);
+      particleService.spawnFloatingText(100, 100, 'TEST DAMAGE', '#f87171', 16);
+    }).not.toThrow();
+  });
+});
+
+describe('Monster Auto-Preset Engine', () => {
+  it('should automatically analyze bug titles and assign appropriate traits and dialogues', () => {
+    const fePreset = generateMonsterPreset('React 무한 리렌더링 버그', 'Major');
+    expect(fePreset.elementTrait).toBe('Frontend');
+    expect(fePreset.defenseTrait).toBe('Dodge');
+    expect(fePreset.dialogue).toBeTruthy();
+
+    const dbPreset = generateMonsterPreset('SQL Deadlock 및 인덱스 미적용 이슈', 'Critical');
+    expect(dbPreset.elementTrait).toBe('Database');
+    expect(dbPreset.dialogue).toContain('CRITICAL');
+
+    const secPreset = generateMonsterPreset('CORS 토큰 인증 실패 401 Error', 'Minor');
+    expect(secPreset.elementTrait).toBe('Security');
+    expect(secPreset.defenseTrait).toBe('Shield');
   });
 });
