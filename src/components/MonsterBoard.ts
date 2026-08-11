@@ -116,7 +116,9 @@ export function renderMonsterBoard(state: AppState): string {
         const isHit = hitMonsterId === m.id;
         const isEnraged = m.isEnraged || m.isOverdue;
         const isCriticalImpact = isHit && !!lastHitDamageText?.includes('CRITICAL');
+        const isWeaknessImpact = isHit && !!lastHitDamageText?.includes('WEAK!');
         const hpPct = (m.currentHp / m.maxHp) * 100;
+        const hpTone = hpPct > 60 ? 'hp-high' : hpPct > 30 ? 'hp-medium' : 'hp-low';
         const accent = severityAccent(m);
         const elemLabel = elementIcon[m.elementTrait || 'Frontend'] || elementIcon['Frontend'];
         const safePrUrl = safeExternalUrl(m.prUrl);
@@ -124,7 +126,7 @@ export function renderMonsterBoard(state: AppState): string {
         const spriteCell = m.isBoss ? '1 0' : ({ Frontend: '0 1', Backend: '1 1', Database: '2 0', Security: '3 0' } as const)[m.elementTrait || 'Backend'];
 
         return `
-          <div class="card monster-card-animated ${m.isBoss ? 'boss-monster-card' : ''} ${isEnraged ? 'enraged-monster-card' : ''} ${isHit ? 'monster-impact' : ''} ${isCriticalImpact ? 'monster-impact-critical' : ''}"
+          <div class="card monster-card-animated ${m.isBoss ? 'boss-monster-card' : ''} ${isEnraged ? 'enraged-monster-card' : ''} ${isHit ? 'monster-impact monster-pixel-flash' : ''} ${isCriticalImpact ? 'monster-impact-critical' : ''} ${isWeaknessImpact ? 'monster-impact-weakness' : ''}"
             style="border-left: 3px solid ${accent}; padding: 0;">
 
             <div class="dq-monster-container" style="margin: 0; border: none; background: transparent; border-radius: 16px; padding: 1rem 1.15rem;">
@@ -135,7 +137,7 @@ export function renderMonsterBoard(state: AppState): string {
                 : `<img src="${m.monsterImage || '/cyber_bug.jpg'}" alt="Monster" class="dq-monster-img ${m.status === 'Defeated' ? 'dq-monster-defeated' : ''} ${isHit ? 'hit-animation' : ''}" style="width: 68px; height: 68px; border-radius: 12px;" />`}
 
               ${isHit && lastHitDamageText ? `
-                <div class="damage-float-text ${lastHitDamageText.includes('CRITICAL') || lastHitDamageText.includes('2X') ? 'critical' : ''}">${lastHitDamageText}</div>
+                <div class="damage-float-text ${lastHitDamageText.includes('CRITICAL') || lastHitDamageText.includes('2X') ? 'critical' : ''} ${lastHitDamageText.includes('WEAK!') ? 'weakness' : ''}">${lastHitDamageText}</div>
               ` : ''}
 
               <!-- Monster Info -->
@@ -173,13 +175,13 @@ export function renderMonsterBoard(state: AppState): string {
                 ` : ''}
 
                 <!-- HP Bar -->
-                <div class="monster-hp-frame ${m.isBoss ? 'monster-hp-boss' : ''}" style="margin-bottom: 0.45rem;">
+                <div class="monster-hp-frame ${m.isBoss ? 'monster-hp-boss' : ''} ${hpTone}" style="margin-bottom: 0.45rem;">
                   <div class="monster-hp-label">
                     <span>${m.isBoss ? 'BOSS HP' : 'ENEMY HP'}</span>
                     <strong>${m.currentHp.toLocaleString()} / ${m.maxHp.toLocaleString()}</strong>
                   </div>
                   <div class="hp-bar-outer monster-hp-bar">
-                    <div class="hp-bar-inner" style="width: ${hpPct}%;${isEnraged ? ' background: linear-gradient(90deg, var(--danger), #fb923c);' : ''}"></div>
+                    <div class="hp-bar-inner" style="width: ${hpPct}%;"></div>
                   </div>
                 </div>
 

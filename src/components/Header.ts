@@ -31,9 +31,9 @@ export function renderHeader(state: AppState): string {
       <div class="user-badge-container header-controls">
 
         <!-- HP Bar -->
-        <div class="stat-bar-box">
-          <div style="display: flex; justify-content: space-between; font-size: 0.67rem; margin-bottom: 0.18rem; align-items: center; gap: 0.25rem;">
-            ${icon('fire', 'color:var(--danger)', 11)} <span style="color: var(--danger); font-weight: 700; flex: 1;">${userState.hp}/${userState.maxHp}</span>
+        <div class="stat-bar-box game-hud-gauge game-hud-hp">
+          <div class="game-hud-label">
+            ${icon('fire', 'color:var(--danger)', 11)} <span>HERO HP</span><strong>${userState.hp}/${userState.maxHp}</strong>
           </div>
           <div class="hp-bar-outer">
             <div class="hp-bar-inner" style="width: ${hpPct}%;"></div>
@@ -41,9 +41,9 @@ export function renderHeader(state: AppState): string {
         </div>
 
         <!-- XP Bar -->
-        <div class="stat-bar-box">
-          <div style="display: flex; justify-content: space-between; font-size: 0.67rem; margin-bottom: 0.18rem; align-items: center; gap: 0.25rem;">
-            ${icon('crystal', 'color:var(--primary-light)', 11)} <span style="color: var(--primary-light); font-weight: 700; flex: 1;">Lv.${userState.level} · ${userState.xp}xp</span>
+        <div class="stat-bar-box game-hud-gauge game-hud-xp">
+          <div class="game-hud-label">
+            ${icon('crystal', 'color:var(--primary-light)', 11)} <span>LEVEL ${userState.level}</span><strong>${userState.xp} XP</strong>
           </div>
           <div class="hp-bar-outer">
             <div class="xp-bar-inner" style="width: ${xpPct}%;"></div>

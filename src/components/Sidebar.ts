@@ -27,8 +27,8 @@ export function renderSidebar(state: AppState): string {
       <section class="card">
         <div class="card-header"><h3 class="card-title">${icon('users', 'color:var(--primary-light)', 15)} 팀 워크로드</h3><span class="badge ${capacity.isOverloaded ? 'badge-danger' : 'badge-success'}">${capacity.isOverloaded ? '주의 필요' : '안정적'}</span></div>
         ${capacity.isOverloaded ? `<div class="inline-alert inline-alert-danger">${icon('warning', '', 13)} 리소스 재배분이 필요합니다.</div>` : ''}
-        <div class="capacity-summary"><div><span>이번 스프린트</span><strong>${capacity.assignedHours} / ${capacity.availableHours}h</strong></div><strong class="capacity-percent">${loadPct}%</strong></div>
-        <div class="progress-track"><div class="progress-value ${capacity.isOverloaded ? 'is-danger' : ''}" style="width:${loadPct}%"></div></div>
+        <div class="capacity-summary game-hud-workload"><div><span>TEAM LOAD</span><strong>${capacity.assignedHours} / ${capacity.availableHours}h</strong></div><strong class="capacity-percent">${loadPct}%</strong></div>
+        <div class="progress-track game-hud-bar"><div class="progress-value ${capacity.isOverloaded ? 'is-danger' : ''}" style="width:${loadPct}%"></div></div>
         <div class="member-load-list">
           ${capacity.members.length ? capacity.members.map(m => {
             const percent = Math.min(100, Math.round((m.assignedHours / m.availableHours) * 100));

@@ -590,8 +590,8 @@ renderModals = function renderModals() {
     return `<div class="modal-backdrop" id="modal-backdrop"><div class="modal-card" style="max-width:680px;">
       <div class="modal-heading"><div class="modal-heading-icon">${icon('map', '', 18)}</div><div class="modal-heading-copy"><p>DUNGEON MAP</p><h2>던전 월드맵</h2></div><button class="modal-close" id="btn-close-modal">${icon('close', '', 16)}</button></div>
       <p class="modal-description">각 던전의 보스를 토벌해 팀 아티팩트를 수집하세요.</p>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.7rem;">${dungeons.map(d => `<section style="padding:1rem;border:1px solid ${dungeonProgress[d.id] ? 'var(--success-border)' : 'var(--panel-border)'};border-radius:12px;background:var(--inner-box-bg);">
-        <div style="color:${d.tone};margin-bottom:.55rem;">${icon(d.icon, '', 22)}</div><strong style="font-size:.85rem;">${d.name}</strong><p style="font-size:.7rem;color:var(--text-sub);margin:.35rem 0;">보스: ${d.boss}</p><span class="badge ${dungeonProgress[d.id] ? 'badge-success' : ''}">${dungeonProgress[d.id] ? '클리어' : `보상: ${d.reward}`}</span>
+      <div class="pixel-dungeon-map">${dungeons.map((d, index) => `<section class="pixel-dungeon-tile dungeon-tile-${index} ${dungeonProgress[d.id] ? 'is-cleared' : ''}">
+        <div class="pixel-dungeon-marker" style="color:${d.tone};">${icon(d.icon, '', 22)}</div><strong style="font-size:.85rem;">${d.name}</strong><p style="font-size:.7rem;color:var(--text-sub);margin:.35rem 0;">보스: ${d.boss}</p><span class="badge ${dungeonProgress[d.id] ? 'badge-success' : ''}">${dungeonProgress[d.id] ? '클리어' : `보상: ${d.reward}`}</span>
         <button class="action-btn btn-clear-dungeon" data-dungeon="${d.id}" style="width:100%;justify-content:center;margin-top:.75rem;" ${dungeonProgress[d.id] ? 'disabled' : ''}>${dungeonProgress[d.id] ? '완료' : '보스 도전'}</button>
       </section>`).join('')}</div>
     </div></div>`;
@@ -1090,6 +1090,11 @@ renderModals = function renderModals() {
 
 
   if (activeModal === 'coopBoss') {
+    const coopBossHpPct = coopBossState.maxHp > 0
+      ? (coopBossState.currentHp / coopBossState.maxHp) * 100
+      : 0;
+    const coopBossHpTone = coopBossHpPct > 60 ? 'hp-high' : coopBossHpPct > 30 ? 'hp-medium' : 'hp-low';
+
     return `
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card dq-window" style="max-width: 520px; text-align: center;">
@@ -1101,10 +1106,10 @@ renderModals = function renderModals() {
             HP: <strong>${coopBossState.currentHp} / ${coopBossState.maxHp}</strong> | 최종 보상: <strong style="color: var(--warning);">${coopBossState.rewardItem}</strong>
           </div>
 
-          <div class="monster-hp-frame monster-hp-boss" style="margin-bottom: 1rem;">
+          <div class="monster-hp-frame monster-hp-boss ${coopBossHpTone}" style="margin-bottom: 1rem;">
             <div class="monster-hp-label"><span>RAID BOSS HP</span><strong>${coopBossState.currentHp} / ${coopBossState.maxHp}</strong></div>
             <div class="hp-bar-outer monster-hp-bar">
-              <div class="hp-bar-inner" style="width: ${(coopBossState.currentHp / coopBossState.maxHp) * 100}%; background: var(--danger);"></div>
+              <div class="hp-bar-inner" style="width: ${coopBossHpPct}%;"></div>
             </div>
           </div>
 
@@ -1476,9 +1481,9 @@ renderModals = function renderModals() {
             <span class="badge badge-success">${userState.name} 보유</span>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.85rem;">
+          <div class="pixel-inventory-grid">
             ${userState.inventory.map((item: any) => `
-              <div style="display: flex; justify-content: space-between; align-items: center; background: var(--inner-box-bg); padding: 0.55rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+              <div class="pixel-inventory-item">
                 <div>
                   <strong style="font-size: 0.82rem;">${item.name}</strong>
                   <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.1rem;">${item.description}</div>
@@ -1949,6 +1954,13 @@ attachEvents = function attachEvents() {
 
   document.querySelector('#btn-attack-coopboss')?.addEventListener('click', () => {
     soundFx.playHitSound();
+    const bossButton = document.querySelector('#btn-attack-coopboss')?.getBoundingClientRect();
+    const impactX = bossButton ? bossButton.left + bossButton.width / 2 : window.innerWidth / 2;
+    const impactY = bossButton ? bossButton.top - 76 : window.innerHeight / 2;
+    particleService.triggerImpact(impactX, impactY, { critical: true, color: '#f43f5e', accentColor: '#fbbf24' });
+    particleService.spawnFloatingText(impactX, impactY - 16, '-300 RAID', '#fbbf24', 24);
+    document.body.classList.add('impact-critical');
+    window.setTimeout(() => document.body.classList.remove('impact-critical'), 320);
     coopBossState.currentHp = Math.max(0, coopBossState.currentHp - 300);
     confetti({ particleCount: 60, spread: 50 });
     
@@ -2437,6 +2449,13 @@ attachEvents = function attachEvents() {
       const elementalResult = calculateElementalDamage(baseDamage, monster, userState.devClass);
       baseDamage = elementalResult.damage;
       const hasElementalAdvantage = elementalResult.advantage;
+      const elementFxColor: Record<NonNullable<BugMonster['elementTrait']>, string> = {
+        Frontend: '#38bdf8',
+        Backend: '#a78bfa',
+        Database: '#fbbf24',
+        Security: '#34d399',
+      };
+      const impactColor = hasElementalAdvantage ? elementFxColor[monster.elementTrait || 'Backend'] : '#38bdf8';
 
       if (isSkillActiveNextAttack) {
         baseDamage = Math.round(baseDamage * userState.activeSkill.damageMultiplier);
@@ -2467,7 +2486,14 @@ attachEvents = function attachEvents() {
         return;
       }
 
-      particleService.triggerImpact(screenCenterX, screenCenterY, isCritical);
+      particleService.triggerImpact(screenCenterX, screenCenterY, {
+        critical: isCritical,
+        color: isCritical ? '#fbbf24' : impactColor,
+        accentColor: hasElementalAdvantage ? '#ffffff' : undefined,
+      });
+      if (hasElementalAdvantage) {
+        particleService.spawnFloatingText(screenCenterX, screenCenterY - 58, 'WEAKNESS!', impactColor, 16);
+      }
       particleService.spawnFloatingText(
         screenCenterX,
         screenCenterY - 32,
@@ -2498,7 +2524,9 @@ attachEvents = function attachEvents() {
       mockGuildWar.guildA.score += baseDamage;
       
       hitMonsterId = monster.id;
-      lastHitDamageText = isCritical ? `CRITICAL! -${baseDamage} HP` : `-${baseDamage} HP`;
+      lastHitDamageText = isCritical
+        ? `CRITICAL! -${baseDamage} HP`
+        : hasElementalAdvantage ? `WEAK! -${baseDamage} HP` : `-${baseDamage} HP`;
 
       if (!shouldEnrage) {
         battleLogMessage = `[${hasElementalAdvantage ? '약점 속성 적중 +30%' : 'AI 코드 검수'}] ${userState.name}의 공격! ${monster.title}에게 ${baseDamage} 데미지!`;

@@ -31,6 +31,12 @@ interface ImpactWave {
   pixelated: boolean;
 }
 
+export interface ImpactOptions {
+  critical?: boolean;
+  color?: string;
+  accentColor?: string;
+}
+
 class ParticleService {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
@@ -38,8 +44,9 @@ class ParticleService {
   private floatingTexts: FloatingText[] = [];
   private impactWaves: ImpactWave[] = [];
   private animationFrameId: number | null = null;
-  private readonly maxParticles = 96;
-  private readonly maxWaves = 4;
+  // A bounded pool keeps combat feedback predictable even during rapid attacks.
+  private readonly maxParticles = 72;
+  private readonly maxWaves = 3;
 
   constructor() {
     // Lazy canvas creation
@@ -94,13 +101,13 @@ class ParticleService {
 
     for (let i = 0; i < actualCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 5.4 + 2.2;
+      const speed = Math.round((Math.random() * 4.4 + 2.2) * 2) / 2;
       const size = Math.random() > 0.72 ? 5 : (Math.random() > 0.45 ? 3 : 2);
       this.particles.push({
         x,
         y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1.2,
+        vx: Math.round(Math.cos(angle) * speed),
+        vy: Math.round(Math.sin(angle) * speed - 1),
         size,
         color,
         alpha: 1,
@@ -113,18 +120,20 @@ class ParticleService {
   }
 
   /** Layered burst used for an intentional, high-feedback combat impact. */
-  public triggerImpact(x: number, y: number, critical: boolean = false) {
-    const color = critical ? '#fbbf24' : '#38bdf8';
-    const accent = critical ? '#f43f5e' : '#a5b4fc';
-    this.triggerExplosion(x, y, color, critical ? 48 : 28);
-    this.triggerExplosion(x, y, accent, critical ? 22 : 12);
-    this.triggerExplosion(x, y, '#ffffff', critical ? 10 : 5);
+  public triggerImpact(x: number, y: number, options: boolean | ImpactOptions = false) {
+    const config = typeof options === 'boolean' ? { critical: options } : options;
+    const critical = config.critical ?? false;
+    const color = config.color ?? (critical ? '#fbbf24' : '#38bdf8');
+    const accent = config.accentColor ?? (critical ? '#f43f5e' : '#a5b4fc');
+    this.triggerExplosion(x, y, color, critical ? 34 : 20);
+    this.triggerExplosion(x, y, accent, critical ? 16 : 9);
+    this.triggerExplosion(x, y, '#ffffff', critical ? 8 : 4);
 
     if (!this.prefersReducedMotion()) {
       this.impactWaves.splice(0, Math.max(0, this.impactWaves.length - (this.maxWaves - 2)));
       this.impactWaves.push(
-        { x, y, radius: 8, maxRadius: critical ? 138 : 88, color, alpha: 0.9, lineWidth: critical ? 4 : 3, pixelated: true },
-        { x, y, radius: critical ? 18 : 12, maxRadius: critical ? 190 : 116, color: accent, alpha: 0.6, lineWidth: 2, pixelated: false }
+        { x, y, radius: 8, maxRadius: critical ? 126 : 78, color, alpha: 0.9, lineWidth: critical ? 4 : 3, pixelated: true },
+        { x, y, radius: critical ? 18 : 12, maxRadius: critical ? 168 : 104, color: accent, alpha: 0.6, lineWidth: 2, pixelated: true }
       );
     }
     this.startLoop();
@@ -165,9 +174,9 @@ class ParticleService {
     const pLen = this.particles.length;
     for (let i = pLen - 1; i >= 0; i--) {
       const p = this.particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.15; // Gravity
+      p.x = Math.round(p.x + p.vx);
+      p.y = Math.round(p.y + p.vy);
+      p.vy = Math.round((p.vy + 0.2) * 2) / 2; // Quantized gravity for pixel movement
       p.alpha -= p.decay;
 
       if (p.alpha <= 0) {
@@ -193,7 +202,7 @@ class ParticleService {
     const wLen = this.impactWaves.length;
     for (let i = wLen - 1; i >= 0; i--) {
       const wave = this.impactWaves[i];
-      wave.radius += (wave.maxRadius - wave.radius) * 0.18 + 2;
+      wave.radius = Math.round((wave.radius + (wave.maxRadius - wave.radius) * 0.18 + 2) / 2) * 2;
       wave.alpha -= 0.06;
 
       if (wave.alpha <= 0 || wave.radius >= wave.maxRadius - 2) {
@@ -210,10 +219,6 @@ class ParticleService {
         const corner = Math.round(r * 0.42);
         this.ctx.strokeRect(Math.round(wave.x - r), Math.round(wave.y - corner), r * 2, corner * 2);
         this.ctx.strokeRect(Math.round(wave.x - corner), Math.round(wave.y - r), corner * 2, r * 2);
-      } else {
-        this.ctx.beginPath();
-        this.ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
-        this.ctx.stroke();
       }
     }
 
@@ -223,7 +228,7 @@ class ParticleService {
       this.ctx.textAlign = 'center';
       for (let i = tLen - 1; i >= 0; i--) {
         const ft = this.floatingTexts[i];
-        ft.y += ft.vy;
+        ft.y = Math.round(ft.y + ft.vy);
         ft.alpha -= 0.025;
 
         if (ft.alpha <= 0) {
@@ -233,7 +238,9 @@ class ParticleService {
         }
 
         this.ctx.globalAlpha = ft.alpha < 0 ? 0 : ft.alpha;
-        this.ctx.font = `900 ${ft.fontSize}px 'Pretendard', sans-serif`;
+        this.ctx.font = `900 ${ft.fontSize}px ui-monospace, monospace`;
+        this.ctx.fillStyle = 'rgba(3, 7, 18, .8)';
+        this.ctx.fillText(ft.text, ft.x + 2, ft.y + 2);
         this.ctx.fillStyle = ft.color;
         this.ctx.fillText(ft.text, ft.x, ft.y);
       }
