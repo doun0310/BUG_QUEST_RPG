@@ -6,23 +6,19 @@ export interface GeneratedMonsterPreset {
   traitDescription: string;
 }
 
-// 속성별 자동 외형 아바타 이미지 세트
+// 속성별 자동 외형 픽셀 몬스터 세트
 const AVATAR_MAP = {
   Frontend: [
-    'https://images.unsplash.com/photo-1563089145-599997674d42?w=150&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150&auto=format&fit=crop&q=80',
+    'pixel-monster-v2-0-0', 'pixel-monster-v2-0-1', 'pixel-monster-v2-0-2', 'pixel-monster-v2-0-3',
   ],
   Backend: [
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=150&auto=format&fit=crop&q=80',
+    'pixel-monster-v2-1-0', 'pixel-monster-v2-1-1', 'pixel-monster-v2-1-2', 'pixel-monster-v2-1-3',
   ],
   Database: [
-    'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=150&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=150&auto=format&fit=crop&q=80',
+    'pixel-monster-v2-2-0', 'pixel-monster-v2-2-1',
   ],
   Security: [
-    'https://images.unsplash.com/photo-1510511459019-5dda7724fd87?w=150&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=150&auto=format&fit=crop&q=80',
+    'pixel-monster-v2-2-2', 'pixel-monster-v2-2-3',
   ],
 };
 

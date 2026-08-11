@@ -16,6 +16,7 @@ import { createAccountDemoData } from './services/accountDemoService';
 import { escapeHtml, safeExternalUrl } from './services/inputSafety';
 import { validateIssueInput } from './services/issueValidation';
 import { showToast } from './toastManager';
+import { getMonsterArtwork, MONSTER_ARTWORK_OPTIONS } from './services/monsterSpriteService';
 
 const workloadFixture: TeamMemberCapacity[] = [
   { userName: 'Alex', role: 'Frontend Dev', vacationDays: 0, totalSprintDays: 10, workingHoursPerDay: 8, deepWorkLimitRatio: 0.7, availableHours: 56, assignedHours: 12, isOverloaded: false },
@@ -83,6 +84,16 @@ describe('Connected Account Demo Data', () => {
     expect(demo.monsters.every(item => item.title.startsWith('[샘플]'))).toBe(true);
     expect(demo.monsters[0].title).toContain('React Query 캐시 무효화');
     expect(demo.monsters[1].dialogue).toContain('중복 결제');
+  });
+});
+
+describe('Pixel monster artwork atlas', () => {
+  it('offers 12 distinct project-owned monster species and reserves the firewall dragon for bosses', () => {
+    expect(MONSTER_ARTWORK_OPTIONS).toHaveLength(12);
+    expect(new Set(MONSTER_ARTWORK_OPTIONS.map(option => option.id)).size).toBe(12);
+
+    const bossArtwork = getMonsterArtwork({ id: 'boss-1', title: '결제 장애', isBoss: true, elementTrait: 'Backend' });
+    expect(bossArtwork.label).toBe('파이어월 드래곤');
   });
 });
 

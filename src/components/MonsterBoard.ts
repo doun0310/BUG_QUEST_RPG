@@ -1,6 +1,7 @@
 import type { AppState } from '../store';
 import { icon } from '../icons';
 import { escapeHtml, safeExternalUrl } from '../services/inputSafety';
+import { getMonsterArtwork, monsterArtworkClass } from '../services/monsterSpriteService';
 
 export function renderMonsterBoard(state: AppState): string {
   const {
@@ -122,8 +123,7 @@ export function renderMonsterBoard(state: AppState): string {
         const accent = severityAccent(m);
         const elemLabel = elementIcon[m.elementTrait || 'Frontend'] || elementIcon['Frontend'];
         const safePrUrl = safeExternalUrl(m.prUrl);
-        const isSampleIssue = m.title.startsWith('[샘플]');
-        const spriteCell = m.isBoss ? '1 0' : ({ Frontend: '0 1', Backend: '1 1', Database: '2 0', Security: '3 0' } as const)[m.elementTrait || 'Backend'];
+        const artwork = getMonsterArtwork(m);
 
         return `
           <div class="card monster-card-animated ${m.isBoss ? 'boss-monster-card' : ''} ${isEnraged ? 'enraged-monster-card' : ''} ${isHit ? 'monster-impact monster-pixel-flash' : ''} ${isCriticalImpact ? 'monster-impact-critical' : ''} ${isWeaknessImpact ? 'monster-impact-weakness' : ''}"
@@ -132,9 +132,7 @@ export function renderMonsterBoard(state: AppState): string {
             <div class="dq-monster-container" style="margin: 0; border: none; background: transparent; border-radius: 16px; padding: 1rem 1.15rem;">
 
               <!-- Monster Image -->
-              ${isSampleIssue
-                ? `<div role="img" aria-label="${escapeHtml(m.title)} 픽셀 스프라이트" class="dq-monster-img pixel-sprite sprite-${spriteCell.replace(' ', '-')} ${m.status === 'Defeated' ? 'dq-monster-defeated' : ''} ${isHit ? 'hit-animation' : ''}" style="width:68px;height:68px;"></div>`
-                : `<img src="${m.monsterImage || '/cyber_bug.jpg'}" alt="Monster" class="dq-monster-img ${m.status === 'Defeated' ? 'dq-monster-defeated' : ''} ${isHit ? 'hit-animation' : ''}" style="width: 68px; height: 68px; border-radius: 12px;" />`}
+              <div role="img" aria-label="${escapeHtml(artwork.label)} — ${escapeHtml(m.title)}" class="dq-monster-img pixel-sprite pixel-monster-sprite ${monsterArtworkClass(m)} ${m.status === 'Defeated' ? 'dq-monster-defeated' : ''} ${isHit ? 'hit-animation' : ''}" style="width:68px;height:68px;"></div>
 
               ${isHit && lastHitDamageText ? `
                 <div class="damage-float-text ${lastHitDamageText.includes('CRITICAL') || lastHitDamageText.includes('2X') ? 'critical' : ''} ${lastHitDamageText.includes('WEAK!') ? 'weakness' : ''}">${lastHitDamageText}</div>

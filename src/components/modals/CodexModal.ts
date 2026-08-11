@@ -1,6 +1,7 @@
 import type { AppState } from '../../store';
 import { icon } from '../../icons';
 import { renderModalHeader } from '../ui';
+import { getMonsterArtwork, monsterArtworkClass } from '../../services/monsterSpriteService';
 
 export function renderCodexModal(state: AppState): string {
   const { monstersState } = state;
@@ -31,9 +32,11 @@ export function renderCodexModal(state: AppState): string {
 
         <!-- Codex List Grid -->
         <div class="archive-list">
-          ${monstersState.map(m => `
+          ${monstersState.map(m => {
+            const artwork = getMonsterArtwork(m);
+            return `
             <div class="archive-item ${m.status === 'Defeated' ? 'is-resolved' : ''}">
-              <img src="${m.monsterImage || '/cyber_bug.jpg'}" alt="" />
+              <div role="img" aria-label="${artwork.label}" class="archive-monster-sprite pixel-sprite pixel-monster-sprite ${monsterArtworkClass(m)}"></div>
               <div class="archive-item-content">
                   <div class="archive-item-title"><strong>${m.title}</strong>
                     <span class="badge ${m.status === 'Defeated' ? 'badge-success' : 'badge-danger'}">
@@ -50,7 +53,7 @@ export function renderCodexModal(state: AppState): string {
                   ` : ''}
               </div>
             </div>
-          `).join('')}
+          `; }).join('')}
         </div>
       </div>
     </div>

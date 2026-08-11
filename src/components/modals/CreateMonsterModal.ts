@@ -1,6 +1,7 @@
 import type { AppState } from '../../store';
 import { icon } from '../../icons';
 import { renderModalActions, renderModalHeader } from '../ui';
+import { MONSTER_ARTWORK_OPTIONS } from '../../services/monsterSpriteService';
 
 export function renderCreateMonsterModal(state: AppState): string {
   const { userState } = state;
@@ -62,10 +63,7 @@ export function renderCreateMonsterModal(state: AppState): string {
               ${icon('sparkle', '', 12)} 이슈 아트워크
             </label>
             <select class="form-select" id="new-monster-image">
-              <option value="/pixel_slime.jpg" ${selected(editing?.monsterImage, '/pixel_slime.jpg')}>픽셀 블루 슬라임</option>
-              <option value="/cyber_golem.jpg" ${selected(editing?.monsterImage, '/cyber_golem.jpg')}>사이버 메카 골렘 (보스)</option>
-              <option value="/cyber_bug.jpg" ${selected(editing?.monsterImage || '/cyber_bug.jpg', '/cyber_bug.jpg')}>네온 사이버 버그</option>
-              <option value="/shadow_boss.jpg" ${selected(editing?.monsterImage, '/shadow_boss.jpg')}>다크 섀도우 보스</option>
+              ${MONSTER_ARTWORK_OPTIONS.map(option => `<option value="${option.id}" ${selected(editing?.monsterImage, option.id)}>${option.label}</option>`).join('')}
             </select>
           </div>
 
