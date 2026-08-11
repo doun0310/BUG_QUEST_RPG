@@ -13,6 +13,8 @@ import { createAccount, login, logout, switchAccount, isLoggedIn, getCurrentAcco
 import { calculateElementalDamage, canEnrage, isDailyClaimAvailable } from './services/gameRules';
 import { getAssignedWorkloadMembers, recalculateWorkload } from './services/workloadService';
 import { createAccountDemoData } from './services/accountDemoService';
+import { escapeHtml, safeExternalUrl } from './services/inputSafety';
+import { validateIssueInput } from './services/issueValidation';
 
 const workloadFixture: TeamMemberCapacity[] = [
   { userName: 'Alex', role: 'Frontend Dev', vacationDays: 0, totalSprintDays: 10, workingHoursPerDay: 8, deepWorkLimitRatio: 0.7, availableHours: 56, assignedHours: 12, isOverloaded: false },
@@ -80,6 +82,19 @@ describe('Connected Account Demo Data', () => {
     expect(demo.monsters.every(item => item.title.startsWith('[샘플]'))).toBe(true);
     expect(demo.monsters[0].title).toContain('React Query 캐시 무효화');
     expect(demo.monsters[1].dialogue).toContain('중복 결제');
+  });
+});
+
+describe('Issue quality safeguards', () => {
+  it('escapes user text and rejects unsafe external URLs', () => {
+    expect(escapeHtml('<img src=x onerror=alert(1)>')).toContain('&lt;img');
+    expect(safeExternalUrl('javascript:alert(1)')).toBeNull();
+    expect(safeExternalUrl('https://github.com/example/repo')).toBe('https://github.com/example/repo');
+  });
+
+  it('validates issue content before it is saved', () => {
+    expect(validateIssueInput({ title: 'x', assignee: 'A', dueDate: '', estimatedHours: 0, dialogue: '' })).toBeTruthy();
+    expect(validateIssueInput({ title: '로그인 API가 500을 반환함', assignee: 'Lee John', dueDate: '내일 10:00', estimatedHours: 8, dialogue: '재현 절차를 확인합니다.' })).toBeNull();
   });
 });
 

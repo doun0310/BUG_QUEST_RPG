@@ -14,7 +14,6 @@ export function renderOverview(state: AppState): string {
   return `
     <section class="product-overview" aria-labelledby="overview-title">
       <div class="overview-intro">
-        <div class="eyebrow">${icon('overview', '', 14)} TEAM OVERVIEW</div>
         <h2 id="overview-title">오늘의 개발 현황</h2>
         <p>${nextIssue ? `<strong>${nextIssue.title}</strong> 이슈가 현재 가장 높은 우선순위입니다.` : '현재 처리할 활성 이슈가 없습니다. 좋은 흐름입니다.'}</p>
       </div>

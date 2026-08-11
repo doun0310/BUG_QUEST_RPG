@@ -27,13 +27,6 @@ export function renderHeader(state: AppState): string {
         </div>
       </div>
 
-      <nav class="product-nav" aria-label="주요 메뉴">
-        <span class="is-active">${icon('overview', '', 14)} 개요</span>
-        <span>${icon('bug', '', 14)} 이슈</span>
-        <span>${icon('pr', '', 14)} Pull requests</span>
-        <span>${icon('chart', '', 14)} 인사이트</span>
-      </nav>
-
       <!-- Stat Bars & Controls -->
       <div class="user-badge-container header-controls">
 

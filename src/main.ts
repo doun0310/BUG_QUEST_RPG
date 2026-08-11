@@ -33,6 +33,8 @@ import { calculateElementalDamage, canEnrage, isDailyClaimAvailable } from './se
 import { recalculateWorkload } from './services/workloadService';
 import { fetchProjectSnapshot, getProjectApiConfig, saveProjectApiConfig, saveProjectSnapshot, verifyProjectApi } from './services/projectApiService';
 import { createAccountDemoData } from './services/accountDemoService';
+import { escapeHtml } from './services/inputSafety';
+import { validateIssueInput } from './services/issueValidation';
 
 import { 
   mockUser, 
@@ -1099,8 +1101,11 @@ renderModals = function renderModals() {
             HP: <strong>${coopBossState.currentHp} / ${coopBossState.maxHp}</strong> | 최종 보상: <strong style="color: var(--warning);">${coopBossState.rewardItem}</strong>
           </div>
 
-          <div class="hp-bar-outer" style="height: 12px; margin-bottom: 1rem;">
-            <div style="width: ${(coopBossState.currentHp / coopBossState.maxHp) * 100}%; height: 100%; background: var(--danger); border-radius: 3px;"></div>
+          <div class="monster-hp-frame monster-hp-boss" style="margin-bottom: 1rem;">
+            <div class="monster-hp-label"><span>RAID BOSS HP</span><strong>${coopBossState.currentHp} / ${coopBossState.maxHp}</strong></div>
+            <div class="hp-bar-outer monster-hp-bar">
+              <div class="hp-bar-inner" style="width: ${(coopBossState.currentHp / coopBossState.maxHp) * 100}%; background: var(--danger);"></div>
+            </div>
           </div>
 
           <div style="background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border); margin-bottom: 1rem; text-align: left;">
@@ -1338,7 +1343,7 @@ renderModals = function renderModals() {
           <form id="form-vacation">
             <div class="form-group">
               <label>신청자 이름</label>
-              <input type="text" class="form-input" id="vacation-user" value="${userState.name}" required />
+              <input type="text" class="form-input" id="vacation-user" value="${escapeHtml(userState.name)}" required />
             </div>
             <div class="form-group">
               <label>구분</label>
@@ -1375,8 +1380,8 @@ renderModals = function renderModals() {
               ${vacationsState.map(request => `
                 <div style="display:flex; align-items:center; gap:0.5rem; padding:0.55rem 0.65rem; background:var(--inner-box-bg); border:1px solid var(--panel-border); border-radius:7px;">
                   <div style="min-width:0; flex:1; font-size:0.75rem;">
-                    <strong>${request.userName}</strong> · ${request.type} ${request.days}일
-                    <span style="display:block; margin-top:0.12rem; color:var(--text-sub);">${request.startDate} ~ ${request.endDate} · ${request.reason}</span>
+                    <strong>${escapeHtml(request.userName)}</strong> · ${escapeHtml(request.type)} ${request.days}일
+                    <span style="display:block; margin-top:0.12rem; color:var(--text-sub);">${escapeHtml(request.startDate)} ~ ${escapeHtml(request.endDate)} · ${escapeHtml(request.reason)}</span>
                   </div>
                   <span class="badge" style="white-space:nowrap;">${request.status}</span>
                   ${request.status === '대기' ? `<div style="display:flex; gap:0.25rem;"><button type="button" class="action-btn btn-vacation-status" data-id="${request.id}" data-status="승인" style="padding:0.32rem 0.48rem; font-size:0.68rem;">승인</button><button type="button" class="action-btn action-btn-secondary btn-vacation-status" data-id="${request.id}" data-status="반려" style="padding:0.32rem 0.48rem; font-size:0.68rem;">반려</button></div>` : ''}
@@ -1531,7 +1536,7 @@ renderModals = function renderModals() {
                   <div style="flex: 1;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
                       <strong style="font-size: 0.85rem; color: ${m.status === 'Defeated' ? 'var(--text-sub)' : 'var(--text-main)'};">
-                        ${m.title}
+                        ${escapeHtml(m.title)}
                       </strong>
                       <span class="badge ${m.status === 'Defeated' ? 'badge-success' : 'badge-danger'}">
                         ${m.status === 'Defeated' ? '🏆 토벌 도감 등록' : m.severity}
@@ -1786,14 +1791,19 @@ attachEvents = function attachEvents() {
 
   document.querySelector('#form-create-monster')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const title = (document.querySelector('#new-monster-title') as HTMLInputElement).value;
+    const title = (document.querySelector('#new-monster-title') as HTMLInputElement).value.trim();
     const severity = (document.querySelector('#new-monster-severity') as HTMLSelectElement).value as 'Critical' | 'Major' | 'Minor';
-    const assignee = (document.querySelector('#new-monster-assignee') as HTMLInputElement).value;
-    const dueDate = (document.querySelector('#new-monster-duedate') as HTMLInputElement).value;
+    const assignee = (document.querySelector('#new-monster-assignee') as HTMLInputElement).value.trim();
+    const dueDate = (document.querySelector('#new-monster-duedate') as HTMLInputElement).value.trim();
     const selectedImage = (document.querySelector('#new-monster-image') as HTMLSelectElement)?.value;
     const estimatedHours = Math.max(1, parseInt((document.querySelector('#new-monster-hours') as HTMLInputElement).value, 10) || 8);
     const elementTrait = (document.querySelector('#new-monster-element') as HTMLSelectElement).value as BugMonster['elementTrait'];
     const dialogue = (document.querySelector('#new-monster-dialogue') as HTMLTextAreaElement).value.trim();
+    const validationError = validateIssueInput({ title, assignee, dueDate, estimatedHours, dialogue });
+    if (validationError) {
+      showToast(validationError, 'warning');
+      return;
+    }
 
     const hpMap: Record<'Critical' | 'Major' | 'Minor', number> = { Critical: 1000, Major: 500, Minor: 200 };
     const xpMap: Record<'Critical' | 'Major' | 'Minor', number> = { Critical: 500, Major: 250, Minor: 100 };

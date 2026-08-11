@@ -1,5 +1,6 @@
 import type { AppState } from '../store';
 import { icon } from '../icons';
+import { escapeHtml, safeExternalUrl } from '../services/inputSafety';
 
 export function renderMonsterBoard(state: AppState): string {
   const {
@@ -37,11 +38,8 @@ export function renderMonsterBoard(state: AppState): string {
 
   return `
     <!-- Activity Log -->
-    <div class="activity-log">
-      <p class="activity-log-label">
-        ${icon('activity', 'color:var(--primary)', 12)} LIVE ACTIVITY
-      </p>
-      <div id="dq-battle-log" style="font-size: 0.82rem; color: var(--text-main); line-height: 1.55;">
+    <div class="activity-log" aria-label="최근 활동">
+      <div id="dq-battle-log" aria-live="polite" style="font-size: 0.82rem; color: var(--text-main); line-height: 1.55;">
         ${battleLogMessage}
       </div>
     </div>
@@ -121,9 +119,10 @@ export function renderMonsterBoard(state: AppState): string {
         const hpPct = (m.currentHp / m.maxHp) * 100;
         const accent = severityAccent(m);
         const elemLabel = elementIcon[m.elementTrait || 'Frontend'] || elementIcon['Frontend'];
+        const safePrUrl = safeExternalUrl(m.prUrl);
 
         return `
-          <div class="card monster-card-animated ${isEnraged ? 'enraged-monster-card' : ''} ${isHit ? 'monster-impact' : ''} ${isCriticalImpact ? 'monster-impact-critical' : ''}"
+          <div class="card monster-card-animated ${m.isBoss ? 'boss-monster-card' : ''} ${isEnraged ? 'enraged-monster-card' : ''} ${isHit ? 'monster-impact' : ''} ${isCriticalImpact ? 'monster-impact-critical' : ''}"
             style="border-left: 3px solid ${accent}; padding: 0;">
 
             <div class="dq-monster-container" style="margin: 0; border: none; background: transparent; border-radius: 16px; padding: 1rem 1.15rem;">
@@ -142,7 +141,7 @@ export function renderMonsterBoard(state: AppState): string {
                 <!-- Title Row -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.3rem;">
                   <h3 style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-                    ${m.title}
+                    ${escapeHtml(m.title)}
                     ${isEnraged ? `<span class="badge badge-danger low-hp-warning" style="border-radius: 99px; display: inline-flex; align-items: center; gap: 0.25rem;">${icon('fire', 'color:var(--danger)', 10)} 광포화</span>` : ''}
                   </h3>
                   <div style="display: flex; gap: 0.3rem; align-items: center; flex-shrink: 0;">
@@ -158,7 +157,7 @@ export function renderMonsterBoard(state: AppState): string {
                 <!-- Monster Dialogue -->
                 ${m.dialogue && m.status === 'Active' ? `
                   <div style="background: rgba(129, 140, 248, 0.06); border-left: 2px solid var(--primary); padding: 0.25rem 0.55rem; font-size: 0.7rem; color: var(--text-muted); font-style: italic; border-radius: 0 6px 6px 0; margin-bottom: 0.35rem; display: flex; align-items: flex-start; gap: 0.35rem;">
-                    ${icon('chat', 'color:var(--primary);flex-shrink:0;margin-top:1px', 12)} "${m.dialogue}"
+                    ${icon('chat', 'color:var(--primary);flex-shrink:0;margin-top:1px', 12)} "${escapeHtml(m.dialogue)}"
                   </div>
                 ` : ''}
 
@@ -167,19 +166,17 @@ export function renderMonsterBoard(state: AppState): string {
                   <div style="font-size: 0.7rem; color: ${isEnraged ? 'var(--danger)' : 'var(--text-muted)'}; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.3rem; ${isEnraged ? 'font-weight: 600;' : ''}">
                     ${isEnraged
                       ? icon('warning', 'color:var(--danger)', 12) + ' 마감 초과 — 광포화! 공격력 2배 & 개발자 HP -30'
-                      : icon('clock', '', 12) + ` 마감: ${m.dueDate}`}
+                      : icon('clock', '', 12) + ` 마감: ${escapeHtml(m.dueDate)}`}
                   </div>
                 ` : ''}
 
                 <!-- HP Bar -->
-                <div style="margin-bottom: 0.35rem;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 0.18rem; align-items: center;">
-                    <span style="display: flex; align-items: center; gap: 0.25rem; color: var(--text-muted);">
-                      ${icon('shield', '', 11)} HP
-                    </span>
-                    <span style="color: var(--text-main); font-weight: 600;">${m.currentHp.toLocaleString()} / ${m.maxHp.toLocaleString()}</span>
+                <div class="monster-hp-frame ${m.isBoss ? 'monster-hp-boss' : ''}" style="margin-bottom: 0.45rem;">
+                  <div class="monster-hp-label">
+                    <span>${m.isBoss ? 'BOSS HP' : 'ENEMY HP'}</span>
+                    <strong>${m.currentHp.toLocaleString()} / ${m.maxHp.toLocaleString()}</strong>
                   </div>
-                  <div class="hp-bar-outer">
+                  <div class="hp-bar-outer monster-hp-bar">
                     <div class="hp-bar-inner" style="width: ${hpPct}%;${isEnraged ? ' background: linear-gradient(90deg, var(--danger), #fb923c);' : ''}"></div>
                   </div>
                 </div>
@@ -191,11 +188,11 @@ export function renderMonsterBoard(state: AppState): string {
                       ${icon('crystal', 'color:var(--warning)', 12)} +${m.rewardXp} XP
                     </span>
                     <span style="display: flex; align-items: center; gap: 0.2rem; color: var(--text-muted);">
-                      ${icon('target', '', 11)} ${m.assignee}
+                      ${icon('target', '', 11)} ${escapeHtml(m.assignee)}
                     </span>
-                    <button class="assignee-edit-btn btn-edit-monster" data-id="${m.id}" aria-label="${m.title} 수정">${icon('settings', '', 12)} 수정</button>
-                    ${m.status === 'Active' ? `<button class="assignee-edit-btn btn-reassign-assignee" data-id="${m.id}" aria-label="${m.title} 담당자 변경">${icon('users', '', 12)} 담당 변경</button>` : ''}
-                    ${m.prUrl ? `<a href="${m.prUrl}" target="_blank" style="color: var(--primary-light); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 0.2rem;">${icon('pr', 'color:var(--primary-light)', 12)} PR</a>` : ''}
+                    <button class="assignee-edit-btn btn-edit-monster" data-id="${escapeHtml(m.id)}" aria-label="${escapeHtml(m.title)} 수정">${icon('settings', '', 12)} 수정</button>
+                    ${m.status === 'Active' ? `<button class="assignee-edit-btn btn-reassign-assignee" data-id="${escapeHtml(m.id)}" aria-label="${escapeHtml(m.title)} 담당자 변경">${icon('users', '', 12)} 담당 변경</button>` : ''}
+                    ${safePrUrl ? `<a href="${escapeHtml(safePrUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-light); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 0.2rem;">${icon('pr', 'color:var(--primary-light)', 12)} PR</a>` : ''}
                   </div>
 
                   ${m.status === 'Active' ? `

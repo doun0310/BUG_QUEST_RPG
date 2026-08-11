@@ -1,5 +1,5 @@
 import type { AppState } from '../store';
-import { calculateCapacity, mockDailySummary } from '../mockData';
+import { calculateCapacity } from '../mockData';
 import { icon } from '../icons';
 import { getAssignedWorkloadMembers } from '../services/workloadService';
 
@@ -50,11 +50,6 @@ export function renderSidebar(state: AppState): string {
       <section class="card compact-card">
         <div class="card-header"><h3 class="card-title">${icon('clock', 'color:var(--primary-light)', 15)} 부재 일정</h3></div>
         <div class="schedule-list">${vacationsState.map(v => `<div><span>${icon('leaf', 'color:var(--success)', 12)} <strong>${v.userName}</strong> <small>${v.type}</small></span><time>${v.startDate.substring(5)}</time></div>`).join('')}</div>
-      </section>
-
-      <section class="card compact-card">
-        <div class="card-header"><h3 class="card-title">${icon('checklist', 'color:var(--primary-light)', 15)} 오늘의 요약</h3><button class="icon-button" id="btn-generate-ai" aria-label="요약 갱신">${icon('robot', '', 14)}</button></div>
-        <div class="daily-summary"><div class="summary-done"><span>완료</span><p>${mockDailySummary.doneToday[0]}</p></div><div class="summary-next"><span>다음</span><p>${mockDailySummary.planTomorrow[0]}</p></div></div>
       </section>
     </aside>`;
 }
