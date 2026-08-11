@@ -1,13 +1,14 @@
 import type { AppState } from '../store';
 import { calculateCapacity } from '../mockData';
 import { icon } from '../icons';
+import { getAssignedWorkloadMembers } from '../services/workloadService';
 
 /** Product-focused landing summary. Game progress stays present, but never competes with work priorities. */
 export function renderOverview(state: AppState): string {
   const active = state.monstersState.filter(m => m.status === 'Active');
   const critical = active.filter(m => m.severity === 'Critical' || m.isOverdue).length;
-  const capacity = calculateCapacity(state.teamState);
-  const load = Math.round((capacity.assignedHours / capacity.availableHours) * 100);
+  const capacity = calculateCapacity(getAssignedWorkloadMembers(state.teamState, state.monstersState));
+  const load = capacity.availableHours > 0 ? Math.round((capacity.assignedHours / capacity.availableHours) * 100) : 0;
   const nextIssue = active[0];
 
   return `

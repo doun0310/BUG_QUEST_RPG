@@ -29,6 +29,7 @@ export interface AuthState {
 }
 
 const AUTH_KEY = 'bug_tracker_auth';
+const LEGACY_DEMO_ACCOUNT_NAMES = new Set(['김개발', '김개발 (Hero)', '이백엔드', '이벡엔드', '이디자인', '박백엔드', '박풀스택', '최PM', '최디자인']);
 const inMemoryStore: Record<string, string> = {};
 let accountIdSequence = 0;
 
@@ -191,6 +192,26 @@ export function getCurrentAccount(): Account | null {
 
 export function getAllAccounts(): Account[] {
   return loadAuthState().accounts;
+}
+
+/** One-time migration that removes accounts bundled with the former demo build. */
+export function purgeLegacyDemoAccounts(): number {
+  const state = loadAuthState();
+  const retained = state.accounts.filter(account => !LEGACY_DEMO_ACCOUNT_NAMES.has(account.displayName));
+  const removedCurrentAccount = state.currentAccountId && !retained.some(account => account.id === state.currentAccountId);
+  const removed = state.accounts.length - retained.length;
+  if (!removed) return 0;
+
+  state.accounts = retained;
+  if (removedCurrentAccount) {
+    state.currentAccountId = null;
+    state.isLocked = false;
+    removeItem('userState');
+    removeItem('monstersState');
+    removeItem('vacationsState');
+  }
+  saveAuthState(state);
+  return removed;
 }
 
 const DEFAULT_AVATARS: Record<string, AccountAvatar> = {

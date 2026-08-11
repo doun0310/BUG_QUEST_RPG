@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { calculateCapacity, mockTeamMembers } from './mockData';
+import { calculateCapacity } from './mockData';
+import type { TeamMemberCapacity } from './types';
 import { store } from './store';
 import { t, setLang } from './i18n';
 import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig } from './services/githubService';
@@ -10,20 +11,75 @@ import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './se
 import { parseLcovContent } from './services/lcovParser';
 import { createAccount, login, logout, switchAccount, isLoggedIn, getCurrentAccount, deleteAccount, lockSession, unlockSession, isSessionLocked, resetAuthStateForTesting } from './services/authService';
 import { calculateElementalDamage, canEnrage, isDailyClaimAvailable } from './services/gameRules';
+import { getAssignedWorkloadMembers, recalculateWorkload } from './services/workloadService';
+import { createAccountDemoData } from './services/accountDemoService';
+
+const workloadFixture: TeamMemberCapacity[] = [
+  { userName: 'Alex', role: 'Frontend Dev', vacationDays: 0, totalSprintDays: 10, workingHoursPerDay: 8, deepWorkLimitRatio: 0.7, availableHours: 56, assignedHours: 12, isOverloaded: false },
+  { userName: 'Morgan', role: 'Backend Dev', vacationDays: 0, totalSprintDays: 10, workingHoursPerDay: 8, deepWorkLimitRatio: 0.7, availableHours: 56, assignedHours: 8, isOverloaded: false },
+];
 
 describe('CMS Workload Capacity Calculations', () => {
   it('should correctly calculate total available and assigned hours for team members', () => {
-    const capacity = calculateCapacity(mockTeamMembers);
+    const capacity = calculateCapacity(workloadFixture);
     
     expect(capacity.totalSprintDays).toBe(10);
     expect(capacity.workingHoursPerDay).toBe(8);
-    expect(capacity.members.length).toBe(4);
+    expect(capacity.members.length).toBe(2);
     
-    // Sum of availableHours = 45 + 50 + 50 + 56 = 201
-    expect(capacity.availableHours).toBe(201);
-    // Sum of assignedHours = 52 + 38 + 48 + 40 = 178
-    expect(capacity.assignedHours).toBe(178);
-    expect(capacity.isOverloaded).toBe(true);
+    expect(capacity.availableHours).toBe(112);
+    expect(capacity.assignedHours).toBe(20);
+    expect(capacity.isOverloaded).toBe(false);
+  });
+
+  it('should reflect each member schedule in the team summary', () => {
+    const capacity = calculateCapacity([
+      { ...workloadFixture[0], totalSprintDays: 8, workingHoursPerDay: 6, deepWorkLimitRatio: 0.5 },
+      { ...workloadFixture[1], totalSprintDays: 8, workingHoursPerDay: 10, deepWorkLimitRatio: 0.9 },
+    ]);
+
+    expect(capacity.totalSprintDays).toBe(8);
+    expect(capacity.workingHoursPerDay).toBe(8);
+    expect(capacity.deepWorkLimitRatio).toBeCloseTo(0.7);
+  });
+
+  it('should apply approved leave and assigned issue estimates to workload', () => {
+    const [member] = recalculateWorkload(
+      [{ ...workloadFixture[0], vacationDays: 0, assignedHours: 0, isOverloaded: false }],
+      [{ id: 'leave-1', userName: 'Alex', type: '연차', startDate: '2026-08-10', endDate: '2026-08-11', days: 2, status: '승인', reason: '휴가' }],
+      [{ id: 'bug-1', title: '테스트 버그', severity: 'Minor', status: 'Active', currentHp: 10, maxHp: 10, rewardXp: 1, isBoss: false, assignee: 'Alex', estimatedHours: 12 }]
+    );
+
+    expect(member.vacationDays).toBe(2);
+    expect(member.availableHours).toBe(45);
+    expect(member.assignedHours).toBe(12);
+    expect(member.isOverloaded).toBe(false);
+  });
+
+  it('should show only members with active assigned work in workload views', () => {
+    const members = [workloadFixture[0], workloadFixture[1]];
+    const assigned = getAssignedWorkloadMembers(members, [{
+      id: 'bug-2', title: '배정된 이슈', severity: 'Major', status: 'Active', currentHp: 50, maxHp: 50,
+      rewardXp: 50, isBoss: false, assignee: 'Morgan'
+    }]);
+
+    expect(assigned.map(member => member.userName)).toEqual(['Morgan']);
+  });
+});
+
+describe('Connected Account Demo Data', () => {
+  it('creates assigned sample work from registered account names only', () => {
+    const demo = createAccountDemoData([
+      { id: 'acc-1', displayName: 'Lee John', heroClass: '전사 (Frontend)', avatar: { iconSymbol: '⚡' } },
+      { id: 'acc-2', displayName: 'Choi Mina', heroClass: '마법사 (Backend)', avatar: { iconSymbol: '💻' } },
+    ] as any, '2026-08-11');
+
+    expect(demo.monsters).toHaveLength(5);
+    expect(demo.monsters.slice(0, 2).map(item => item.assignee)).toEqual(['Lee John', 'Choi Mina']);
+    expect(demo.leaderboard.map(item => item.userName)).toEqual(['Lee John', 'Choi Mina']);
+    expect(demo.monsters.every(item => item.title.startsWith('[샘플]'))).toBe(true);
+    expect(demo.monsters[0].title).toContain('React Query 캐시 무효화');
+    expect(demo.monsters[1].dialogue).toContain('중복 결제');
   });
 });
 
@@ -36,7 +92,7 @@ describe('Store & State Management', () => {
 
   it('should initialize with default state and allow updates', () => {
     const initialState = store.getState();
-    expect(initialState.userState.name).toBe('김개발 (Hero)');
+    expect(initialState.userState.name).toBe('새 개발자');
     expect(initialState.bugFilter).toBe('all');
 
     store.setState({ bugFilter: 'active' });

@@ -130,7 +130,7 @@ function renderStep2(members: TeamMemberInput[], errorMsg: string): string {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem;">
           <div class="form-group">
             <label style="font-size:0.7rem;color:var(--text-sub);">이름</label>
-            <input type="text" class="form-input" id="wiz-new-name" placeholder="예: 김개발" style="font-size:0.83rem;" />
+            <input type="text" class="form-input" id="wiz-new-name" placeholder="예: 홍길동" style="font-size:0.83rem;" />
           </div>
           <div class="form-group">
             <label style="font-size:0.7rem;color:var(--text-sub);">직업 클래스</label>

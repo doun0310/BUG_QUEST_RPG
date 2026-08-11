@@ -1,11 +1,13 @@
 import type { AppState } from '../store';
 import { calculateCapacity, mockDailySummary } from '../mockData';
 import { icon } from '../icons';
+import { getAssignedWorkloadMembers } from '../services/workloadService';
 
 export function renderSidebar(state: AppState): string {
   const { userState, teamState, vacationsState } = state;
-  const capacity = calculateCapacity(teamState);
-  const loadPct = Math.min(100, Math.round((capacity.assignedHours / capacity.availableHours) * 100));
+  const assignedMembers = getAssignedWorkloadMembers(teamState, state.monstersState);
+  const capacity = calculateCapacity(assignedMembers);
+  const loadPct = capacity.availableHours > 0 ? Math.min(100, Math.round((capacity.assignedHours / capacity.availableHours) * 100)) : 0;
 
   return `
     <aside class="workspace-sidebar">
@@ -28,10 +30,10 @@ export function renderSidebar(state: AppState): string {
         <div class="capacity-summary"><div><span>이번 스프린트</span><strong>${capacity.assignedHours} / ${capacity.availableHours}h</strong></div><strong class="capacity-percent">${loadPct}%</strong></div>
         <div class="progress-track"><div class="progress-value ${capacity.isOverloaded ? 'is-danger' : ''}" style="width:${loadPct}%"></div></div>
         <div class="member-load-list">
-          ${capacity.members.map(m => {
+          ${capacity.members.length ? capacity.members.map(m => {
             const percent = Math.min(100, Math.round((m.assignedHours / m.availableHours) * 100));
             return `<div class="member-load"><div><span>${m.userName}</span><small>${m.role}</small></div><strong class="${m.isOverloaded ? 'text-danger' : ''}">${m.assignedHours}/${m.availableHours}h</strong><div class="member-progress"><i class="${m.isOverloaded ? 'is-danger' : ''}" style="width:${percent}%"></i></div></div>`;
-          }).join('')}
+          }).join('') : `<p style="margin:0; padding:.45rem 0; color:var(--text-sub); font-size:.75rem;">현재 업무가 배정된 팀원이 없습니다.</p>`}
         </div>
       </section>
 

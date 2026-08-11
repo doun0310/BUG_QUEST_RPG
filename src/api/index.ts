@@ -1,41 +1,26 @@
 import type { BugMonster, VacationRequest, WebhookPayload } from '../types';
-import { showToast } from '../toastManager';
+import { fetchProjectSnapshot, projectApiRequest } from '../services/projectApiService';
 
-// Simulated API Client layer
+// Production API client. The browser never manufactures successful responses:
+// the configured backend is the source of truth.
 export const api = {
   async fetchMonsters(): Promise<BugMonster[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const stored = localStorage.getItem('monstersState');
-        resolve(stored ? JSON.parse(stored) : []);
-      }, 150);
-    });
+    return (await fetchProjectSnapshot())?.monstersState || [];
   },
 
-  async attackMonster(_monsterId: string, damage: number): Promise<{ success: boolean; isDefeated: boolean }> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        showToast(`[API Sync] PR Merge 공격 요청 성공 (-${damage} HP)`, 'success');
-        resolve({ success: true, isDefeated: false });
-      }, 200);
+  async attackMonster(monsterId: string, damage: number): Promise<{ success: boolean; isDefeated: boolean }> {
+    return projectApiRequest(`/v1/monsters/${encodeURIComponent(monsterId)}/attacks`, {
+      method: 'POST', body: JSON.stringify({ damage }),
     });
   },
 
   async submitVacation(request: Partial<VacationRequest>): Promise<boolean> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        showToast(`[API Sync] ${request.type} 신청이 승인 서버로 등록되었습니다.`, 'success');
-        resolve(true);
-      }, 200);
-    });
+    await projectApiRequest('/v1/vacations', { method: 'POST', body: JSON.stringify(request) });
+    return true;
   },
 
-  async sendWebhook(_payload: Partial<WebhookPayload>): Promise<boolean> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        showToast(`[API Sync] Webhook 이벤트 전송 완료`, 'info');
-        resolve(true);
-      }, 150);
-    });
+  async sendWebhook(payload: Partial<WebhookPayload>): Promise<boolean> {
+    await projectApiRequest('/v1/webhooks/events', { method: 'POST', body: JSON.stringify(payload) });
+    return true;
   }
 };

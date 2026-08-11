@@ -11,10 +11,10 @@ import { particleService } from './services/particleService';
 import { generateMonsterPreset } from './services/monsterPresetEngine';
 import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './services/webhookNotifier';
 import { parseLcovContent } from './services/lcovParser';
-import { isLoggedIn, login, logout, createAccount, switchAccount, saveCurrentGameStateToAccount, getCurrentAccount, lockSession, unlockSession, isSessionLocked } from './services/authService';
+import { isLoggedIn, login, logout, createAccount, switchAccount, saveCurrentGameStateToAccount, getCurrentAccount, getAllAccounts, lockSession, unlockSession, isSessionLocked, purgeLegacyDemoAccounts } from './services/authService';
 import { renderLoginScreen } from './components/LoginScreen';
 import { renderOnboardingWizard, type WizardStep } from './components/OnboardingWizard';
-import { isOnboardingComplete, completeOnboarding, loadTeamSettings, saveTeamSettings, resetOnboarding, toTeamMemberCapacity } from './services/teamSettingsService';
+import { isOnboardingComplete, completeOnboarding, loadTeamSettings, saveTeamSettings, resetOnboarding, toTeamMemberCapacity, addAccountAsTeamMember } from './services/teamSettingsService';
 import type { TeamMemberInput } from './types';
 import { store } from './store';
 import { icon } from './icons';
@@ -31,6 +31,8 @@ import { renderOverview } from './components/Overview';
 import { updateAccountProfile } from './services/authService';
 import { calculateElementalDamage, canEnrage, isDailyClaimAvailable } from './services/gameRules';
 import { recalculateWorkload } from './services/workloadService';
+import { fetchProjectSnapshot, getProjectApiConfig, saveProjectApiConfig, saveProjectSnapshot, verifyProjectApi } from './services/projectApiService';
+import { createAccountDemoData } from './services/accountDemoService';
 
 import { 
   mockUser, 
@@ -46,7 +48,7 @@ import {
   mockGuildWar,
   mockTeamCoopBoss
 } from './mockData';
-import type { VacationRequest, BugMonster, WebhookPayload, WeeklyQuest, TeamCoopBoss } from './types';
+import type { VacationRequest, BugMonster, WebhookPayload, WeeklyQuest, TeamCoopBoss, WeeklyRank } from './types';
 
 let currentTheme: 'dark' | 'light' | 'matrix' = 'dark';
 try {
@@ -61,10 +63,19 @@ try {
 let storedUser = null;
 let storedMonsters = null;
 let storedProgress = null;
+let storedVacations = null;
+let storedWebhooks = null;
+let storedLeaderboard = null;
+const legacyDemoNames = new Set(['김개발', '김개발 (Hero)', '이백엔드', '이벡엔드', '이디자인', '박백엔드', '박풀스택', '최PM', '최디자인']);
+const legacyDemoIssueIds = new Set(['b1', 'b2', 'b4', 'b5']);
+purgeLegacyDemoAccounts();
 try {
   storedUser = localStorage.getItem('userState');
   storedMonsters = localStorage.getItem('monstersState');
   storedProgress = localStorage.getItem('gameProgressState');
+  storedVacations = localStorage.getItem('vacationsState');
+  storedWebhooks = localStorage.getItem('webhooksState');
+  storedLeaderboard = localStorage.getItem('leaderboardState');
 } catch {
   // fallback
 }
@@ -73,13 +84,44 @@ let vacationsState: VacationRequest[] = [...mockVacations];
 let teamState = [...mockTeamMembers];
 let monstersState: BugMonster[] = [...mockMonsters];
 let webhooksState: WebhookPayload[] = [...mockWebhooks];
+let leaderboardState: WeeklyRank[] = [...mockWeeklyLeaderboard];
 let questsState: WeeklyQuest[] = [...mockWeeklyQuests];
 let userState = { ...mockUser };
 let coopBossState: TeamCoopBoss = { ...mockTeamCoopBoss };
 const dungeonProgress: Record<string, boolean> = { frontend: false, api: false, infra: false };
 
+function includeExistingAccountsInWorkload() {
+  const knownNames = new Set(teamState.map(member => member.userName));
+  const template = teamState[0] ?? { totalSprintDays: 10, workingHoursPerDay: 8, deepWorkLimitRatio: 0.7 };
+  getAllAccounts().forEach(account => {
+    if (knownNames.has(account.displayName)) return;
+    teamState.push({
+      userName: account.displayName,
+      role: account.heroClass,
+      vacationDays: 0,
+      totalSprintDays: template.totalSprintDays,
+      workingHoursPerDay: template.workingHoursPerDay,
+      deepWorkLimitRatio: template.deepWorkLimitRatio,
+      availableHours: 0,
+      assignedHours: 0,
+      isOverloaded: false,
+    });
+  });
+}
+
+// Restore the configured team before any workload calculation. Without this,
+// a refresh would fall back to demo members and assignments could not match.
+let savedTeamSettings = loadTeamSettings();
+const cleanedMembers = savedTeamSettings.members.filter(member => !legacyDemoNames.has(member.name));
+if (cleanedMembers.length !== savedTeamSettings.members.length) {
+  savedTeamSettings = saveTeamSettings({ members: cleanedMembers });
+}
+if (savedTeamSettings.members.length > 0) {
+  teamState = toTeamMemberCapacity(savedTeamSettings.members, savedTeamSettings.sprintDays);
+}
+
 try {
-  if (storedMonsters) monstersState = JSON.parse(storedMonsters);
+  if (storedMonsters) monstersState = JSON.parse(storedMonsters).filter((monster: BugMonster) => !legacyDemoNames.has(monster.assignee) && !legacyDemoIssueIds.has(monster.id));
 } catch {
   monstersState = [...mockMonsters];
 }
@@ -94,10 +136,57 @@ try {
   userState = { ...mockUser };
 }
 
+try {
+  if (storedVacations) vacationsState = JSON.parse(storedVacations).filter((request: VacationRequest) => !legacyDemoNames.has(request.userName));
+} catch {
+  vacationsState = [...mockVacations];
+}
+
+try {
+  if (storedWebhooks) webhooksState = JSON.parse(storedWebhooks);
+  if (storedLeaderboard) leaderboardState = JSON.parse(storedLeaderboard);
+} catch { /* retain empty defaults */ }
+
 function saveState() {
   localStorage.setItem('userState', JSON.stringify(userState));
   localStorage.setItem('monstersState', JSON.stringify(monstersState));
   localStorage.setItem('gameProgressState', JSON.stringify({ dungeonProgress }));
+  localStorage.setItem('vacationsState', JSON.stringify(vacationsState));
+  localStorage.setItem('webhooksState', JSON.stringify(webhooksState));
+  localStorage.setItem('leaderboardState', JSON.stringify(leaderboardState));
+  scheduleRemoteSync();
+}
+
+let remoteSyncTimer: number | undefined;
+function projectSnapshot() {
+  return { userState, monstersState, vacationsState, webhooksState, leaderboardState, questsState, coopBossState, dungeonProgress };
+}
+
+function scheduleRemoteSync() {
+  window.clearTimeout(remoteSyncTimer);
+  remoteSyncTimer = window.setTimeout(() => {
+    saveProjectSnapshot(projectSnapshot()).catch(() => {
+      // Local storage stays available for offline work; the next update retries.
+    });
+  }, 500);
+}
+
+async function hydrateRemoteProjectState() {
+  try {
+    const remote = await fetchProjectSnapshot();
+    if (!remote) return;
+    if (remote.userState) userState = remote.userState;
+    if (remote.monstersState) monstersState = remote.monstersState;
+    if (remote.vacationsState) vacationsState = remote.vacationsState;
+    if (remote.webhooksState) webhooksState = remote.webhooksState;
+    if (remote.leaderboardState) leaderboardState = remote.leaderboardState;
+    if (remote.questsState) questsState = remote.questsState;
+    if (remote.coopBossState) coopBossState = remote.coopBossState;
+    if (remote.dungeonProgress) Object.assign(dungeonProgress, remote.dungeonProgress);
+    saveState();
+  } catch (error) {
+    console.warn('Project API 동기화에 실패하여 로컬 데이터를 사용합니다.', error);
+  }
 }
 
 let simExtraDevs: number = 0;
@@ -113,6 +202,8 @@ let isSkillActiveNextAttack: boolean = false;
 // Modal States
 let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'dungeonMap' | 'dailyRoulette' | 'reassign' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'skillTree' | 'teamSettings' | 'userProfile' | null = null;
 const dailyRewardKey = 'bug_quest_daily_reward_date';
+const accountDemoSeedKey = 'bug_quest_account_demo_seed';
+const accountDemoVersion = 'realistic-bugs-v3';
 /** Daily rewards follow the product's Korean business day, not UTC midnight. */
 const todayKey = () => {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -131,6 +222,7 @@ let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
 let reassignTargetId: string | null = null;
+let editingMonsterId: string | null = null;
 
 let burnChartInstance: Chart | null = null;
 let radarChartInstance: Chart | null = null;
@@ -182,6 +274,9 @@ function renderApp() {
 
   // 온보딩 미완료 시 위저드 표시
   if (!isOnboardingComplete()) {
+    if (!isOnboardingActive) {
+      wizardMembers = loadTeamSettings().members.map(member => ({ ...member }));
+    }
     isOnboardingActive = true;
     appContainer.innerHTML = renderOnboardingWizard(wizardStep, wizardMembers, wizardErrorMsg);
     attachWizardEvents();
@@ -189,6 +284,7 @@ function renderApp() {
   }
   isOnboardingActive = false;
 
+  includeExistingAccountsInWorkload();
   teamState = recalculateWorkload(teamState, vacationsState, monstersState);
 
   const state = {
@@ -413,6 +509,7 @@ renderModals = function renderModals() {
     isSkillActiveNextAttack,
     openPRs: openPRsList,
     isFetchingOpenPRs,
+    editingMonster: monstersState.find(monster => monster.id === editingMonsterId),
   } as any;
 
   if (activeModal === 'codex') return renderCodexModal(state);
@@ -512,7 +609,7 @@ renderModals = function renderModals() {
 
   if (activeModal === 'reassign') {
     const target = monstersState.find(monster => monster.id === reassignTargetId);
-    const members = [...new Set([userState.name, ...teamState.map(member => member.userName)])];
+    const members = [...new Set([userState.name, ...teamState.map(member => member.userName), ...getAllAccounts().map(account => account.displayName)])];
     return `<div class="modal-backdrop" id="modal-backdrop"><div class="modal-card modal-form-card">
       <div class="modal-heading"><div class="modal-heading-icon">${icon('users', '', 18)}</div><div class="modal-heading-copy"><p>ASSIGN ISSUE</p><h2>담당자 변경</h2></div><button class="modal-close" id="btn-close-modal">${icon('close', '', 16)}</button></div>
       <p class="modal-description"><strong>${target?.title ?? '선택한 이슈'}</strong>의 담당 개발자를 변경합니다.</p>
@@ -772,6 +869,7 @@ renderModals = function renderModals() {
 
   if (activeModal === 'apiSync') {
     const ghConfig = getGitHubConfig();
+    const projectApiConfig = getProjectApiConfig();
     return `
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 520px;">
@@ -781,6 +879,14 @@ renderModals = function renderModals() {
           <p style="font-size: 0.76rem; color: var(--text-sub); margin-bottom: 1rem;">
             실제 GitHub 계정의 Personal Access Token(PAT)과 저장소를 등록하면, 게임 내에서 [PR 통합 공격] 실행 시 <strong>실제 GitHub 저장소의 Pull Request가 자동으로 머지</strong>됩니다.
           </p>
+
+          <section style="margin-bottom:1rem; padding:0.8rem; border:1px solid var(--panel-border); border-radius:8px; background:var(--inner-box-bg);">
+            <h3 style="font-size:0.8rem; margin:0 0 0.5rem;">프로젝트 데이터 서버</h3>
+            <p style="font-size:0.7rem; color:var(--text-sub); margin:0 0 0.55rem;">팀·이슈·휴가·게임 상태를 실제 서버와 동기화합니다. 인증은 서버의 보안 세션 쿠키를 사용합니다.</p>
+            <label style="font-size:0.72rem; display:block; margin-bottom:0.25rem;">API Base URL</label>
+            <input type="url" class="form-input" id="project-api-base-url" value="${projectApiConfig.baseUrl}" placeholder="https://api.example.com" />
+            <label style="display:flex; gap:0.4rem; align-items:center; margin-top:0.55rem; font-size:0.72rem; cursor:pointer;"><input type="checkbox" id="project-api-enable" ${projectApiConfig.enabled ? 'checked' : ''} /> 서버 동기화 사용</label>
+          </section>
 
           <form id="form-api-sync">
             <div class="form-group">
@@ -796,7 +902,7 @@ renderModals = function renderModals() {
               <label style="display: flex; align-items: center; gap: 0.3rem;">
                 ${icon('key', '', 12)} GitHub Personal Access Token (PAT)
               </label>
-              <input type="password" class="form-input" id="gh-token" value="${ghConfig.token}" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" required />
+              <input type="password" class="form-input" id="gh-token" value="${ghConfig.token}" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
               <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.2rem;">
                 필요 권한: <code>repo</code> 또는 <code>pull_requests:write</code> (GitHub -> Settings -> Developer settings -> Tokens)
               </div>
@@ -805,11 +911,11 @@ renderModals = function renderModals() {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;">
               <div class="form-group">
                 <label>저장소 소유자 (Owner)</label>
-                <input type="text" class="form-input" id="gh-owner" value="${ghConfig.owner}" placeholder="e.g. octocat" required />
+                <input type="text" class="form-input" id="gh-owner" value="${ghConfig.owner}" placeholder="e.g. octocat" />
               </div>
               <div class="form-group">
                 <label>저장소 이름 (Repository)</label>
-                <input type="text" class="form-input" id="gh-repo" value="${ghConfig.repo}" placeholder="e.g. my-cool-project" required />
+                <input type="text" class="form-input" id="gh-repo" value="${ghConfig.repo}" placeholder="e.g. my-cool-project" />
               </div>
             </div>
 
@@ -925,7 +1031,7 @@ renderModals = function renderModals() {
     const targetM = monstersState.find(m => m.id === selectedPostMortemMonsterId);
     return `
       <div class="modal-backdrop" id="modal-backdrop">
-        <div class="modal-card">
+        <div class="modal-card" style="max-width: 560px;">
           <h2 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem;">${icon('book', 'color:var(--primary-light)', 18)} 버그 사후 분석 리포트 (Post-Mortem)</h2>
           <p style="font-size: 0.82rem; color: var(--text-sub); margin-bottom: 0.85rem;">
             대상 버그: <strong>${targetM?.title}</strong>
@@ -1227,7 +1333,7 @@ renderModals = function renderModals() {
   if (activeModal === 'vacation') {
     return `
       <div class="modal-backdrop" id="modal-backdrop">
-        <div class="modal-card">
+        <div class="modal-card" style="max-width: 560px;">
           <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem;">휴가 / 외근 신청 (HP +50 회복 연동)</h2>
           <form id="form-vacation">
             <div class="form-group">
@@ -1260,6 +1366,23 @@ renderModals = function renderModals() {
               <button type="submit" class="action-btn">신청 완료</button>
             </div>
           </form>
+          <section style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--panel-border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.55rem;">
+              <h3 style="font-size:0.82rem; margin:0;">신청 현황</h3>
+              <span style="font-size:0.7rem; color:var(--text-sub);">승인된 일정만 워크로드에 반영됩니다</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.4rem; max-height:190px; overflow:auto;">
+              ${vacationsState.map(request => `
+                <div style="display:flex; align-items:center; gap:0.5rem; padding:0.55rem 0.65rem; background:var(--inner-box-bg); border:1px solid var(--panel-border); border-radius:7px;">
+                  <div style="min-width:0; flex:1; font-size:0.75rem;">
+                    <strong>${request.userName}</strong> · ${request.type} ${request.days}일
+                    <span style="display:block; margin-top:0.12rem; color:var(--text-sub);">${request.startDate} ~ ${request.endDate} · ${request.reason}</span>
+                  </div>
+                  <span class="badge" style="white-space:nowrap;">${request.status}</span>
+                  ${request.status === '대기' ? `<div style="display:flex; gap:0.25rem;"><button type="button" class="action-btn btn-vacation-status" data-id="${request.id}" data-status="승인" style="padding:0.32rem 0.48rem; font-size:0.68rem;">승인</button><button type="button" class="action-btn action-btn-secondary btn-vacation-status" data-id="${request.id}" data-status="반려" style="padding:0.32rem 0.48rem; font-size:0.68rem;">반려</button></div>` : ''}
+                </div>`).join('')}
+            </div>
+          </section>
         </div>
       </div>
     `;
@@ -1314,7 +1437,7 @@ renderModals = function renderModals() {
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.85rem;">
-            ${mockWeeklyLeaderboard.map(rank => `
+            ${leaderboardState.map(rank => `
               <div style="display: flex; justify-content: space-between; align-items: center; background: var(--inner-box-bg); padding: 0.55rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   <span style="font-weight: 700; font-size: 0.82rem; width: 24px;">${rank.rank}위</span>
@@ -1632,15 +1755,6 @@ attachEvents = function attachEvents() {
     renderApp();
   });
 
-  document.querySelector('#form-api-sync')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    soundFx.playVictorySound();
-    confetti({ particleCount: 50 });
-    battleLogMessage = ` [API 연동 성공] 외부 이슈와의 동기화가 성공적으로 설정되었습니다!`;
-    activeModal = null;
-    renderApp();
-  });
-
   document.querySelector('#btn-open-achievements')?.addEventListener('click', () => {
     activeModal = 'achievements';
     renderApp();
@@ -1657,8 +1771,17 @@ attachEvents = function attachEvents() {
   });
 
   document.querySelector('#btn-open-create-monster')?.addEventListener('click', () => {
+    editingMonsterId = null;
     activeModal = 'createMonster';
     renderApp();
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.btn-edit-monster').forEach(button => {
+    button.addEventListener('click', () => {
+      editingMonsterId = button.dataset.id || null;
+      activeModal = 'createMonster';
+      renderApp();
+    });
   });
 
   document.querySelector('#form-create-monster')?.addEventListener('submit', (e) => {
@@ -1668,12 +1791,41 @@ attachEvents = function attachEvents() {
     const assignee = (document.querySelector('#new-monster-assignee') as HTMLInputElement).value;
     const dueDate = (document.querySelector('#new-monster-duedate') as HTMLInputElement).value;
     const selectedImage = (document.querySelector('#new-monster-image') as HTMLSelectElement)?.value;
+    const estimatedHours = Math.max(1, parseInt((document.querySelector('#new-monster-hours') as HTMLInputElement).value, 10) || 8);
+    const elementTrait = (document.querySelector('#new-monster-element') as HTMLSelectElement).value as BugMonster['elementTrait'];
+    const dialogue = (document.querySelector('#new-monster-dialogue') as HTMLTextAreaElement).value.trim();
 
     const hpMap: Record<'Critical' | 'Major' | 'Minor', number> = { Critical: 1000, Major: 500, Minor: 200 };
     const xpMap: Record<'Critical' | 'Major' | 'Minor', number> = { Critical: 500, Major: 250, Minor: 100 };
 
     // 100% Automatic preset generation based on bug context & title keywords
     const autoPreset = generateMonsterPreset(title, severity);
+
+    const existingMonster = monstersState.find(monster => monster.id === editingMonsterId);
+    if (existingMonster) {
+      const previousHpRatio = existingMonster.maxHp > 0 ? existingMonster.currentHp / existingMonster.maxHp : 1;
+      existingMonster.title = title;
+      existingMonster.severity = severity;
+      existingMonster.maxHp = hpMap[severity];
+      existingMonster.currentHp = Math.min(existingMonster.maxHp, Math.max(0, Math.round(existingMonster.maxHp * previousHpRatio)));
+      existingMonster.rewardXp = xpMap[severity];
+      existingMonster.assignee = assignee;
+      existingMonster.estimatedHours = estimatedHours;
+      existingMonster.dueDate = dueDate;
+      existingMonster.monsterImage = selectedImage || existingMonster.monsterImage;
+      existingMonster.isBoss = severity === 'Critical';
+      existingMonster.elementTrait = elementTrait || autoPreset.elementTrait;
+      existingMonster.dialogue = dialogue || autoPreset.dialogue;
+      existingMonster.defenseTrait = autoPreset.defenseTrait;
+      existingMonster.traitDescription = autoPreset.traitDescription;
+      saveState();
+      battleLogMessage = `${title} 이슈의 내용을 수정했습니다. 워크로드가 최신화되었습니다.`;
+      showToast('버그 내용이 저장되었습니다.', 'success');
+      editingMonsterId = null;
+      activeModal = null;
+      renderApp();
+      return;
+    }
 
     const newMonster: BugMonster = {
       id: 'b-' + (monstersState.length + 1),
@@ -1683,13 +1835,13 @@ attachEvents = function attachEvents() {
       maxHp: hpMap[severity],
       rewardXp: xpMap[severity],
       assignee,
-      estimatedHours: severity === 'Critical' ? 16 : severity === 'Major' ? 8 : 4,
+      estimatedHours,
       status: 'Active',
       monsterImage: selectedImage || autoPreset.monsterImage,
       dueDate,
       isBoss: severity === 'Critical',
-      elementTrait: autoPreset.elementTrait,
-      dialogue: autoPreset.dialogue,
+      elementTrait: elementTrait || autoPreset.elementTrait,
+      dialogue: dialogue || autoPreset.dialogue,
       defenseTrait: autoPreset.defenseTrait,
       traitDescription: autoPreset.traitDescription,
     };
@@ -2058,6 +2210,23 @@ attachEvents = function attachEvents() {
 
   document.querySelector('#form-api-sync')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const baseUrl = (document.querySelector('#project-api-base-url') as HTMLInputElement)?.value ?? '';
+    const projectApiEnabled = (document.querySelector('#project-api-enable') as HTMLInputElement)?.checked ?? false;
+    if (projectApiEnabled && !baseUrl.trim()) {
+      showToast('프로젝트 API Base URL을 입력해주세요.', 'warning');
+      return;
+    }
+    saveProjectApiConfig({ baseUrl, enabled: projectApiEnabled });
+    if (projectApiEnabled) {
+      showToast('프로젝트 API 연결을 확인하는 중입니다...', 'warning');
+      const projectApiResult = await verifyProjectApi();
+      if (!projectApiResult.success) {
+        showToast(`프로젝트 API: ${projectApiResult.message}`, 'danger');
+        return;
+      }
+      showToast(projectApiResult.message, 'success');
+    }
+
     const token = (document.querySelector('#gh-token') as HTMLInputElement)?.value.trim();
     const owner = (document.querySelector('#gh-owner') as HTMLInputElement)?.value.trim();
     const repo = (document.querySelector('#gh-repo') as HTMLInputElement)?.value.trim();
@@ -2078,6 +2247,7 @@ attachEvents = function attachEvents() {
     }
 
     saveGitHubConfig(newConfig);
+    if (projectApiEnabled) scheduleRemoteSync();
     activeModal = null;
     renderApp();
   });
@@ -2174,7 +2344,7 @@ attachEvents = function attachEvents() {
     }
 
     vacationsState.unshift({
-      id: 'v' + (vacationsState.length + 1),
+      id: `v-${Date.now()}`,
       userName: user,
       type,
       startDate,
@@ -2189,7 +2359,21 @@ attachEvents = function attachEvents() {
     battleLogMessage = `${type} 신청이 등록되었습니다. ${recovery ? `HP가 +${recovery} 회복되었습니다.` : '승인 상태를 기다립니다.'}`;
 
     activeModal = null;
+    saveState();
     renderApp();
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.btn-vacation-status').forEach(button => {
+    button.addEventListener('click', () => {
+      const request = vacationsState.find(item => item.id === button.dataset.id);
+      const status = button.dataset.status as VacationRequest['status'] | undefined;
+      if (!request || (status !== '승인' && status !== '반려')) return;
+      request.status = status;
+      battleLogMessage = `${request.userName}님의 ${request.type} 신청이 ${status}되었습니다.`;
+      saveState();
+      showToast(status === '승인' ? '일정이 승인되어 워크로드에 반영되었습니다.' : '휴가 신청을 반려했습니다.', status === '승인' ? 'success' : 'warning');
+      renderApp();
+    });
   });
 
   document.querySelector('#form-attack')?.addEventListener('submit', async (e) => {
@@ -2530,6 +2714,8 @@ attachLoginEvents = function attachLoginEvents() {
 
     const res = await createAccount(username, displayName, pin, heroClass);
     if (res.success) {
+      const settings = addAccountAsTeamMember(displayName, heroClass);
+      teamState = toTeamMemberCapacity(settings.members, settings.sprintDays);
       // Auto login
       await login(username, pin);
       loginErrorMsg = '';
@@ -3030,9 +3216,9 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Real-Time Simulated Webhook Push Events (Every 25 seconds)
-setInterval(() => {
-  const authors = ['김개발', '이백엔드', '박풀스택', '최디자인', 'AI-Bot'];
+// Demo events are intentionally disabled when a real project API is configured.
+if (!getProjectApiConfig().enabled) setInterval(() => {
+  const authors = ['Integration Bot', 'Automation Bot'];
   const eventTypes: ('pull_request_merged' | 'issue_opened' | 'commit_pushed')[] = ['pull_request_merged', 'issue_opened', 'commit_pushed'];
   const repos = ['org/cms-core', 'org/rpg-backend', 'org/ai-engine'];
   
@@ -3073,8 +3259,26 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => renderApp());
-} else {
+async function startApplication() {
+  await hydrateRemoteProjectState();
+  const accounts = getAllAccounts();
+  const accountSignature = accounts.map(account => account.id).sort().join('|');
+  const demoSignature = `${accountDemoVersion}:${accountSignature}`;
+  if (accounts.length > 0 && localStorage.getItem(accountDemoSeedKey) !== demoSignature) {
+    const demo = createAccountDemoData(accounts, todayKey());
+    // Replace only previous sample records; user-created and synced project data remains intact.
+    monstersState = [...monstersState.filter(monster => !monster.title.startsWith('[샘플]')), ...demo.monsters];
+    vacationsState = [...vacationsState.filter(request => request.reason !== '샘플 외근 일정'), ...demo.vacations];
+    webhooksState = [...webhooksState.filter(webhook => !webhook.summary.startsWith('[샘플]')), ...demo.webhooks];
+    leaderboardState = demo.leaderboard;
+    saveState();
+    localStorage.setItem(accountDemoSeedKey, demoSignature);
+  }
   renderApp();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => { void startApplication(); });
+} else {
+  void startApplication();
 }

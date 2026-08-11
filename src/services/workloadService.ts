@@ -1,5 +1,16 @@
 import type { BugMonster, TeamMemberCapacity, VacationRequest } from '../types';
 
+/** Members are shown in the workload board only while they own an active issue. */
+export function getAssignedWorkloadMembers(members: TeamMemberCapacity[], issues: BugMonster[]): TeamMemberCapacity[] {
+  const activeAssignees = new Set(
+    issues
+      .filter(issue => issue.status === 'Active')
+      .map(issue => issue.assignee.trim())
+      .filter(Boolean)
+  );
+  return members.filter(member => activeAssignees.has(member.userName));
+}
+
 /** Derives live workload from active issues and approved absences. */
 export function recalculateWorkload(members: TeamMemberCapacity[], vacations: VacationRequest[], issues: BugMonster[]): TeamMemberCapacity[] {
   return members.map(member => {

@@ -59,6 +59,21 @@ export function saveTeamSettings(settings: Partial<TeamSettings>): TeamSettings 
   return updated;
 }
 
+/** Registers a local account as a workload member without duplicating existing team entries. */
+export function addAccountAsTeamMember(name: string, role: Extract<TeamMemberInput['role'], '전사 (Frontend)' | '마법사 (Backend)' | '성기사 (QA)'>): TeamSettings {
+  const current = loadTeamSettings();
+  if (current.members.some(member => member.name === name)) return current;
+  return saveTeamSettings({
+    members: [...current.members, {
+      id: `member-${Date.now()}`,
+      name,
+      role,
+      workingHoursPerDay: 8,
+      deepWorkRatio: 0.7,
+    }],
+  });
+}
+
 export function isOnboardingComplete(): boolean {
   return loadTeamSettings().isConfigured === true;
 }
