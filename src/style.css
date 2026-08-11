@@ -1067,6 +1067,20 @@ header { padding: .8rem 1rem; }
   border: 2px solid var(--pixel-ink);
   box-shadow: 3px 3px 0 var(--pixel-shadow);
 }
+.pixel-sprite {
+  flex: 0 0 auto;
+  background-image: url('/bug-quest-sprite-atlas-v1-alpha.png');
+  background-repeat: no-repeat;
+  background-size: 400% 200%;
+}
+.pixel-sprite.sprite-0-0 { background-position: 0% 0%; }
+.pixel-sprite.sprite-1-0 { background-position: 33.333% 0%; }
+.pixel-sprite.sprite-2-0 { background-position: 66.667% 0%; }
+.pixel-sprite.sprite-3-0 { background-position: 100% 0%; }
+.pixel-sprite.sprite-0-1 { background-position: 0% 100%; }
+.pixel-sprite.sprite-1-1 { background-position: 33.333% 100%; }
+.pixel-sprite.sprite-2-1 { background-position: 66.667% 100%; }
+.pixel-sprite.sprite-3-1 { background-position: 100% 100%; }
 .boss-monster-card { border-color: var(--danger) !important; box-shadow: 5px 5px 0 #4b101a, inset 0 0 0 1px rgba(255,184,184,.18) !important; }
 .boss-monster-card::before {
   content: "BOSS ENCOUNTER";
