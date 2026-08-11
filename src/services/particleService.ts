@@ -19,11 +19,22 @@ export interface FloatingText {
   vy: number;
 }
 
+interface ImpactWave {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  color: string;
+  alpha: number;
+  lineWidth: number;
+}
+
 class ParticleService {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private particles: Particle[] = [];
   private floatingTexts: FloatingText[] = [];
+  private impactWaves: ImpactWave[] = [];
   private animationFrameId: number | null = null;
 
   constructor() {
@@ -80,6 +91,20 @@ class ParticleService {
       });
     }
 
+    this.startLoop();
+  }
+
+  /** Layered burst used for an intentional, high-feedback combat impact. */
+  public triggerImpact(x: number, y: number, critical: boolean = false) {
+    const color = critical ? '#fbbf24' : '#38bdf8';
+    const accent = critical ? '#f43f5e' : '#a5b4fc';
+    this.triggerExplosion(x, y, color, critical ? 62 : 36);
+    this.triggerExplosion(x, y, accent, critical ? 30 : 14);
+
+    this.impactWaves.push(
+      { x, y, radius: 8, maxRadius: critical ? 150 : 95, color, alpha: 0.95, lineWidth: critical ? 5 : 3 },
+      { x, y, radius: critical ? 20 : 14, maxRadius: critical ? 220 : 135, color: accent, alpha: 0.65, lineWidth: 2 }
+    );
     this.startLoop();
   }
 
@@ -158,7 +183,28 @@ class ParticleService {
       this.ctx.restore();
     }
 
-    if (this.particles.length > 0 || this.floatingTexts.length > 0) {
+    // Render expanding impact waves behind floating text.
+    for (let i = this.impactWaves.length - 1; i >= 0; i--) {
+      const wave = this.impactWaves[i];
+      wave.radius += (wave.maxRadius - wave.radius) * 0.16 + 2;
+      wave.alpha -= 0.055;
+      if (wave.alpha <= 0 || wave.radius >= wave.maxRadius - 2) {
+        this.impactWaves.splice(i, 1);
+        continue;
+      }
+      this.ctx.save();
+      this.ctx.globalAlpha = wave.alpha;
+      this.ctx.strokeStyle = wave.color;
+      this.ctx.lineWidth = wave.lineWidth;
+      this.ctx.shadowBlur = 16;
+      this.ctx.shadowColor = wave.color;
+      this.ctx.beginPath();
+      this.ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.restore();
+    }
+
+    if (this.particles.length > 0 || this.floatingTexts.length > 0 || this.impactWaves.length > 0) {
       this.animationFrameId = requestAnimationFrame(this.loop);
     } else {
       this.animationFrameId = null;

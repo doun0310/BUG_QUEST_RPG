@@ -30,6 +30,13 @@ export interface AuthState {
 
 const AUTH_KEY = 'bug_tracker_auth';
 const inMemoryStore: Record<string, string> = {};
+let accountIdSequence = 0;
+
+/** Date.now alone can collide when accounts are created in the same event loop tick. */
+function createAccountId(): string {
+  accountIdSequence += 1;
+  return `acc-${Date.now()}-${accountIdSequence}`;
+}
 
 function getItem(key: string): string | null {
   try {
@@ -67,6 +74,7 @@ export function resetAuthStateForTesting(): void {
   for (const k in inMemoryStore) {
     delete inMemoryStore[k];
   }
+  accountIdSequence = 0;
 }
 
 function loadAuthState(): AuthState {
@@ -232,7 +240,7 @@ export async function createAccount(
   };
 
   const newAccount: Account = {
-    id: 'acc-' + Date.now(),
+    id: createAccountId(),
     username,
     displayName,
     pin: hashedPin,
@@ -296,7 +304,7 @@ export function createAccountSync(
   };
 
   const newAccount: Account = {
-    id: 'acc-' + Date.now(),
+    id: createAccountId(),
     username,
     displayName,
     pin: hashedPin,

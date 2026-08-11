@@ -1,28 +1,19 @@
 import type { AppState } from '../../store';
 import { icon } from '../../icons';
+import { renderModalActions, renderModalHeader } from '../ui';
 
 export function renderCreateMonsterModal(state: AppState): string {
   const { userState } = state;
 
   return `
     <div class="modal-backdrop" id="modal-backdrop">
-      <div class="modal-card">
-
-        <!-- Header -->
-        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
-          <div style="width: 38px; height: 38px; border-radius: 10px; background: var(--primary-bg); border: 1px solid var(--primary-border); display: flex; align-items: center; justify-content: center;">
-            ${icon('bug', 'color:var(--primary-light)', 18)}
-          </div>
-          <div>
-            <p style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.1rem;">Create Issue</p>
-            <h2 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">신규 버그 몬스터 등록</h2>
-          </div>
-        </div>
+      <div class="modal-card modal-form-card">
+        ${renderModalHeader({ icon: 'bug', eyebrow: 'NEW ISSUE', title: '신규 이슈 등록' })}
 
         <form id="form-create-monster" style="display: flex; flex-direction: column; gap: 0;">
           <div class="form-group">
             <label style="display: flex; align-items: center; gap: 0.3rem;">
-              ${icon('bug', '', 12)} 몬스터/버그 이슈 제목
+              ${icon('bug', '', 12)} 이슈 제목
             </label>
             <input type="text" class="form-input" id="new-monster-title"
               placeholder="e.g. AUTH-502 토큰 만료 무한 루프" required />
@@ -51,7 +42,7 @@ export function renderCreateMonsterModal(state: AppState): string {
           </div>
           <div class="form-group" style="margin-bottom: 1.5rem;">
             <label style="display: flex; align-items: center; gap: 0.3rem;">
-              ${icon('sparkle', '', 12)} 몬스터 외형 아트워크
+              ${icon('sparkle', '', 12)} 이슈 아트워크
             </label>
             <select class="form-select" id="new-monster-image">
               <option value="/pixel_slime.jpg">픽셀 블루 슬라임</option>
@@ -61,15 +52,7 @@ export function renderCreateMonsterModal(state: AppState): string {
             </select>
           </div>
 
-          <!-- Actions -->
-          <div style="display: flex; gap: 0.6rem; justify-content: flex-end;">
-            <button type="button" class="action-btn action-btn-secondary" id="btn-close-modal" style="display: flex; align-items: center; gap: 0.35rem;">
-              ${icon('close', '', 13)} 취소
-            </button>
-            <button type="submit" class="action-btn" style="min-width: 130px; justify-content: center; display: flex; align-items: center; gap: 0.4rem;">
-              ${icon('lightning', 'color:white', 14)} 몬스터 전장 출현
-            </button>
-          </div>
+          ${renderModalActions('이슈 등록', 'plus')}
         </form>
       </div>
     </div>

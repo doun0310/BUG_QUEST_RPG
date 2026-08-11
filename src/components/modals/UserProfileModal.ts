@@ -1,5 +1,7 @@
 import { getCurrentAccount } from '../../services/authService';
 import type { UserProfile } from '../../types';
+import { icon } from '../../icons';
+import { renderModalHeader } from '../ui';
 
 const HERO_CLASSES: UserProfile['heroClass'][] = [
   '전사 (Frontend)',
@@ -26,24 +28,13 @@ export function renderUserProfileModal(errorMsg: string = '', successMsg: string
 
   return `
     <div class="modal-backdrop" id="modal-backdrop" style="align-items: center; padding: 1.5rem 1rem;">
-      <div class="modal-card" style="max-width: 520px; width: 100%; padding: 2rem; position: relative;">
-
-        <!-- Header -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
-          <div>
-            <h2 style="font-size: 1.15rem; font-weight: 900; margin: 0 0 0.25rem; color: var(--text-main); display: flex; align-items: center; gap: 0.4rem;">
-              👤 계정 프로필 수정
-            </h2>
-            <p style="font-size: 0.76rem; color: var(--text-sub); margin: 0;">
-              계정 닉네임, 보안 PIN, 아바타 및 직업 클래스를 수정합니다.
-            </p>
-          </div>
-          <button type="button" id="up-close" style="background: none; border: 1px solid var(--panel-border); color: var(--text-sub); border-radius: 8px; padding: 0.3rem 0.7rem; cursor: pointer; font-size: 0.82rem;">✕ 닫기</button>
-        </div>
+      <div class="modal-card profile-modal">
+        ${renderModalHeader({ icon: 'users', eyebrow: 'ACCOUNT SETTINGS', title: '계정 프로필 수정', closeId: 'up-close' })}
+        <p class="modal-description">계정 닉네임, 보안 PIN, 아바타 및 직업 클래스를 수정합니다.</p>
 
         <!-- Alert Messages -->
-        ${successMsg ? `<div style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #34d399; font-size: 0.8rem; padding: 0.65rem 0.9rem; border-radius: 10px; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.4rem;">✅ ${successMsg}</div>` : ''}
-        ${errorMsg ? `<div style="background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: #f87171; font-size: 0.8rem; padding: 0.65rem 0.9rem; border-radius: 10px; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.4rem;">⚠️ ${errorMsg}</div>` : ''}
+        ${successMsg ? `<div class="inline-alert inline-alert-success">${icon('check', '', 13)} ${successMsg}</div>` : ''}
+        ${errorMsg ? `<div class="inline-alert inline-alert-danger">${icon('warning', '', 13)} ${errorMsg}</div>` : ''}
 
         <form id="form-update-profile">
           <!-- Account ID (Non-editable) -->
@@ -60,7 +51,7 @@ export function renderUserProfileModal(errorMsg: string = '', successMsg: string
           <!-- Avatar Preset Selection -->
           <div style="margin-bottom: 1.25rem;">
             <label style="font-size: 0.75rem; color: var(--text-sub); font-weight: 700; display: block; margin-bottom: 0.5rem;">
-              🎨 아바타 커스텀
+              ${icon('paint', '', 13)} 아바타 커스텀
             </label>
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
               <!-- Live Preview Avatar -->
@@ -116,7 +107,7 @@ export function renderUserProfileModal(errorMsg: string = '', successMsg: string
           <!-- PIN Change Section -->
           <div style="margin-bottom: 1.5rem;">
             <div style="font-size: 0.78rem; font-weight: 700; color: var(--primary-light); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.3rem;">
-              🔒 보안 PIN 및 본인 인증
+              ${icon('shield', '', 13)} 보안 PIN 및 본인 인증
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
@@ -136,8 +127,8 @@ export function renderUserProfileModal(errorMsg: string = '', successMsg: string
             <button type="button" id="up-close-footer" style="background: none; border: 1px solid var(--panel-border); color: var(--text-sub); border-radius: 10px; padding: 0.55rem 1.1rem; cursor: pointer; font-size: 0.83rem;">
               취소
             </button>
-            <button type="submit" class="action-btn" style="padding: 0.55rem 1.6rem; font-size: 0.88rem; font-weight: 800; box-shadow: 0 4px 14px rgba(99,102,241,0.35);">
-              💾 프로필 저장
+            <button type="submit" class="action-btn" style="padding: 0.55rem 1.6rem; font-size: 0.88rem; font-weight: 800;">
+              ${icon('check', 'color:white', 14)} 프로필 저장
             </button>
           </div>
         </form>

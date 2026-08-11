@@ -13,21 +13,29 @@ export function renderHeader(state: AppState): string {
   return `
     <header>
       <!-- Logo + Identity -->
-      <div style="display: flex; align-items: center; gap: 1rem;">
+      <div class="brand-lockup">
+        <div class="brand-mark" aria-hidden="true">${icon('mark', '', 22)}</div>
         <div>
           <h1 class="logo-title" style="display: flex; align-items: center; gap: 0.4rem;">
-            ${icon('bug', 'color:var(--primary-light)', 18)} BUG QUEST RPG
+            BUG QUEST <span>WORKSPACE</span>
           </h1>
-          <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem; display: flex; align-items: center; gap: 0.4rem;">
-            ${icon('target', 'color:var(--text-muted)', 12)} ${userState.name}
+          <div class="brand-context">
+            ${icon('activity', 'color:var(--text-muted)', 12)} ${userState.name}
             <span style="color: var(--panel-border);">·</span>
             ${icon('lightning', 'color:var(--warning)', 12)} <span style="color: var(--warning); font-weight: 700;">${userState.streakCount} COMBO</span>
           </div>
         </div>
       </div>
 
+      <nav class="product-nav" aria-label="주요 메뉴">
+        <span class="is-active">${icon('overview', '', 14)} 개요</span>
+        <span>${icon('bug', '', 14)} 이슈</span>
+        <span>${icon('pr', '', 14)} Pull requests</span>
+        <span>${icon('chart', '', 14)} 인사이트</span>
+      </nav>
+
       <!-- Stat Bars & Controls -->
-      <div class="user-badge-container">
+      <div class="user-badge-container header-controls">
 
         <!-- HP Bar -->
         <div class="stat-bar-box">

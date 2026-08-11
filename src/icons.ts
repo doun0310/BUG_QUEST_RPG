@@ -7,7 +7,11 @@
  * 사용법: icon('sword', 'color: var(--danger); width: 16px;')
  */
 
-type IconName =
+export type IconName =
+  | 'mark'         // 브랜드 심볼
+  | 'overview'     // 현황 개요
+  | 'activity'     // 활동 피드
+  | 'settings'     // 설정
   | 'sword'        // ⚔️ 공격 / 전투
   | 'shield'       // 🛡️ 방어 / Security
   | 'bug'          // 🐛 버그 / 이슈
@@ -63,6 +67,14 @@ type IconName =
   | 'feedback';    // 💡 피드백
 
 const paths: Record<IconName, string> = {
+  // ─── BUG QUEST BRAND MARK ────────────────────────────────────────────────
+  mark: `<path d="M12 2.5L19.5 6.8V15.2L12 21.5L4.5 15.2V6.8L12 2.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none"/>
+         <ellipse cx="12" cy="12" rx="3.1" ry="4.1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+         <path d="M8.9 10L6.3 8.4M15.1 10L17.7 8.4M8.9 14L6.3 15.6M15.1 14L17.7 15.6M12 7.9V5.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+         <circle cx="12" cy="12" r="1" fill="currentColor"/>`,
+  overview: `<rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M15 20L17.3 17.7L19 19.1L21 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  activity: `<path d="M3 12H7L9.2 5L13 19L15.2 12H21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+  settings: `<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 3V5M12 19V21M21 12H19M5 12H3M18.4 5.6L17 7M7 17L5.6 18.4M18.4 18.4L17 17M7 7L5.6 5.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
   // ─── SWORD ────────────────────────────────────────────────────────────────
   sword: `<path d="M14.5 2.5L21.5 9.5L9 22L2 22L2 15L14.5 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
           <path d="M15 8L8 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>

@@ -1,5 +1,7 @@
 import { loadTeamSettings, saveTeamSettings, toTeamMemberCapacity } from '../../services/teamSettingsService';
 import type { TeamMemberInput, TeamSettings } from '../../types';
+import { icon } from '../../icons';
+import { renderModalHeader } from '../ui';
 
 const ROLE_OPTIONS: TeamMemberInput['role'][] = [
   '전사 (Frontend)',
@@ -30,7 +32,7 @@ function memberRow(m: TeamMemberInput, i: number): string {
       padding:0.6rem 0.85rem;
       transition:border-color 0.2s;
     ">
-      <span style="font-size:1.25rem;">${ROLE_EMOJI[m.role] || '👤'}</span>
+      <span class="ts-role-mark">${ROLE_EMOJI[m.role] || '•'}</span>
       <input type="text" class="form-input ts-member-name" data-idx="${i}"
         value="${m.name}" placeholder="이름"
         style="font-size:0.83rem;font-weight:700;min-width:0;" />
@@ -62,24 +64,13 @@ export function renderTeamSettingsModal(editMembers: TeamMemberInput[], errorMsg
 
   return `
     <div class="modal-backdrop" id="modal-backdrop" style="align-items:flex-start;padding:1.5rem 1rem;overflow-y:auto;">
-      <div class="modal-card" style="max-width:680px;width:100%;padding:2rem;position:relative;">
-
-        <!-- Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-          <div>
-            <h2 style="font-size:1.1rem;font-weight:900;margin:0 0 0.2rem;color:var(--text-main);">
-              ⚙️ 팀 설정
-            </h2>
-            <p style="font-size:0.75rem;color:var(--text-sub);margin:0;">
-              변경 사항은 저장 즉시 앱 전체에 반영됩니다.
-            </p>
-          </div>
-          <button type="button" id="ts-close" style="background:none;border:1px solid var(--panel-border);color:var(--text-sub);border-radius:8px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.82rem;">✕ 닫기</button>
-        </div>
+      <div class="modal-card team-settings-modal">
+        ${renderModalHeader({ icon: 'settings', eyebrow: 'WORKSPACE SETTINGS', title: '팀 설정', closeId: 'ts-close' })}
+        <p class="modal-description">변경 사항은 저장 즉시 앱 전체에 반영됩니다.</p>
 
         <!-- Alert Messages -->
-        ${successMsg ? `<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;font-size:0.8rem;padding:0.65rem 0.9rem;border-radius:10px;margin-bottom:1rem;display:flex;align-items:center;gap:0.4rem;">✅ ${successMsg}</div>` : ''}
-        ${errorMsg ? `<div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:#f87171;font-size:0.8rem;padding:0.65rem 0.9rem;border-radius:10px;margin-bottom:1rem;display:flex;align-items:center;gap:0.4rem;">⚠️ ${errorMsg}</div>` : ''}
+        ${successMsg ? `<div class="inline-alert inline-alert-success">${icon('check', '', 13)} ${successMsg}</div>` : ''}
+        ${errorMsg ? `<div class="inline-alert inline-alert-danger">${icon('warning', '', 13)} ${errorMsg}</div>` : ''}
 
         <!-- Section 1: 프로젝트 기본 정보 -->
         <div style="margin-bottom:1.5rem;">

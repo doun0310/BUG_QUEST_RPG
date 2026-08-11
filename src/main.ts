@@ -27,6 +27,7 @@ import { renderCMSChartModal } from './components/modals/CMSChartModal';
 import { renderCreateMonsterModal } from './components/modals/CreateMonsterModal';
 import { renderTeamSettingsModal } from './components/modals/TeamSettingsModal';
 import { renderUserProfileModal } from './components/modals/UserProfileModal';
+import { renderOverview } from './components/Overview';
 import { updateAccountProfile } from './services/authService';
 
 import { 
@@ -178,16 +179,19 @@ function renderApp() {
   } as any;
   
   appContainer.innerHTML = `
-    <div id="app-header-container">${renderHeader(state)}</div>
-    <div id="app-main-layout" style="display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(280px, 1fr); gap: 1.25rem; align-items: start;">
-      <section id="app-board-container" style="min-width: 0;">
+    <div class="app-shell">
+      <div id="app-header-container">${renderHeader(state)}</div>
+      ${renderOverview(state)}
+      <main id="app-main-layout" class="workspace-layout">
+        <section id="app-board-container" class="workspace-primary">
         ${renderMonsterBoard(state)}
-      </section>
-      <div id="app-sidebar-container">
+        </section>
+        <aside id="app-sidebar-container" class="workspace-secondary">
         ${renderSidebar(state)}
-      </div>
+        </aside>
+      </main>
+      <div id="app-modals">${renderModals()}</div>
     </div>
-    <div id="app-modals">${renderModals()}</div>
   `;
 
   attachEvents();
@@ -1978,14 +1982,15 @@ attachEvents = function attachEvents() {
         isSkillActiveNextAttack = false;
       }
 
-      // Spawn dynamic particle explosion & floating text
-      const screenCenterX = window.innerWidth / 2;
-      const screenCenterY = window.innerHeight / 2;
-      const particleColor = isCritical ? '#a855f7' : '#38bdf8';
-      particleService.triggerExplosion(screenCenterX, screenCenterY, particleColor, isCritical ? 40 : 25);
-      particleService.spawnFloatingText(screenCenterX, screenCenterY - 40, isCritical ? `💥 CRITICAL! -${baseDamage} HP` : `⚔️ -${baseDamage} HP`, isCritical ? '#f43f5e' : '#fbbf24', isCritical ? 24 : 18);
+      // Anchor the impact to the targeted issue card instead of the viewport center.
+      const attackButton = Array.from(document.querySelectorAll<HTMLButtonElement>('.btn-attack-trigger'))
+        .find(button => button.dataset.id === monster.id);
+      const targetRect = attackButton?.closest('.monster-card-animated')?.getBoundingClientRect();
+      const screenCenterX = targetRect ? targetRect.left + targetRect.width * 0.35 : window.innerWidth / 2;
+      const screenCenterY = targetRect ? targetRect.top + targetRect.height * 0.48 : window.innerHeight / 2;
+      const didDodge = monster.defenseTrait === 'Dodge' && Math.random() < 0.2;
 
-      if (monster.defenseTrait === 'Dodge' && Math.random() < 0.2) {
+      if (didDodge) {
         soundFx.playDodgeSound();
         particleService.spawnFloatingText(screenCenterX, screenCenterY - 40, '💨 DODGE!', '#94a3b8', 20);
         battleLogMessage = `[${monster.title}] 몬스터가 회피 스킬을 사용하여 데미지를 입지 않았습니다!`;
@@ -2000,6 +2005,17 @@ attachEvents = function attachEvents() {
         }, 800);
         return;
       }
+
+      particleService.triggerImpact(screenCenterX, screenCenterY, isCritical);
+      particleService.spawnFloatingText(
+        screenCenterX,
+        screenCenterY - 32,
+        isCritical ? `CRITICAL  -${baseDamage}` : `-${baseDamage}`,
+        isCritical ? '#fbbf24' : '#f1f5f9',
+        isCritical ? 30 : 22
+      );
+      document.body.classList.add(isCritical ? 'impact-critical' : 'impact-hit');
+      window.setTimeout(() => document.body.classList.remove('impact-hit', 'impact-critical'), isCritical ? 320 : 180);
 
       monster.currentHp = Math.max(0, monster.currentHp - baseDamage);
       userState.streakCount += 1;

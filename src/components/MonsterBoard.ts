@@ -36,10 +36,10 @@ export function renderMonsterBoard(state: AppState): string {
   };
 
   return `
-    <!-- Battle Log -->
-    <div style="background: rgba(6, 10, 22, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 14px; padding: 0.85rem 1.1rem; margin-bottom: 1rem;">
-      <p style="font-size: 0.62rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--primary); margin-bottom: 0.35rem; font-family: var(--font-dq); display: flex; align-items: center; gap: 0.4rem;">
-        ${icon('sword', 'color:var(--primary)', 12)} BATTLE LOG
+    <!-- Activity Log -->
+    <div class="activity-log">
+      <p class="activity-log-label">
+        ${icon('activity', 'color:var(--primary)', 12)} LIVE ACTIVITY
       </p>
       <div id="dq-battle-log" style="font-size: 0.82rem; color: var(--text-main); line-height: 1.55;">
         ${battleLogMessage}
@@ -52,7 +52,7 @@ export function renderMonsterBoard(state: AppState): string {
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.85rem;">
         <div>
           <h2 style="font-size: 0.95rem; font-weight: 700; background: linear-gradient(135deg, var(--primary-light), var(--sky)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.4rem;">
-            ${icon('bug', 'color:var(--primary-light)', 16)} 몬스터 토벌 전장
+            ${icon('bug', 'color:var(--primary-light)', 16)} 이슈 보드
           </h2>
           <div style="display: flex; gap: 0.4rem;">
             <span class="badge badge-danger" style="border-radius: 99px; display: inline-flex; align-items: center; gap: 0.3rem;">
@@ -65,7 +65,7 @@ export function renderMonsterBoard(state: AppState): string {
         </div>
         <div style="display: flex; gap: 0.45rem; flex-wrap: wrap; justify-content: flex-end;">
           <button class="action-btn" id="btn-open-create-monster" style="font-size: 0.73rem; padding: 0.38rem 0.75rem; display: flex; align-items: center; gap: 0.35rem;">
-            ${icon('plus', '', 13)} 버그 등록
+            ${icon('plus', '', 13)} 이슈 등록
           </button>
           <button class="action-btn action-btn-secondary" id="btn-open-quests" style="font-size: 0.73rem; padding: 0.38rem 0.75rem; display: flex; align-items: center; gap: 0.35rem;">
             ${icon('checklist', '', 13)} 주간 퀘스트
@@ -84,7 +84,7 @@ export function renderMonsterBoard(state: AppState): string {
         <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.74rem;">
           ${icon('sparkle', 'color:var(--primary-light)', 14)}
           <span style="font-weight: 700; color: var(--primary-light);">${userState.activeSkill.name}</span>
-          <span style="color: var(--text-muted);">— AI 검수 인가</span>
+          <span style="color: var(--text-muted);">— 품질 검수 자동화</span>
           <span style="color: var(--text-muted); font-size: 0.66rem; display: flex; align-items: center; gap: 0.3rem;">
             <kbd>S</kbd> 스킬 &nbsp; <kbd>A</kbd> 공격 &nbsp; <kbd>Esc</kbd> 닫기
           </span>
@@ -115,12 +115,13 @@ export function renderMonsterBoard(state: AppState): string {
       ${filteredMonsters.map(m => {
         const isHit = hitMonsterId === m.id;
         const isEnraged = m.isEnraged || m.isOverdue;
+        const isCriticalImpact = isHit && !!lastHitDamageText?.includes('CRITICAL');
         const hpPct = (m.currentHp / m.maxHp) * 100;
         const accent = severityAccent(m);
         const elemLabel = elementIcon[m.elementTrait || 'Frontend'] || elementIcon['Frontend'];
 
         return `
-          <div class="card monster-card-animated ${isEnraged ? 'enraged-monster-card' : ''}"
+          <div class="card monster-card-animated ${isEnraged ? 'enraged-monster-card' : ''} ${isHit ? 'monster-impact' : ''} ${isCriticalImpact ? 'monster-impact-critical' : ''}"
             style="border-left: 3px solid ${accent}; padding: 0;">
 
             <div class="dq-monster-container" style="margin: 0; border: none; background: transparent; border-radius: 16px; padding: 1rem 1.15rem;">
@@ -196,7 +197,7 @@ export function renderMonsterBoard(state: AppState): string {
                   ${m.status === 'Active' ? `
                     <button class="action-btn action-btn-danger btn-attack-trigger" data-id="${m.id}"
                       style="font-size: 0.72rem; padding: 0.32rem 0.75rem; border-radius: 8px; display: flex; align-items: center; gap: 0.35rem;">
-                      ${icon('sword', 'color:white', 13)} PR 통합 공격
+                      ${icon('pr', 'color:white', 13)} PR 병합
                     </button>
                   ` : `
                     <div style="display: flex; gap: 0.4rem; align-items: center;">
