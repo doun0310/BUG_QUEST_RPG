@@ -187,6 +187,8 @@ export interface DeveloperStats {
 export interface UserProfile {
   name: string;
   heroClass: '전사 (Frontend)' | '마법사 (Backend)' | '성기사 (QA)';
+  devClass?: '프론트엔드 마법사' | '백엔드 전사' | 'DevOps 성기사';
+  skillPoints?: number;
   level: number;
   hp: number;
   maxHp: number;

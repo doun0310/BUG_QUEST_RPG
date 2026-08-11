@@ -101,7 +101,7 @@ let lastHitDamageText: string | null = null;
 let isSkillActiveNextAttack: boolean = false;
 
 // Modal States
-let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'teamSettings' | 'userProfile' | null = null;
+let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'skillTree' | 'teamSettings' | 'userProfile' | null = null;
 let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
@@ -391,6 +391,61 @@ renderModals = function renderModals() {
   if (activeModal === 'createMonster') return renderCreateMonsterModal(state);
   if (activeModal === 'teamSettings') return renderTeamSettingsModal(editModalMembers, tsModalErrorMsg, tsModalSuccessMsg);
   if (activeModal === 'userProfile') return renderUserProfileModal(upModalErrorMsg, upModalSuccessMsg);
+
+  if (activeModal === 'skillTree') {
+    const cls = userState.devClass || '프론트엔드 마법사';
+    const sp = userState.skillPoints || 3;
+
+    return `
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-card" style="max-width: 560px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h2 style="font-size: 1.05rem; font-weight: 700;">⚔️ 전직 클래스 & 스킬 트리 (Class & Skill Tree)</h2>
+            <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
+          </div>
+
+          <div style="background: var(--inner-box-bg); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span style="font-size: 0.78rem; color: var(--text-sub);">현재 클래스</span>
+                <div style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">${cls}</div>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 0.78rem; color: var(--text-sub);">보유 스킬 포인트</span>
+                <div style="font-size: 1.1rem; font-weight: 800; color: var(--warning);">${sp} SP</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+            <div style="background: var(--inner-box-bg); padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.85rem; color: #38bdf8;">✨ [액티브] CSS Z-Index 무적 실드</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.15rem;">버그 몬스터의 다음 공격 피해를 100% 무효화 (쿨타임 3턴)</div>
+              </div>
+              <button class="action-btn btn-upgrade-skill" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">스킬 강화 (-1 SP)</button>
+            </div>
+
+            <div style="background: var(--inner-box-bg); padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.85rem; color: #fb7185;">💥 [액티브] DB 트랜잭션 2배 타격</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.15rem;">다음 PR Merge 공격 피해량 200% 폭발적 증가</div>
+              </div>
+              <button class="action-btn btn-upgrade-skill" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">스킬 강화 (-1 SP)</button>
+            </div>
+
+            <div style="background: var(--inner-box-bg); padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.85rem; color: #4ade80;">🛡️ [패시브] CI/CD 무적 자동화</strong>
+                <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.15rem;">SLA 초과 시 발생하는 HP 감소 피해를 50% 반감</div>
+              </div>
+              <button class="action-btn btn-upgrade-skill" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">스킬 강화 (-1 SP)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   if (activeModal === 'releaseMilestone') {
     return `
@@ -1332,6 +1387,26 @@ attachEvents = function attachEvents() {
   document.addEventListener('click', () => {
     isRpgMenuOpen = false;
     rpgDropdownMenu?.classList.remove('show');
+  });
+
+  document.querySelector('#btn-open-skilltree')?.addEventListener('click', () => {
+    activeModal = 'skillTree';
+    renderApp();
+  });
+
+  document.querySelectorAll('.btn-upgrade-skill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if ((userState.skillPoints || 0) > 0) {
+        userState.skillPoints = (userState.skillPoints || 1) - 1;
+        soundFx.playVictorySound();
+        confetti({ particleCount: 35, spread: 40 });
+        battleLogMessage = `⚔️ [스킬 강화] 전직 스킬이 한 단계 더 강력해졌습니다!`;
+        saveState();
+        renderApp();
+      } else {
+        alert('보유한 스킬 포인트(SP)가 부족합니다! 버그 몬스터를 처치하여 레벨업하세요.');
+      }
+    });
   });
 
   document.querySelector('#btn-open-releasemilestone')?.addEventListener('click', () => {
