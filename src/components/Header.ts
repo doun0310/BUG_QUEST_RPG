@@ -69,6 +69,9 @@ export function renderHeader(state: AppState): string {
             ${icon('sword', '', 14)} RPG 메뉴
           </button>
           <div class="dropdown-menu" id="rpg-dropdown-menu">
+            <button class="dropdown-item" id="btn-open-skilltree">${iconLabel('sword', '전직 클래스 & 스킬 트리', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-dungeon-map">${iconLabel('map', '던전 월드맵 & 보스 파밍', '', 14)}</button>
+            <button class="dropdown-item" id="btn-open-daily-roulette">${iconLabel('ticket', '일일 출석 룰렛 & 보물 상자', '', 14)}</button>
             <button class="dropdown-item" id="btn-open-releasemilestone">${iconLabel('flag', '릴리즈 배포 마일스톤', '', 14)}</button>
             <button class="dropdown-item" id="btn-open-slackbot">${iconLabel('slack', 'Slack / Teams 챗봇', '', 14)}</button>
             <button class="dropdown-item" id="btn-open-cicdpipeline">${iconLabel('rocket', 'CI/CD 파이프라인', '', 14)}</button>

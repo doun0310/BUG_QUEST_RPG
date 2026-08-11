@@ -29,10 +29,10 @@ export function renderMonsterBoard(state: AppState): string {
   };
 
   const elementIcon: Record<string, string> = {
-    Frontend: icon('paint', 'color:var(--primary-light)', 12) + ' Frontend',
-    Backend: icon('server', 'color:var(--sky)', 12) + ' Backend',
-    Database: icon('database', 'color:var(--warning)', 12) + ' Database',
-    Security: icon('shield', 'color:var(--success)', 12) + ' Security',
+    Frontend: icon('paint', 'color:var(--primary-light)', 12) + ' 약점: Frontend',
+    Backend: icon('server', 'color:var(--sky)', 12) + ' 약점: Backend',
+    Database: icon('database', 'color:var(--warning)', 12) + ' 약점: Database',
+    Security: icon('shield', 'color:var(--success)', 12) + ' 약점: Security',
   };
 
   return `
@@ -112,7 +112,9 @@ export function renderMonsterBoard(state: AppState): string {
 
     <!-- Monster Cards -->
     <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-      ${filteredMonsters.map(m => {
+      ${filteredMonsters.length === 0 ? `
+        <div class="empty-state"><div>${icon('bug', 'color:var(--primary-light)', 26)}</div><h3>표시할 이슈가 없습니다</h3><p>${bugFilter === 'defeated' ? '아직 해결된 이슈가 없습니다.' : '필터를 변경하거나 새로운 이슈를 등록하세요.'}</p><button class="action-btn" id="btn-open-create-monster">${icon('plus', 'color:white', 14)} 이슈 등록</button></div>
+      ` : filteredMonsters.map(m => {
         const isHit = hitMonsterId === m.id;
         const isEnraged = m.isEnraged || m.isOverdue;
         const isCriticalImpact = isHit && !!lastHitDamageText?.includes('CRITICAL');

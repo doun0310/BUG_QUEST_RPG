@@ -3,8 +3,8 @@ import { icon } from '../../icons';
 import { getGitHubConfig, type GitHubPullRequest } from '../../services/githubService';
 import { renderModalHeader } from '../ui';
 
-export function renderAttackModal(state: AppState & { openPRs?: GitHubPullRequest[] }): string {
-  const { monstersState, attackTargetId, isSkillActiveNextAttack, userState, openPRs = [] } = state;
+export function renderAttackModal(state: AppState & { openPRs?: GitHubPullRequest[]; isFetchingOpenPRs?: boolean }): string {
+  const { monstersState, attackTargetId, isSkillActiveNextAttack, userState, openPRs = [], isFetchingOpenPRs = false } = state;
   const targetMonster = monstersState.find(m => m.id === attackTargetId);
   const ghConfig = getGitHubConfig();
 
@@ -26,8 +26,8 @@ export function renderAttackModal(state: AppState & { openPRs?: GitHubPullReques
               ${icon('check', 'color:var(--success)', 13)}
               <span>GitHub 온라인 연동 (<strong>${ghConfig.owner}/${ghConfig.repo}</strong>)</span>
             </span>
-            <button type="button" class="action-btn action-btn-secondary" id="btn-fetch-open-prs" style="padding: 0.15rem 0.45rem; font-size: 0.68rem; display: flex; align-items: center; gap: 0.25rem;">
-              ${icon('pr', 'color:var(--success)', 11)} 열린 PR 목록 불러오기
+            <button type="button" class="action-btn action-btn-secondary" id="btn-fetch-open-prs" style="padding: 0.15rem 0.45rem; font-size: 0.68rem; display: flex; align-items: center; gap: 0.25rem;" ${isFetchingOpenPRs ? 'disabled' : ''}>
+              ${isFetchingOpenPRs ? '목록 조회 중…' : icon('pr', 'color:var(--success)', 11) + ' 열린 PR 목록 불러오기'}
             </button>
           </div>
         ` : `

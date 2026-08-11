@@ -9,6 +9,7 @@ import { generateMonsterPreset } from './services/monsterPresetEngine';
 import { getWebhookConfig, saveWebhookConfig, notifyMonsterDefeated } from './services/webhookNotifier';
 import { parseLcovContent } from './services/lcovParser';
 import { createAccount, login, logout, switchAccount, isLoggedIn, getCurrentAccount, deleteAccount, lockSession, unlockSession, isSessionLocked, resetAuthStateForTesting } from './services/authService';
+import { calculateElementalDamage, canEnrage, isDailyClaimAvailable } from './services/gameRules';
 
 describe('CMS Workload Capacity Calculations', () => {
   it('should correctly calculate total available and assigned hours for team members', () => {
@@ -175,6 +176,22 @@ end_of_record
     expect(summary.linesFound).toBe(10);
     expect(summary.linesHit).toBe(8);
     expect(summary.coveragePercent).toBe(80); // (8/10) * 100 = 80%
+  });
+});
+
+describe('Game progression rules', () => {
+  it('applies elemental advantage and detects the enrage threshold', () => {
+    const result = calculateElementalDamage(100, { elementTrait: 'Frontend' }, '프론트엔드 마법사');
+    expect(result.damage).toBe(130);
+    expect(result.advantage).toBe(true);
+    expect(canEnrage({ currentHp: 30, maxHp: 100, isEnraged: false })).toBe(true);
+    expect(canEnrage({ currentHp: 31, maxHp: 100, isEnraged: false })).toBe(false);
+  });
+
+  it('allows exactly one daily reward per date', () => {
+    expect(isDailyClaimAvailable(null, '2026-08-11')).toBe(true);
+    expect(isDailyClaimAvailable('2026-08-11', '2026-08-11')).toBe(false);
+    expect(isDailyClaimAvailable('2026-08-10', '2026-08-11')).toBe(true);
   });
 });
 

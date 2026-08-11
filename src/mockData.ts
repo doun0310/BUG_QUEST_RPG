@@ -11,6 +11,9 @@ export const CYBER_GOLEM_IMG = '/cyber_golem.jpg';
 export const mockUser: UserProfile = {
   name: '김개발 (Hero)',
   heroClass: '전사 (Frontend)',
+  devClass: '프론트엔드 마법사',
+  skillPoints: 3,
+  skillLevels: { shield: 0, transaction: 0, automation: 0 },
   level: 5,
   hp: 70,
   maxHp: 100,

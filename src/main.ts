@@ -29,6 +29,7 @@ import { renderTeamSettingsModal } from './components/modals/TeamSettingsModal';
 import { renderUserProfileModal } from './components/modals/UserProfileModal';
 import { renderOverview } from './components/Overview';
 import { updateAccountProfile } from './services/authService';
+import { calculateElementalDamage, canEnrage, isDailyClaimAvailable } from './services/gameRules';
 
 import { 
   mockUser, 
@@ -58,9 +59,11 @@ try {
 
 let storedUser = null;
 let storedMonsters = null;
+let storedProgress = null;
 try {
   storedUser = localStorage.getItem('userState');
   storedMonsters = localStorage.getItem('monstersState');
+  storedProgress = localStorage.getItem('gameProgressState');
 } catch {
   // fallback
 }
@@ -72,12 +75,17 @@ let webhooksState: WebhookPayload[] = [...mockWebhooks];
 let questsState: WeeklyQuest[] = [...mockWeeklyQuests];
 let userState = { ...mockUser };
 let coopBossState: TeamCoopBoss = { ...mockTeamCoopBoss };
+const dungeonProgress: Record<string, boolean> = { frontend: false, api: false, infra: false };
 
 try {
   if (storedMonsters) monstersState = JSON.parse(storedMonsters);
 } catch {
   monstersState = [...mockMonsters];
 }
+
+try {
+  if (storedProgress) Object.assign(dungeonProgress, JSON.parse(storedProgress).dungeonProgress || {});
+} catch { /* retain defaults */ }
 
 try {
   if (storedUser) userState = JSON.parse(storedUser);
@@ -88,6 +96,7 @@ try {
 function saveState() {
   localStorage.setItem('userState', JSON.stringify(userState));
   localStorage.setItem('monstersState', JSON.stringify(monstersState));
+  localStorage.setItem('gameProgressState', JSON.stringify({ dungeonProgress }));
 }
 
 let simExtraDevs: number = 0;
@@ -101,7 +110,9 @@ let lastHitDamageText: string | null = null;
 let isSkillActiveNextAttack: boolean = false;
 
 // Modal States
-let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'skillTree' | 'teamSettings' | 'userProfile' | null = null;
+let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'dungeonMap' | 'dailyRoulette' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'skillTree' | 'teamSettings' | 'userProfile' | null = null;
+const dailyRewardKey = 'bug_quest_daily_reward_date';
+const todayKey = () => new Date().toISOString().slice(0, 10);
 let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
@@ -368,6 +379,7 @@ function renderChartIfModalOpen() {
   }
 }
 let openPRsList: GitHubPullRequest[] = [];
+let isFetchingOpenPRs = false;
 
 renderModals = function renderModals() {
   if (!activeModal) return '';
@@ -383,6 +395,7 @@ renderModals = function renderModals() {
     lastLootReward,
     isSkillActiveNextAttack,
     openPRs: openPRsList,
+    isFetchingOpenPRs,
   } as any;
 
   if (activeModal === 'codex') return renderCodexModal(state);
@@ -394,7 +407,8 @@ renderModals = function renderModals() {
 
   if (activeModal === 'skillTree') {
     const cls = userState.devClass || '프론트엔드 마법사';
-    const sp = userState.skillPoints || 3;
+    const sp = userState.skillPoints ?? 0;
+    const levels = userState.skillLevels || { shield: 0, transaction: 0, automation: 0 };
 
     return `
       <div class="modal-backdrop" id="modal-backdrop">
@@ -417,13 +431,17 @@ renderModals = function renderModals() {
             </div>
           </div>
 
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.45rem;margin-bottom:1rem;">
+            ${(['프론트엔드 마법사', '백엔드 전사', 'DevOps 성기사'] as const).map(devClass => `<button class="action-btn action-btn-secondary btn-select-dev-class ${cls === devClass ? 'is-selected-class' : ''}" data-class="${devClass}" style="justify-content:center;min-height:48px;font-size:0.7rem;${cls === devClass ? 'border-color:var(--primary);color:var(--primary-light);background:var(--primary-bg);' : ''}">${devClass}</button>`).join('')}
+          </div>
+
           <div style="display: flex; flex-direction: column; gap: 0.6rem;">
             <div style="background: var(--inner-box-bg); padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <strong style="font-size: 0.85rem; color: #38bdf8;">✨ [액티브] CSS Z-Index 무적 실드</strong>
                 <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.15rem;">버그 몬스터의 다음 공격 피해를 100% 무효화 (쿨타임 3턴)</div>
               </div>
-              <button class="action-btn btn-upgrade-skill" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">스킬 강화 (-1 SP)</button>
+              <button class="action-btn btn-upgrade-skill" data-skill="shield" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Lv.${levels.shield}/3 · 강화</button>
             </div>
 
             <div style="background: var(--inner-box-bg); padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
@@ -431,7 +449,7 @@ renderModals = function renderModals() {
                 <strong style="font-size: 0.85rem; color: #fb7185;">💥 [액티브] DB 트랜잭션 2배 타격</strong>
                 <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.15rem;">다음 PR Merge 공격 피해량 200% 폭발적 증가</div>
               </div>
-              <button class="action-btn btn-upgrade-skill" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">스킬 강화 (-1 SP)</button>
+              <button class="action-btn btn-upgrade-skill" data-skill="transaction" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Lv.${levels.transaction}/3 · 강화</button>
             </div>
 
             <div style="background: var(--inner-box-bg); padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;">
@@ -439,12 +457,40 @@ renderModals = function renderModals() {
                 <strong style="font-size: 0.85rem; color: #4ade80;">🛡️ [패시브] CI/CD 무적 자동화</strong>
                 <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 0.15rem;">SLA 초과 시 발생하는 HP 감소 피해를 50% 반감</div>
               </div>
-              <button class="action-btn btn-upgrade-skill" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">스킬 강화 (-1 SP)</button>
+              <button class="action-btn btn-upgrade-skill" data-skill="automation" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Lv.${levels.automation}/3 · 강화</button>
             </div>
           </div>
         </div>
       </div>
     `;
+  }
+
+  if (activeModal === 'dungeonMap') {
+    const dungeons = [
+      { id: 'frontend', icon: 'paint', name: '프론트엔드 던전', boss: '레이아웃 쉐이프시프터', reward: 'CSS 아티팩트', tone: 'var(--primary-light)' },
+      { id: 'api', icon: 'server', name: 'API 던전', boss: '타임아웃 하이드라', reward: 'API 아티팩트', tone: 'var(--sky)' },
+      { id: 'infra', icon: 'rocket', name: '인프라 파이프라인', boss: '배포 드래곤', reward: '배포 아티팩트', tone: 'var(--success)' },
+    ] as const;
+    return `<div class="modal-backdrop" id="modal-backdrop"><div class="modal-card" style="max-width:680px;">
+      <div class="modal-heading"><div class="modal-heading-icon">${icon('map', '', 18)}</div><div class="modal-heading-copy"><p>DUNGEON MAP</p><h2>던전 월드맵</h2></div><button class="modal-close" id="btn-close-modal">${icon('close', '', 16)}</button></div>
+      <p class="modal-description">각 던전의 보스를 토벌해 팀 아티팩트를 수집하세요.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.7rem;">${dungeons.map(d => `<section style="padding:1rem;border:1px solid ${dungeonProgress[d.id] ? 'var(--success-border)' : 'var(--panel-border)'};border-radius:12px;background:var(--inner-box-bg);">
+        <div style="color:${d.tone};margin-bottom:.55rem;">${icon(d.icon, '', 22)}</div><strong style="font-size:.85rem;">${d.name}</strong><p style="font-size:.7rem;color:var(--text-sub);margin:.35rem 0;">보스: ${d.boss}</p><span class="badge ${dungeonProgress[d.id] ? 'badge-success' : ''}">${dungeonProgress[d.id] ? '클리어' : `보상: ${d.reward}`}</span>
+        <button class="action-btn btn-clear-dungeon" data-dungeon="${d.id}" style="width:100%;justify-content:center;margin-top:.75rem;" ${dungeonProgress[d.id] ? 'disabled' : ''}>${dungeonProgress[d.id] ? '완료' : '보스 도전'}</button>
+      </section>`).join('')}</div>
+    </div></div>`;
+  }
+
+  if (activeModal === 'dailyRoulette') {
+    const claimedToday = !isDailyClaimAvailable(localStorage.getItem(dailyRewardKey), todayKey());
+    const rewards = ['+50 XP', '커피 포션', '+1 SP', '희귀 아티팩트', '+100 XP', '보물 상자', 'HP +30', '골드 티켓'];
+    return `<div class="modal-backdrop" id="modal-backdrop"><div class="modal-card" style="max-width:480px;text-align:center;">
+      <div class="modal-heading"><div class="modal-heading-icon">${icon('ticket', '', 18)}</div><div class="modal-heading-copy" style="text-align:left;"><p>DAILY CHECK-IN</p><h2>일일 출석 룰렛</h2></div><button class="modal-close" id="btn-close-modal">${icon('close', '', 16)}</button></div>
+      <p class="modal-description" style="text-align:left;">매일 한 번, 오늘의 개발 행운을 획득하세요.</p>
+      <div class="daily-roulette" id="daily-roulette"><div class="roulette-pointer">◆</div><div class="roulette-wheel">${rewards.map((reward, i) => `<span style="transform:rotate(${i * 45}deg) translateY(-88px) rotate(-${i * 45}deg)">${reward}</span>`).join('')}</div></div>
+      <button class="action-btn" id="btn-spin-daily-roulette" style="margin-top:1rem;min-width:180px;justify-content:center;" ${claimedToday ? 'disabled' : ''}>${claimedToday ? '오늘의 출석 완료' : '룰렛 돌리기'}</button>
+      <p style="margin-top:.65rem;font-size:.7rem;color:var(--text-muted);">${claimedToday ? '내일 다시 도전할 수 있습니다.' : '출석 보상은 자정에 초기화됩니다.'}</p>
+    </div></div>`;
   }
 
   if (activeModal === 'releaseMilestone') {
@@ -1394,10 +1440,76 @@ attachEvents = function attachEvents() {
     renderApp();
   });
 
-  document.querySelectorAll('.btn-upgrade-skill').forEach(btn => {
+  document.querySelector('#btn-open-dungeon-map')?.addEventListener('click', () => {
+    activeModal = 'dungeonMap';
+    renderApp();
+  });
+
+  document.querySelector('#btn-open-daily-roulette')?.addEventListener('click', () => {
+    activeModal = 'dailyRoulette';
+    renderApp();
+  });
+
+  document.querySelector<HTMLButtonElement>('#btn-spin-daily-roulette')?.addEventListener('click', () => {
+    const wheel = document.querySelector<HTMLElement>('.roulette-wheel');
+    const rewards = [
+      { name: '+50 XP', xp: 50 }, { name: '커피 포션', item: '포션: 커피 힐링 (HP +30)' },
+      { name: '+1 SP', sp: 1 }, { name: '희귀 아티팩트', item: '희귀 아티팩트: 픽셀 코어' },
+      { name: '+100 XP', xp: 100 }, { name: '보물 상자', item: '가차 보물 상자' },
+      { name: 'HP +30', hp: 30 }, { name: '골드 티켓', item: '골드 티켓: 조기 퇴근권' }
+    ];
+    const reward = rewards[Math.floor(Math.random() * rewards.length)];
+    wheel?.classList.add('is-spinning');
+    setTimeout(() => {
+      if (reward.xp) userState.xp += reward.xp;
+      if (reward.sp) userState.skillPoints = (userState.skillPoints ?? 0) + reward.sp;
+      if (reward.hp) userState.hp = Math.min(userState.maxHp, userState.hp + reward.hp);
+      if (reward.item) userState.inventory.push({ id: `daily-${Date.now()}`, name: reward.item, type: '아이템', icon: '✦', description: '일일 출석 룰렛 보상', acquiredAt: todayKey() });
+      localStorage.setItem(dailyRewardKey, todayKey());
+      soundFx.playVictorySound();
+      confetti({ particleCount: 70, spread: 70, origin: { y: 0.55 } });
+      showToast(`출석 보상 획득: ${reward.name}`, 'success');
+      saveState();
+      renderApp();
+    }, 850);
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.btn-clear-dungeon').forEach(btn => {
     btn.addEventListener('click', () => {
-      if ((userState.skillPoints || 0) > 0) {
-        userState.skillPoints = (userState.skillPoints || 1) - 1;
+      const dungeon = btn.dataset.dungeon;
+      if (!dungeon || dungeonProgress[dungeon]) return;
+      dungeonProgress[dungeon] = true;
+      const rewards: Record<string, string> = { frontend: 'CSS 아티팩트: 레이아웃 코어', api: 'API 아티팩트: 하이드라 키', infra: '배포 아티팩트: 드래곤 엔진' };
+      userState.inventory.push({ id: `artifact-${dungeon}-${Date.now()}`, name: rewards[dungeon], type: '아이템', icon: '✦', description: '던전 보스 토벌로 획득한 팀 아티팩트', acquiredAt: new Date().toISOString().slice(0, 10) });
+      userState.xp += 150;
+      particleService.triggerImpact(window.innerWidth / 2, window.innerHeight / 2, true);
+      soundFx.playVictorySound();
+      showToast(`${rewards[dungeon]} 획득! +150 XP`, 'success');
+      saveState();
+      renderApp();
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.btn-select-dev-class').forEach(btn => {
+    btn.addEventListener('click', () => {
+      userState.devClass = btn.dataset.class as NonNullable<typeof userState.devClass>;
+      const multiplier = userState.devClass === '백엔드 전사' ? 2.2 : userState.devClass === 'DevOps 성기사' ? 1.7 : 1.9;
+      userState.activeSkill = { ...userState.activeSkill, name: userState.devClass === '백엔드 전사' ? 'DB 트랜잭션 강타' : userState.devClass === 'DevOps 성기사' ? 'CI/CD 자동 방어' : 'CSS Z-Index 실드', damageMultiplier: multiplier };
+      saveState();
+      renderApp();
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.btn-upgrade-skill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const skill = btn.dataset.skill as 'shield' | 'transaction' | 'automation';
+      userState.skillLevels ||= { shield: 0, transaction: 0, automation: 0 };
+      if (userState.skillLevels[skill] >= 3) {
+        showToast('해당 스킬은 이미 최대 레벨입니다.', 'info');
+      } else if ((userState.skillPoints ?? 0) > 0) {
+        userState.skillPoints = (userState.skillPoints ?? 0) - 1;
+        userState.skillLevels[skill] += 1;
+        if (skill === 'transaction') userState.activeSkill.damageMultiplier = 2 + userState.skillLevels[skill] * 0.15;
         soundFx.playVictorySound();
         confetti({ particleCount: 35, spread: 40 });
         battleLogMessage = `⚔️ [스킬 강화] 전직 스킬이 한 단계 더 강력해졌습니다!`;
@@ -1945,8 +2057,11 @@ attachEvents = function attachEvents() {
   // ─── Live GitHub Fetch Open PRs Handler ───
   document.querySelector('#btn-fetch-open-prs')?.addEventListener('click', async () => {
     const ghConfig = getGitHubConfig();
+    isFetchingOpenPRs = true;
+    renderApp();
     showToast('🔎 open 상태인 GitHub PR 목록 조회 중...', 'warning');
     const prs = await fetchOpenPullRequests(ghConfig);
+    isFetchingOpenPRs = false;
     if (prs.length === 0) {
       showToast('열려있는 GitHub PR이 없거나 연동 권한을 확인해주세요.', 'info');
     } else {
@@ -1954,6 +2069,7 @@ attachEvents = function attachEvents() {
       showToast(`open 상태인 PR ${prs.length}개를 발견하였습니다!`, 'success');
       renderApp();
     }
+    if (prs.length === 0) renderApp();
   });
 
   document.querySelector('#select-open-pr')?.addEventListener('change', (e) => {
@@ -2052,6 +2168,10 @@ attachEvents = function attachEvents() {
       const aiQualityMultiplier = Math.random() > 0.3 ? 1.2 : 0.8;
       baseDamage = Math.round(baseDamage * aiQualityMultiplier);
 
+      const elementalResult = calculateElementalDamage(baseDamage, monster, userState.devClass);
+      baseDamage = elementalResult.damage;
+      const hasElementalAdvantage = elementalResult.advantage;
+
       if (isSkillActiveNextAttack) {
         baseDamage = Math.round(baseDamage * userState.activeSkill.damageMultiplier);
         isSkillActiveNextAttack = false;
@@ -2093,6 +2213,12 @@ attachEvents = function attachEvents() {
       window.setTimeout(() => document.body.classList.remove('impact-hit', 'impact-critical'), isCritical ? 320 : 180);
 
       monster.currentHp = Math.max(0, monster.currentHp - baseDamage);
+      const shouldEnrage = canEnrage(monster) && Math.random() < 0.45;
+      if (shouldEnrage) {
+        monster.isEnraged = true;
+        battleLogMessage = `⚠️ ${monster.title}이(가) HP 30% 이하에서 광폭화했습니다. 다음 공격 전 빠르게 처리하세요!`;
+        showToast('보스 광폭화 발동 — 타임어택 상태입니다!', 'warning');
+      }
       userState.streakCount += 1;
 
       // Season Pass XP Gain
@@ -2108,7 +2234,9 @@ attachEvents = function attachEvents() {
       hitMonsterId = monster.id;
       lastHitDamageText = isCritical ? `CRITICAL! -${baseDamage} HP` : `-${baseDamage} HP`;
 
-      battleLogMessage = `[AI 코드 검수 우수] ${userState.name}의 공격! ${monster.title}에게 ${baseDamage} 데미지! (Slack 채널 알림 발송 완료)`;
+      if (!shouldEnrage) {
+        battleLogMessage = `[${hasElementalAdvantage ? '약점 속성 적중 +30%' : 'AI 코드 검수'}] ${userState.name}의 공격! ${monster.title}에게 ${baseDamage} 데미지!`;
+      }
 
       webhooksState.unshift({
         id: 'wh-' + (webhooksState.length + 1),
@@ -2124,6 +2252,7 @@ attachEvents = function attachEvents() {
         monster.status = 'Defeated';
         userState.xp += monster.rewardXp;
         userState.defeatedBugs += 1;
+        userState.skillPoints = (userState.skillPoints ?? 0) + 1;
         userState.hp = Math.min(userState.maxHp, userState.hp + 10);
 
         // Send live Slack & Teams incoming webhook notifications
