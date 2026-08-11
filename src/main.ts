@@ -2104,13 +2104,12 @@ attachEvents = function attachEvents() {
         }, 1500);
         return;
       } else {
-        confetti({ particleCount: 30, spread: 40 });
+        confetti({ particleCount: 20, spread: 35 });
         
-        setTimeout(() => {
+        window.setTimeout(() => {
           hitMonsterId = null;
           lastHitDamageText = null;
-          renderApp();
-        }, 600);
+        }, 500);
       }
       saveState();
     }

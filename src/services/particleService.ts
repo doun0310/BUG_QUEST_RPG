@@ -7,6 +7,7 @@ export interface Particle {
   color: string;
   alpha: number;
   decay: number;
+  shape: 'pixel' | 'spark';
 }
 
 export interface FloatingText {
@@ -27,6 +28,7 @@ interface ImpactWave {
   color: string;
   alpha: number;
   lineWidth: number;
+  pixelated: boolean;
 }
 
 class ParticleService {
@@ -36,6 +38,8 @@ class ParticleService {
   private floatingTexts: FloatingText[] = [];
   private impactWaves: ImpactWave[] = [];
   private animationFrameId: number | null = null;
+  private readonly maxParticles = 96;
+  private readonly maxWaves = 4;
 
   constructor() {
     // Lazy canvas creation
@@ -43,7 +47,7 @@ class ParticleService {
 
   private initCanvas() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    
+
     if (!this.canvas) {
       this.canvas = document.createElement('canvas');
       this.canvas.id = 'fx-particle-canvas';
@@ -54,9 +58,10 @@ class ParticleService {
       this.canvas.style.height = '100vh';
       this.canvas.style.pointerEvents = 'none';
       this.canvas.style.zIndex = '9999';
+      this.canvas.style.imageRendering = 'pixelated';
       document.body.appendChild(this.canvas);
 
-      this.ctx = this.canvas.getContext('2d');
+      this.ctx = this.canvas.getContext('2d', { alpha: true });
       this.resize();
       window.addEventListener('resize', () => this.resize());
     }
@@ -69,25 +74,38 @@ class ParticleService {
     }
   }
 
+  private prefersReducedMotion(): boolean {
+    return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  private canRender(): boolean {
+    return typeof document === 'undefined' || document.visibilityState !== 'hidden';
+  }
+
   /**
    * 화면 특정 좌표 (x, y)에 픽셀 파티클 폭발 이펙트 발생
    */
-  public triggerExplosion(x: number, y: number, color: string = '#38bdf8', count: number = 24) {
+  public triggerExplosion(x: number, y: number, color: string = '#38bdf8', count: number = 20) {
     this.initCanvas();
-    if (!this.ctx) return;
+    if (!this.ctx || !this.canRender()) return;
 
-    for (let i = 0; i < count; i++) {
+    const availableSlots = this.maxParticles - this.particles.length;
+    const actualCount = Math.max(0, Math.min(this.prefersReducedMotion() ? 8 : count, availableSlots));
+
+    for (let i = 0; i < actualCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 6 + 2;
+      const speed = Math.random() * 5.4 + 2.2;
+      const size = Math.random() > 0.72 ? 5 : (Math.random() > 0.45 ? 3 : 2);
       this.particles.push({
         x,
         y,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1.5,
-        size: Math.random() * 5 + 3,
+        vy: Math.sin(angle) * speed - 1.2,
+        size,
         color,
         alpha: 1,
-        decay: Math.random() * 0.03 + 0.015,
+        decay: Math.random() * 0.035 + 0.02,
+        shape: i % 6 === 0 ? 'spark' : 'pixel',
       });
     }
 
@@ -98,13 +116,17 @@ class ParticleService {
   public triggerImpact(x: number, y: number, critical: boolean = false) {
     const color = critical ? '#fbbf24' : '#38bdf8';
     const accent = critical ? '#f43f5e' : '#a5b4fc';
-    this.triggerExplosion(x, y, color, critical ? 62 : 36);
-    this.triggerExplosion(x, y, accent, critical ? 30 : 14);
+    this.triggerExplosion(x, y, color, critical ? 48 : 28);
+    this.triggerExplosion(x, y, accent, critical ? 22 : 12);
+    this.triggerExplosion(x, y, '#ffffff', critical ? 10 : 5);
 
-    this.impactWaves.push(
-      { x, y, radius: 8, maxRadius: critical ? 150 : 95, color, alpha: 0.95, lineWidth: critical ? 5 : 3 },
-      { x, y, radius: critical ? 20 : 14, maxRadius: critical ? 220 : 135, color: accent, alpha: 0.65, lineWidth: 2 }
-    );
+    if (!this.prefersReducedMotion()) {
+      this.impactWaves.splice(0, Math.max(0, this.impactWaves.length - (this.maxWaves - 2)));
+      this.impactWaves.push(
+        { x, y, radius: 8, maxRadius: critical ? 138 : 88, color, alpha: 0.9, lineWidth: critical ? 4 : 3, pixelated: true },
+        { x, y, radius: critical ? 18 : 12, maxRadius: critical ? 190 : 116, color: accent, alpha: 0.6, lineWidth: 2, pixelated: false }
+      );
+    }
     this.startLoop();
   }
 
@@ -139,8 +161,9 @@ class ParticleService {
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Render Particles
-    for (let i = this.particles.length - 1; i >= 0; i--) {
+    // 1. Render Particles (Opt: O(1) swap-pop removal & no heavy shadowBlur)
+    const pLen = this.particles.length;
+    for (let i = pLen - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.x += p.vx;
       p.y += p.vy;
@@ -148,61 +171,76 @@ class ParticleService {
       p.alpha -= p.decay;
 
       if (p.alpha <= 0) {
-        this.particles.splice(i, 1);
+        // Swap-pop to avoid splice overhead
+        this.particles[i] = this.particles[this.particles.length - 1];
+        this.particles.pop();
         continue;
       }
 
-      this.ctx.save();
-      this.ctx.globalAlpha = Math.max(0, p.alpha);
+      this.ctx.globalAlpha = p.alpha;
       this.ctx.fillStyle = p.color;
-      this.ctx.shadowBlur = 8;
-      this.ctx.shadowColor = p.color;
-      this.ctx.fillRect(p.x, p.y, p.size, p.size);
-      this.ctx.restore();
-    }
-
-    // Render Floating Text
-    for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
-      const ft = this.floatingTexts[i];
-      ft.y += ft.vy;
-      ft.alpha -= 0.02;
-
-      if (ft.alpha <= 0) {
-        this.floatingTexts.splice(i, 1);
-        continue;
+      const px = Math.round(p.x);
+      const py = Math.round(p.y);
+      if (p.shape === 'spark') {
+        this.ctx.fillRect(px - p.size, py, p.size * 3, p.size);
+        this.ctx.fillRect(px, py - p.size, p.size, p.size * 3);
+      } else {
+        this.ctx.fillRect(px, py, p.size, p.size);
       }
-
-      this.ctx.save();
-      this.ctx.globalAlpha = Math.max(0, ft.alpha);
-      this.ctx.font = `900 ${ft.fontSize}px 'Pretendard', sans-serif`;
-      this.ctx.fillStyle = ft.color;
-      this.ctx.shadowBlur = 10;
-      this.ctx.shadowColor = ft.color;
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(ft.text, ft.x, ft.y);
-      this.ctx.restore();
     }
 
-    // Render expanding impact waves behind floating text.
-    for (let i = this.impactWaves.length - 1; i >= 0; i--) {
+    // 2. Render Expanding Impact Waves
+    const wLen = this.impactWaves.length;
+    for (let i = wLen - 1; i >= 0; i--) {
       const wave = this.impactWaves[i];
-      wave.radius += (wave.maxRadius - wave.radius) * 0.16 + 2;
-      wave.alpha -= 0.055;
+      wave.radius += (wave.maxRadius - wave.radius) * 0.18 + 2;
+      wave.alpha -= 0.06;
+
       if (wave.alpha <= 0 || wave.radius >= wave.maxRadius - 2) {
-        this.impactWaves.splice(i, 1);
+        this.impactWaves[i] = this.impactWaves[this.impactWaves.length - 1];
+        this.impactWaves.pop();
         continue;
       }
-      this.ctx.save();
+
       this.ctx.globalAlpha = wave.alpha;
       this.ctx.strokeStyle = wave.color;
       this.ctx.lineWidth = wave.lineWidth;
-      this.ctx.shadowBlur = 16;
-      this.ctx.shadowColor = wave.color;
-      this.ctx.beginPath();
-      this.ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
-      this.ctx.stroke();
-      this.ctx.restore();
+      if (wave.pixelated) {
+        const r = Math.round(wave.radius / 6) * 6;
+        const corner = Math.round(r * 0.42);
+        this.ctx.strokeRect(Math.round(wave.x - r), Math.round(wave.y - corner), r * 2, corner * 2);
+        this.ctx.strokeRect(Math.round(wave.x - corner), Math.round(wave.y - r), corner * 2, r * 2);
+      } else {
+        this.ctx.beginPath();
+        this.ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
     }
+
+    // 3. Render Floating Text
+    const tLen = this.floatingTexts.length;
+    if (tLen > 0) {
+      this.ctx.textAlign = 'center';
+      for (let i = tLen - 1; i >= 0; i--) {
+        const ft = this.floatingTexts[i];
+        ft.y += ft.vy;
+        ft.alpha -= 0.025;
+
+        if (ft.alpha <= 0) {
+          this.floatingTexts[i] = this.floatingTexts[this.floatingTexts.length - 1];
+          this.floatingTexts.pop();
+          continue;
+        }
+
+        this.ctx.globalAlpha = ft.alpha < 0 ? 0 : ft.alpha;
+        this.ctx.font = `900 ${ft.fontSize}px 'Pretendard', sans-serif`;
+        this.ctx.fillStyle = ft.color;
+        this.ctx.fillText(ft.text, ft.x, ft.y);
+      }
+    }
+
+    // Reset globalAlpha
+    this.ctx.globalAlpha = 1;
 
     if (this.particles.length > 0 || this.floatingTexts.length > 0 || this.impactWaves.length > 0) {
       this.animationFrameId = requestAnimationFrame(this.loop);
