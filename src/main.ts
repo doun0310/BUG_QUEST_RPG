@@ -17,7 +17,7 @@ import { renderOnboardingWizard, type WizardStep } from './components/Onboarding
 import { isOnboardingComplete, completeOnboarding, loadTeamSettings, saveTeamSettings, resetOnboarding, toTeamMemberCapacity, addAccountAsTeamMember } from './services/teamSettingsService';
 import type { TeamMemberInput } from './types';
 import { store } from './store';
-import { icon } from './icons';
+import { avatarIcon, icon } from './icons';
 import { renderHeader } from './components/Header';
 import { renderMonsterBoard } from './components/MonsterBoard';
 import { renderSidebar } from './components/Sidebar';
@@ -2950,7 +2950,7 @@ function attachUserProfileModalEvents() {
       if (!symbol) return;
       const preview = document.querySelector('#up-avatar-preview') as HTMLElement;
       const hiddenInput = document.querySelector('#up-avatar-symbol') as HTMLInputElement;
-      if (preview) preview.textContent = symbol;
+      if (preview) preview.innerHTML = avatarIcon(symbol, 28);
       if (hiddenInput) hiddenInput.value = symbol;
 
       document.querySelectorAll('.up-icon-preset-btn').forEach(b => {

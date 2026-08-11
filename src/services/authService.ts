@@ -5,7 +5,7 @@ import { hashPin, hashPinSync, verifyPin, verifyPinSync } from './cryptoService'
 
 export interface AccountAvatar {
   bgColor: string; // e.g. 'linear-gradient(135deg, #6366f1, #38bdf8)'
-  iconSymbol: string; // e.g. '⚡', '💻', '🛡️', '👾', '🚀'
+  iconSymbol: string; // IconName string; legacy emoji values are migrated when rendered.
 }
 
 export interface Account {
@@ -215,9 +215,9 @@ export function purgeLegacyDemoAccounts(): number {
 }
 
 const DEFAULT_AVATARS: Record<string, AccountAvatar> = {
-  '전사 (Frontend)': { bgColor: 'linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)', iconSymbol: '🎨' },
-  '마법사 (Backend)': { bgColor: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)', iconSymbol: '💻' },
-  '성기사 (QA)': { bgColor: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', iconSymbol: '🛡️' },
+  '전사 (Frontend)': { bgColor: 'linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)', iconSymbol: 'roleWarrior' },
+  '마법사 (Backend)': { bgColor: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)', iconSymbol: 'roleMage' },
+  '성기사 (QA)': { bgColor: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', iconSymbol: 'rolePaladin' },
 };
 
 
@@ -243,7 +243,7 @@ export async function createAccount(
     return { success: false, message: `사용자명 "${username}"은(는) 이미 사용 중입니다.` };
   }
 
-  const avatar = customAvatar || DEFAULT_AVATARS[heroClass] || { bgColor: 'linear-gradient(135deg, #6366f1, #38bdf8)', iconSymbol: '⚔️' };
+  const avatar = customAvatar || DEFAULT_AVATARS[heroClass] || { bgColor: 'linear-gradient(135deg, #6366f1, #38bdf8)', iconSymbol: 'sword' };
   const hashedPin = hashPinSync(pin, username);
 
   const newUserState: UserProfile = {
@@ -302,7 +302,7 @@ export function createAccountSync(
     return { success: false, message: `사용자명 "${username}"은(는) 이미 사용 중입니다.` };
   }
 
-  const avatar = customAvatar || DEFAULT_AVATARS[heroClass] || { bgColor: 'linear-gradient(135deg, #6366f1, #38bdf8)', iconSymbol: '⚔️' };
+  const avatar = customAvatar || DEFAULT_AVATARS[heroClass] || { bgColor: 'linear-gradient(135deg, #6366f1, #38bdf8)', iconSymbol: 'sword' };
 
   // Sync fallback hash
   let hash = 0;

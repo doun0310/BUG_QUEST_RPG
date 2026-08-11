@@ -115,7 +115,7 @@ export function createAccountDemoData(accounts: Account[], dateKey: string): Acc
       role: account.heroClass,
       xpEarned: Math.max(120, 520 - index * 70),
       bugsSlain: Math.max(1, 5 - index),
-      avatar: account.avatar?.iconSymbol || '👤',
+      avatar: account.avatar?.iconSymbol || 'mark',
     })),
   };
 }

@@ -1,3 +1,6 @@
+import { icon } from './icons';
+import { escapeHtml } from './services/inputSafety';
+
 // Toast Notification Service
 export function showToast(message: string, type: 'info' | 'success' | 'danger' | 'warning' = 'info', duration: number = 3000) {
   let container = document.getElementById('toast-container');
@@ -11,15 +14,15 @@ export function showToast(message: string, type: 'info' | 'success' | 'danger' |
   toast.className = `toast-item toast-${type}`;
   
   const iconMap = {
-    info: 'ℹ️',
-    success: '✅',
-    danger: '⚠️',
-    warning: '⚡'
-  };
+    info: 'feedback',
+    success: 'check',
+    danger: 'warning',
+    warning: 'lightning'
+  } as const;
 
   toast.innerHTML = `
-    <span>${iconMap[type]}</span>
-    <span style="flex: 1;">${message}</span>
+    <span>${icon(iconMap[type], '', 16)}</span>
+    <span style="flex: 1;">${escapeHtml(message)}</span>
   `;
 
   container.appendChild(toast);

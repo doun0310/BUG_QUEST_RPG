@@ -1,5 +1,5 @@
 import { getAllAccounts, getCurrentAccount, isSessionLocked, type Account } from '../services/authService';
-import { icon } from '../icons';
+import { avatarIcon, icon } from '../icons';
 
 export function renderLoginScreen(errorMsg: string = '', successMsg: string = ''): string {
   const accounts = getAllAccounts();
@@ -8,13 +8,13 @@ export function renderLoginScreen(errorMsg: string = '', successMsg: string = ''
 
   // 1. Session Lock Mode (화면 잠금 모드)
   if (locked && currentAccount) {
-    const avatar = currentAccount.avatar || { bgColor: 'linear-gradient(135deg, #6366f1, #38bdf8)', iconSymbol: '🛡️' };
+    const avatar = currentAccount.avatar || { bgColor: 'linear-gradient(135deg, #6366f1, #38bdf8)', iconSymbol: 'shield' };
     return `
       <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-gradient); padding: 1.5rem;">
         <div style="width: 100%; max-width: 400px; background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); border-radius: 24px; padding: 2.25rem 2rem; box-shadow: var(--glass-glow); text-align: center; color: var(--text-main);">
           
           <div style="width: 72px; height: 72px; border-radius: 50%; background: ${avatar.bgColor}; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1rem auto; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); border: 2px solid rgba(255, 255, 255, 0.2);">
-            ${avatar.iconSymbol}
+            ${avatarIcon(avatar.iconSymbol, 32)}
           </div>
 
           <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.2rem;">${currentAccount.displayName}</h2>
@@ -90,12 +90,12 @@ export function renderLoginScreen(errorMsg: string = '', successMsg: string = ''
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 240px; overflow-y: auto; padding-right: 0.2rem;">
               ${accounts.map(acc => {
-                const avatar = acc.avatar || { bgColor: 'linear-gradient(135deg, #6366f1, #38bdf8)', iconSymbol: '👾' };
+                const avatar = acc.avatar || { bgColor: 'linear-gradient(135deg, #6366f1, #38bdf8)', iconSymbol: 'mark' };
                 return `
                   <div class="account-card-item" data-username="${acc.username}" style="background: var(--inner-box-bg); border: 1px solid var(--panel-border); padding: 0.85rem 1rem; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--panel-border)'">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                       <div style="width: 42px; height: 42px; border-radius: 12px; background: ${avatar.bgColor}; display: flex; align-items: center; justify-content: justify; justify-content: center; font-size: 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-                        ${avatar.iconSymbol}
+                        ${avatarIcon(avatar.iconSymbol, 20)}
                       </div>
                       <div>
                         <div style="font-size: 0.9rem; font-weight: 800; display: flex; align-items: center; gap: 0.35rem;">

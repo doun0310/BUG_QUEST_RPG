@@ -1097,6 +1097,13 @@ header { padding: .8rem 1rem; }
 /* Pixel treatment for data-heavy and supporting interfaces. */
 ::selection { color: #fff; background: var(--primary); }
 svg { shape-rendering: crispEdges; }
+.pixel-icon { overflow: visible; image-rendering: pixelated; }
+.pixel-icon path, .pixel-icon rect, .pixel-icon circle, .pixel-icon ellipse, .pixel-icon polygon, .pixel-icon polyline, .pixel-icon line {
+  stroke-linecap: square !important;
+  stroke-linejoin: miter !important;
+  vector-effect: non-scaling-stroke;
+}
+.avatar-icon-svg { filter: drop-shadow(1px 1px 0 rgba(0,0,0,.5)); }
 .dropdown-menu, .toast-item, .inline-alert, .chart-surface, .analytics-summary > div,
 .archive-metrics > div, .archive-item, .archive-postmortem, .schedule-list > div,
 .daily-roulette, .roulette-pointer {

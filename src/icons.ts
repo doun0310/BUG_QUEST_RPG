@@ -404,7 +404,18 @@ export function icon(
   cls = ''
 ): string {
   const d = paths[name] ?? paths['bug'];
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" style="display:inline-block;vertical-align:middle;flex-shrink:0;${style}" class="icon-svg${cls ? ' ' + cls : ''}" aria-hidden="true">${d}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" shape-rendering="crispEdges" style="display:inline-block;vertical-align:middle;flex-shrink:0;${style}" class="icon-svg pixel-icon${cls ? ' ' + cls : ''}" aria-hidden="true">${d}</svg>`;
+}
+
+const legacyAvatarIconMap: Record<string, IconName> = {
+  '⚡': 'lightning', '💻': 'server', '🛡️': 'shield', '👾': 'bug', '🚀': 'rocket',
+  '🗡️': 'sword', '🧙‍♂️': 'roleMage', '🎨': 'paint', '🔥': 'fire', '👑': 'trophy',
+};
+
+/** Renders a game-styled avatar icon, including migration support for older emoji avatars. */
+export function avatarIcon(symbol: string | undefined, size = 20): string {
+  const name = legacyAvatarIconMap[symbol || ''] || (symbol as IconName) || 'mark';
+  return icon(name in paths ? name : 'mark', '', size, 'avatar-icon-svg');
 }
 
 /** 아이콘 + 텍스트 레이블을 가로 flex 행으로 묶어 반환합니다. */

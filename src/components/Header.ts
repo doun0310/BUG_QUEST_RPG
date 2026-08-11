@@ -84,7 +84,7 @@ export function renderHeader(state: AppState): string {
             <button class="dropdown-item" id="btn-open-simulator">${iconLabel('flask', '예산 시뮬레이터', '', 14)}</button>
             <button class="dropdown-item" id="btn-open-pet">${iconLabel('paw', `펫 Lv.${userState.pet.level}`, '', 14)}</button>
             <button class="dropdown-item" id="btn-open-forge">${iconLabel('hammer', `장비 강화 +${userState.weapon.enhanceLevel}`, '', 14)}</button>
-            <button class="dropdown-item" id="btn-edit-profile" style="color: var(--primary-light);">${iconLabel('users', '👤 계정 프로필 수정', 'color:var(--primary-light)', 14)}</button>
+            <button class="dropdown-item" id="btn-edit-profile" style="color: var(--primary-light);">${iconLabel('users', '계정 프로필 수정', 'color:var(--primary-light)', 14)}</button>
             <button class="dropdown-item" id="btn-switch-account" style="color: var(--sky);">${iconLabel('users', '다른 계정으로 전환', 'color:var(--sky)', 14)}</button>
             <button class="dropdown-item" id="btn-team-settings" style="color: var(--primary-light);">${iconLabel('sparkle', '팀 설정 (온보딩 재실행)', 'color:var(--primary-light)', 14)}</button>
             <button class="dropdown-item" id="btn-logout" style="color: var(--danger);">${iconLabel('warning', '로그아웃', 'color:var(--danger)', 14)}</button>

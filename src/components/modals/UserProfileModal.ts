@@ -1,6 +1,6 @@
 import { getCurrentAccount } from '../../services/authService';
 import type { UserProfile } from '../../types';
-import { icon } from '../../icons';
+import { avatarIcon, icon, type IconName } from '../../icons';
 import { renderModalHeader } from '../ui';
 
 const HERO_CLASSES: UserProfile['heroClass'][] = [
@@ -17,14 +17,14 @@ const AVATAR_BG_PRESETS = [
   { name: '다크 옵스', bg: 'linear-gradient(135deg, #475569, #0f172a)' },
 ];
 
-const AVATAR_ICON_PRESETS = ['⚡', '💻', '🛡️', '👾', '🚀', '🗡️', '🧙‍♂️', '🎨', '🔥', '👑'];
+const AVATAR_ICON_PRESETS: IconName[] = ['lightning', 'server', 'shield', 'bug', 'rocket', 'sword', 'roleMage', 'paint', 'fire', 'trophy'];
 
 export function renderUserProfileModal(errorMsg: string = '', successMsg: string = ''): string {
   const account = getCurrentAccount();
   if (!account) return '';
 
   const currentBg = account.avatar?.bgColor || AVATAR_BG_PRESETS[0].bg;
-  const currentSymbol = account.avatar?.iconSymbol || '⚡';
+  const currentSymbol = account.avatar?.iconSymbol || 'lightning';
 
   return `
     <div class="modal-backdrop" id="modal-backdrop" style="align-items: center; padding: 1.5rem 1rem;">
@@ -56,7 +56,7 @@ export function renderUserProfileModal(errorMsg: string = '', successMsg: string
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
               <!-- Live Preview Avatar -->
               <div id="up-avatar-preview" style="width: 56px; height: 56px; border-radius: 16px; background: ${currentBg}; display: flex; align-items: center; justify-content: center; font-size: 1.7rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.2); flex-shrink: 0;">
-                ${currentSymbol}
+                ${avatarIcon(currentSymbol, 28)}
               </div>
               <div style="flex: 1;">
                 <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.35rem;">테마 색상</div>
@@ -77,7 +77,7 @@ export function renderUserProfileModal(errorMsg: string = '', successMsg: string
               ${AVATAR_ICON_PRESETS.map(symbol => `
                 <button type="button" class="up-icon-preset-btn" data-symbol="${symbol}"
                   style="width: 32px; height: 32px; border-radius: 8px; background: ${currentSymbol === symbol ? 'var(--primary-bg)' : 'var(--inner-box-bg)'}; border: 1px solid ${currentSymbol === symbol ? 'var(--primary)' : 'var(--panel-border)'}; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                  ${symbol}
+                  ${avatarIcon(symbol, 17)}
                 </button>
               `).join('')}
             </div>
