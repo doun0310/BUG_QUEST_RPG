@@ -112,7 +112,20 @@ let isSkillActiveNextAttack: boolean = false;
 // Modal States
 let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'dungeonMap' | 'dailyRoulette' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'skillTree' | 'teamSettings' | 'userProfile' | null = null;
 const dailyRewardKey = 'bug_quest_daily_reward_date';
-const todayKey = () => new Date().toISOString().slice(0, 10);
+/** Daily rewards follow the product's Korean business day, not UTC midnight. */
+const todayKey = () => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date());
+  const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value || '';
+  return `${pick('year')}-${pick('month')}-${pick('day')}`;
+};
+const currentWeekLabel = () => {
+  const [year, month, day] = todayKey().split('-').map(Number);
+  const firstDay = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const mondayOffset = (firstDay + 6) % 7;
+  return `${month}월 ${Math.ceil((day + mondayOffset) / 7)}주차`;
+};
 let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
@@ -1217,8 +1230,12 @@ renderModals = function renderModals() {
               </select>
             </div>
             <div class="form-group">
-              <label>기간</label>
-              <input type="date" class="form-input" id="vacation-start" value="2026-08-17" required />
+              <label>시작일</label>
+              <input type="date" class="form-input" id="vacation-start" value="${todayKey()}" required />
+            </div>
+            <div class="form-group">
+              <label>종료일</label>
+              <input type="date" class="form-input" id="vacation-end" value="${todayKey()}" required />
             </div>
             <div class="form-group">
               <label>신청 사유</label>
@@ -1237,6 +1254,8 @@ renderModals = function renderModals() {
 
 
   if (activeModal === 'webhook') {
+    const ghConfig = getGitHubConfig();
+    const whConfig = getWebhookConfig();
     return `
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal-card" style="max-width: 520px;">
@@ -1258,6 +1277,11 @@ renderModals = function renderModals() {
             `).join('')}
           </div>
 
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.85rem;">
+            <div class="inline-alert ${ghConfig.isEnabled ? 'inline-alert-success' : 'inline-alert-danger'}" style="margin:0;justify-content:space-between;"><span>GitHub ${ghConfig.isEnabled ? '연결됨' : '미연결'}</span><button class="action-btn action-btn-secondary" id="btn-open-api-from-webhook">설정</button></div>
+            <div class="inline-alert ${whConfig.isEnabled ? 'inline-alert-success' : 'inline-alert-danger'}" style="margin:0;justify-content:space-between;"><span>메신저 ${whConfig.isEnabled ? '활성' : '비활성'}</span><button class="action-btn action-btn-secondary" id="btn-open-slack-from-webhook">설정</button></div>
+          </div>
+
           <div style="display: flex; justify-content: flex-end;">
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
           </div>
@@ -1272,7 +1296,7 @@ renderModals = function renderModals() {
         <div class="modal-card" style="max-width: 460px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
             <h2 style="font-size: 1rem; font-weight: 700;">주간 토벌 랭킹</h2>
-            <span class="badge">8월 1주차</span>
+            <span class="badge">${currentWeekLabel()}</span>
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.85rem;">
@@ -1931,6 +1955,9 @@ attachEvents = function attachEvents() {
     });
   });
 
+  document.querySelector('#btn-open-api-from-webhook')?.addEventListener('click', () => { activeModal = 'apiSync'; renderApp(); });
+  document.querySelector('#btn-open-slack-from-webhook')?.addEventListener('click', () => { activeModal = 'slackBot'; renderApp(); });
+
   document.querySelectorAll('#btn-leaderboard').forEach(btn => {
     btn.addEventListener('click', () => {
       activeModal = 'leaderboard';
@@ -2101,20 +2128,28 @@ attachEvents = function attachEvents() {
     const user = (document.querySelector('#vacation-user') as HTMLInputElement).value;
     const type = (document.querySelector('#vacation-type') as HTMLSelectElement).value as any;
     const reason = (document.querySelector('#vacation-reason') as HTMLInputElement).value;
+    const startDate = (document.querySelector('#vacation-start') as HTMLInputElement).value;
+    const endDate = (document.querySelector('#vacation-end') as HTMLInputElement).value;
+    const days = Math.floor((new Date(`${endDate}T00:00:00`).getTime() - new Date(`${startDate}T00:00:00`).getTime()) / 86400000) + 1;
+    if (days <= 0) {
+      showToast('종료일은 시작일 이후로 선택해주세요.', 'warning');
+      return;
+    }
 
     vacationsState.unshift({
       id: 'v' + (vacationsState.length + 1),
       userName: user,
       type,
-      startDate: '2026-08-17',
-      endDate: '2026-08-18',
-      days: 2,
-      status: '승인',
+      startDate,
+      endDate,
+      days,
+      status: '대기',
       reason
     });
 
-    userState.hp = Math.min(userState.maxHp, userState.hp + 50);
-    battleLogMessage = `휴가 신청 승인 완료! 충분한 휴식으로 개발자 HP가 +50 회복되었습니다!`;
+    const recovery = type === '연차' ? 50 : type === '월차' ? 30 : 0;
+    userState.hp = Math.min(userState.maxHp, userState.hp + recovery);
+    battleLogMessage = `${type} 신청이 등록되었습니다. ${recovery ? `HP가 +${recovery} 회복되었습니다.` : '승인 상태를 기다립니다.'}`;
 
     activeModal = null;
     renderApp();

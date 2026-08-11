@@ -72,7 +72,7 @@ function renderStep1(settings: TeamSettings, errorMsg: string): string {
 
       <div class="form-group" style="margin-bottom: 0.9rem;">
         <label style="font-size:0.75rem;color:var(--text-sub);margin-bottom:0.3rem;display:block;">프로젝트 이름 <span style="color:var(--danger);">*</span></label>
-        <input type="text" class="form-input" id="wizard-project-name" placeholder="예: CMS 고도화 v2.0, 쇼핑몰 리뉴얼" value="${settings.projectName}" style="font-size:0.88rem;" />
+        <input type="text" class="form-input" id="wizard-project-name" placeholder="예: 데이터베이스 인프라 구축, 웹사이트 리뉴얼" value="${settings.projectName}" style="font-size:0.88rem;" />
       </div>
 
       <div class="form-group" style="margin-bottom: 0.9rem;">
@@ -97,7 +97,7 @@ function renderStep2(members: TeamMemberInput[], errorMsg: string): string {
   return `
     <div>
       <h2 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.35rem; color: var(--text-main);">
-        👥 팀원을 등록해주세요
+        팀원을 등록해주세요
       </h2>
       <p style="font-size: 0.78rem; color: var(--text-sub); margin-bottom: 1.25rem;">
         실제 팀원 이름과 역할을 입력하세요. 워크로드 계산 및 리더보드에 반영됩니다.
@@ -150,7 +150,7 @@ function renderStep2(members: TeamMemberInput[], errorMsg: string): string {
           <div class="form-group">
             <label style="font-size:0.7rem;color:var(--text-sub);">집중 업무 비율</label>
             <div style="display:flex;align-items:center;gap:0.3rem;">
-              <input type="number" class="form-input" id="new-member-ratio" value="70" min="40" max="90" step="5" style="width:70px;font-size:0.82rem;" />
+              <input type="number" class="form-input" id="new-member-ratio" value="55" min="40" max="90" step="5" style="width:70px;font-size:0.82rem;" />
               <span style="font-size:0.75rem;color:var(--text-sub);">%</span>
             </div>
           </div>
@@ -169,7 +169,7 @@ function renderStep3(settings: TeamSettings): string {
   return `
     <div>
       <h2 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.35rem; color: var(--text-main);">
-        📊 스프린트 & 예산을 설정해주세요
+        스프린트 & 예산을 설정해주세요
       </h2>
       <p style="font-size: 0.78rem; color: var(--text-sub); margin-bottom: 1.5rem;">
         팀 워크로드 계산 및 예산 소진율 차트에 반영됩니다.
@@ -203,7 +203,7 @@ function renderStep3(settings: TeamSettings): string {
       <div style="background:var(--inner-box-bg);border:1px solid var(--panel-border);border-radius:12px;padding:0.85rem;">
         <div style="font-size:0.75rem;font-weight:700;color:var(--text-sub);margin-bottom:0.5rem;">⚡ 자동 계산 미리보기</div>
         <div id="wizard-capacity-preview" style="font-size:0.78rem;color:var(--text-main);line-height:1.7;">
-          팀원 정보와 스프린트 기간을 기반으로 예상 가용 시간이 자동 계산됩니다.
+          팀원 정보와 스프린트 기간을 기반으로 하여 예상 가용 시간이 자동 계산됩니다.
         </div>
       </div>
     </div>
@@ -216,7 +216,7 @@ function renderStep4(settings: TeamSettings): string {
   return `
     <div>
       <h2 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.35rem; color: var(--text-main);">
-        ⚔️ 길드 이름을 설정하고 시작하세요!
+        길드 이름을 설정하고 시작하세요!
       </h2>
       <p style="font-size: 0.78rem; color: var(--text-sub); margin-bottom: 1.5rem;">
         팀을 두 개의 길드로 나누어 주간 경쟁을 진행합니다.
@@ -224,19 +224,19 @@ function renderStep4(settings: TeamSettings): string {
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;">
         <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:1rem;">
-          <div style="font-size:0.7rem;font-weight:700;color:var(--primary-light);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em;">⚔️ 공격형 길드</div>
+          <div style="font-size:0.7rem;font-weight:700;color:var(--primary-light);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em;">공격형 길드</div>
           <input type="text" class="form-input" id="wizard-guild-a" placeholder="예: 프론트엔드 길드" value="${settings.guildAName}" style="font-size:0.82rem;" />
           <div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.3rem;">주로 Frontend/기능 개발팀</div>
         </div>
         <div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);border-radius:14px;padding:1rem;">
-          <div style="font-size:0.7rem;font-weight:700;color:#c084fc;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em;">🧙 수비형 길드</div>
+          <div style="font-size:0.7rem;font-weight:700;color:#c084fc;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em;">수비형 길드</div>
           <input type="text" class="form-input" id="wizard-guild-b" placeholder="예: 백엔드 길드" value="${settings.guildBName}" style="font-size:0.82rem;" />
           <div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.3rem;">주로 Backend/인프라팀</div>
         </div>
       </div>
 
       <div style="background:linear-gradient(135deg,rgba(15,23,42,0.9),rgba(30,41,59,0.8));border:1px solid var(--primary-border);border-radius:16px;padding:1.25rem;margin-bottom:1.5rem;">
-        <div style="font-size:0.78rem;font-weight:700;color:var(--primary-light);margin-bottom:0.65rem;">📋 설정 요약</div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--primary-light);margin-bottom:0.65rem;">설정 요약</div>
         <div id="wizard-final-summary" style="font-size:0.78rem;color:var(--text-sub);line-height:1.9;">
         </div>
       </div>
@@ -303,7 +303,7 @@ export function renderOnboardingWizard(
               </button>
             ` : `
               <button type="button" id="btn-wizard-complete" class="action-btn" style="padding:0.65rem 1.75rem;font-size:0.88rem;font-weight:800;box-shadow:0 4px 16px rgba(99,102,241,0.35);">
-                🚀 전장으로 출격!
+                전장으로 출격!
               </button>
             `}
           </div>
