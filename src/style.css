@@ -1227,3 +1227,90 @@ input[type="checkbox"] { accent-color: var(--pixel-highlight); }
 .pixel-dungeon-tile > strong { font-family:ui-monospace,monospace; }
 .pixel-dungeon-tile .action-btn { margin-top:auto !important; }
 @media (max-width:760px) { .pixel-inventory-grid,.pixel-dungeon-map { grid-template-columns:1fr; }.pixel-dungeon-map::before { display:none; }.pixel-dungeon-tile { min-height:0; } }
+
+/* Prompt-derived pixel UI system: framed panels, inset surfaces, corner rails, and discrete states. */
+:root {
+  --pixel-unit: 4px;
+  --pixel-corner: 10px;
+  --pixel-inset: rgba(255, 255, 255, .055);
+  --pixel-pressed: rgba(0, 0, 0, .32);
+}
+
+header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activity-log, .empty-state {
+  background-image:
+    linear-gradient(90deg, var(--pixel-highlight) 0 var(--pixel-corner), transparent var(--pixel-corner)) top left / 24px 2px no-repeat,
+    linear-gradient(-90deg, var(--pixel-highlight) 0 var(--pixel-corner), transparent var(--pixel-corner)) top right / 24px 2px no-repeat,
+    linear-gradient(90deg, var(--pixel-highlight) 0 var(--pixel-corner), transparent var(--pixel-corner)) bottom left / 24px 2px no-repeat,
+    linear-gradient(-90deg, var(--pixel-highlight) 0 var(--pixel-corner), transparent var(--pixel-corner)) bottom right / 24px 2px no-repeat,
+    linear-gradient(135deg, rgba(255,255,255,.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.05) 50%, rgba(255,255,255,.05) 75%, transparent 75%) !important;
+  background-size: 24px 2px, 24px 2px, 24px 2px, 24px 2px, 6px 6px !important;
+  background-color: var(--pixel-panel) !important;
+}
+
+.card-header, .profile-summary-head {
+  min-height: 28px;
+  padding-bottom: var(--pixel-unit);
+  border-bottom: 2px solid var(--pixel-edge);
+  box-shadow: inset 0 -1px 0 var(--pixel-inset);
+}
+.card-header .card-title, .profile-summary-head strong {
+  color: var(--pixel-highlight);
+  text-shadow: 1px 1px 0 var(--pixel-shadow);
+}
+
+.action-btn, .toolbar-pill-btn, .assignee-edit-btn, .modal-close, .icon-button, .dropdown-item {
+  transition: transform 80ms steps(2, end), box-shadow 80ms steps(2, end), background-color 80ms steps(2, end) !important;
+}
+.action-btn, .toolbar-pill-btn, .assignee-edit-btn, .modal-close, .icon-button {
+  min-height: 30px;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.13) 0 2px, transparent 2px) !important;
+}
+.action-btn:hover, .toolbar-pill-btn:hover, .assignee-edit-btn:hover, .modal-close:hover, .icon-button:hover {
+  background-color: var(--primary-bg) !important;
+  color: var(--pixel-highlight);
+}
+.action-btn:active, .toolbar-pill-btn:active, .assignee-edit-btn:active, .modal-close:active, .icon-button:active {
+  background-color: var(--pixel-pressed) !important;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,.48) !important;
+}
+.dropdown-item {
+  min-height: 31px;
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+}
+.dropdown-item:hover, .dropdown-item:focus-visible {
+  border-top-color: var(--pixel-edge);
+  border-bottom-color: var(--pixel-edge);
+  box-shadow: inset 3px 0 0 var(--pixel-highlight);
+}
+
+.game-hud-gauge, .monster-hp-frame, .progress-track.game-hud-bar {
+  background-image: linear-gradient(135deg, rgba(255,255,255,.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.1) 50%, rgba(255,255,255,.1) 75%, transparent 75%);
+  background-size: 4px 4px;
+}
+.game-hud-gauge .hp-bar-outer, .monster-hp-bar, .progress-track.game-hud-bar {
+  padding: 1px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.09), inset 2px 2px 0 rgba(0,0,0,.42);
+}
+.game-hud-gauge .hp-bar-inner, .monster-hp-bar .hp-bar-inner, .progress-track.game-hud-bar .progress-value {
+  transition: width 180ms steps(8, end) !important;
+}
+
+.quick-action-list { gap: var(--pixel-unit); }
+.quick-action-list .action-btn {
+  justify-content: flex-start;
+  padding-left: calc(var(--pixel-unit) * 2);
+  text-align: left;
+}
+.schedule-list > div, .member-load, .archive-item {
+  background-image: linear-gradient(90deg, var(--pixel-highlight) 0 2px, transparent 2px) !important;
+  background-repeat: no-repeat !important;
+  background-size: 12px 2px !important;
+  background-position: top left !important;
+}
+
+@media (max-width: 760px) {
+  :root { --pixel-corner: 8px; }
+  .card-header, .profile-summary-head { min-height: 24px; }
+  .action-btn, .toolbar-pill-btn, .assignee-edit-btn { min-height: 34px; }
+}
