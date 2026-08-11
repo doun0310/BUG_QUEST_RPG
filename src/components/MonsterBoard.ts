@@ -193,6 +193,7 @@ export function renderMonsterBoard(state: AppState): string {
                     <span style="display: flex; align-items: center; gap: 0.2rem; color: var(--text-muted);">
                       ${icon('target', '', 11)} ${m.assignee}
                     </span>
+                    ${m.status === 'Active' ? `<button class="assignee-edit-btn btn-reassign-assignee" data-id="${m.id}" aria-label="${m.title} 담당자 변경">${icon('users', '', 12)} 담당 변경</button>` : ''}
                     ${m.prUrl ? `<a href="${m.prUrl}" target="_blank" style="color: var(--primary-light); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 0.2rem;">${icon('pr', 'color:var(--primary-light)', 12)} PR</a>` : ''}
                   </div>
 

@@ -30,6 +30,7 @@ import { renderUserProfileModal } from './components/modals/UserProfileModal';
 import { renderOverview } from './components/Overview';
 import { updateAccountProfile } from './services/authService';
 import { calculateElementalDamage, canEnrage, isDailyClaimAvailable } from './services/gameRules';
+import { recalculateWorkload } from './services/workloadService';
 
 import { 
   mockUser, 
@@ -110,7 +111,7 @@ let lastHitDamageText: string | null = null;
 let isSkillActiveNextAttack: boolean = false;
 
 // Modal States
-let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'dungeonMap' | 'dailyRoulette' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'skillTree' | 'teamSettings' | 'userProfile' | null = null;
+let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'dungeonMap' | 'dailyRoulette' | 'reassign' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'skillTree' | 'teamSettings' | 'userProfile' | null = null;
 const dailyRewardKey = 'bug_quest_daily_reward_date';
 /** Daily rewards follow the product's Korean business day, not UTC midnight. */
 const todayKey = () => {
@@ -129,6 +130,7 @@ const currentWeekLabel = () => {
 let selectedPostMortemMonsterId: string | null = null;
 let attackTargetId: string | null = null;
 let lastLootReward: string | null = null;
+let reassignTargetId: string | null = null;
 
 let burnChartInstance: Chart | null = null;
 let radarChartInstance: Chart | null = null;
@@ -186,6 +188,8 @@ function renderApp() {
     return;
   }
   isOnboardingActive = false;
+
+  teamState = recalculateWorkload(teamState, vacationsState, monstersState);
 
   const state = {
     userState,
@@ -503,6 +507,16 @@ renderModals = function renderModals() {
       <div class="daily-roulette" id="daily-roulette"><div class="roulette-pointer">◆</div><div class="roulette-wheel">${rewards.map((reward, i) => `<span style="transform:rotate(${i * 45}deg) translateY(-88px) rotate(-${i * 45}deg)">${reward}</span>`).join('')}</div></div>
       <button class="action-btn" id="btn-spin-daily-roulette" style="margin-top:1rem;min-width:180px;justify-content:center;" ${claimedToday ? 'disabled' : ''}>${claimedToday ? '오늘의 출석 완료' : '룰렛 돌리기'}</button>
       <p style="margin-top:.65rem;font-size:.7rem;color:var(--text-muted);">${claimedToday ? '내일 다시 도전할 수 있습니다.' : '출석 보상은 자정에 초기화됩니다.'}</p>
+    </div></div>`;
+  }
+
+  if (activeModal === 'reassign') {
+    const target = monstersState.find(monster => monster.id === reassignTargetId);
+    const members = [...new Set([userState.name, ...teamState.map(member => member.userName)])];
+    return `<div class="modal-backdrop" id="modal-backdrop"><div class="modal-card modal-form-card">
+      <div class="modal-heading"><div class="modal-heading-icon">${icon('users', '', 18)}</div><div class="modal-heading-copy"><p>ASSIGN ISSUE</p><h2>담당자 변경</h2></div><button class="modal-close" id="btn-close-modal">${icon('close', '', 16)}</button></div>
+      <p class="modal-description"><strong>${target?.title ?? '선택한 이슈'}</strong>의 담당 개발자를 변경합니다.</p>
+      <form id="form-reassign"><div class="form-group"><label for="reassign-assignee">담당 개발자</label><select class="form-select" id="reassign-assignee">${members.map(name => `<option value="${name}" ${target?.assignee === name ? 'selected' : ''}>${name}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="action-btn action-btn-secondary" id="btn-close-modal">취소</button><button type="submit" class="action-btn">${icon('check', 'color:white', 14)} 담당자 저장</button></div></form>
     </div></div>`;
   }
 
@@ -1669,6 +1683,7 @@ attachEvents = function attachEvents() {
       maxHp: hpMap[severity],
       rewardXp: xpMap[severity],
       assignee,
+      estimatedHours: severity === 'Critical' ? 16 : severity === 'Major' ? 8 : 4,
       status: 'Active',
       monsterImage: selectedImage || autoPreset.monsterImage,
       dueDate,
@@ -1963,6 +1978,28 @@ attachEvents = function attachEvents() {
       activeModal = 'leaderboard';
       renderApp();
     });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.btn-reassign-assignee').forEach(btn => {
+    btn.addEventListener('click', () => {
+      reassignTargetId = btn.dataset.id || null;
+      activeModal = 'reassign';
+      renderApp();
+    });
+  });
+
+  document.querySelector('#form-reassign')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const target = monstersState.find(monster => monster.id === reassignTargetId);
+    const assignee = (document.querySelector('#reassign-assignee') as HTMLSelectElement).value;
+    if (!target || !assignee) return;
+    target.assignee = assignee;
+    battleLogMessage = `${target.title} 이슈의 담당자가 ${assignee}(으)로 변경되었습니다.`;
+    saveState();
+    showToast('담당자가 변경되었습니다.', 'success');
+    reassignTargetId = null;
+    activeModal = null;
+    renderApp();
   });
 
   document.querySelectorAll('.btn-attack-trigger').forEach(btn => {

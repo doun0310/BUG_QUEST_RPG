@@ -70,6 +70,7 @@ export interface BugMonster {
   maxHp: number;
   currentHp: number;
   assignee: string;
+  estimatedHours?: number;
   rewardXp: number;
   isBoss: boolean;
   status: 'Active' | 'Defeated';
