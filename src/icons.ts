@@ -65,6 +65,11 @@ export type IconName =
   | 'star'         // ⭐ 평가
   | 'clap'         // 👏 박수 / 칭찬
   | 'key'          // 🔑 API 키
+  | 'roleWarrior'  // ⚔️ 전사 (Frontend)
+  | 'roleMage'     // 🪄 마법사 (Backend)
+  | 'rolePaladin'  // 🛡️ 성기사 (QA)
+  | 'roleArcher'   // 🏹 궁수 (DevOps)
+  | 'roleHealer'   // 🌿 힐러 (PM)
   | 'feedback';    // 💡 피드백
 
 const paths: Record<IconName, string> = {
@@ -358,6 +363,26 @@ const paths: Record<IconName, string> = {
         <path d="M12 12L21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M17 17L19 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M19 19L21 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+
+  // ─── CLASS ROLES ─────────────────────────────────────────────────────────
+  roleWarrior: `<path d="M14.5 2.5L21.5 9.5L9 22L2 22L2 15L14.5 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+                <path d="M15 8L8 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M17 5L19 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M9.5 2.5L2.5 9.5L15 22L22 22L22 15L9.5 2.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/>`,
+
+  roleMage: `<path d="M12 2L14 7L19 9L15 13L16 18L12 15L8 18L9 13L5 9L10 7L12 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
+             <path d="M12 15V22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+             <circle cx="12" cy="7" r="1.5" fill="currentColor"/>`,
+
+  rolePaladin: `<path d="M12 3L4 6.5V12C4 16.4 7.4 20.5 12 22C16.6 20.5 20 16.4 20 12V6.5L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+                <path d="M12 7V17M7 11H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`,
+
+  roleArcher: `<path d="M5 3L19 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+               <path d="M14 17H19V12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+               <path d="M5 21C5 21 3 13 10 6C17 3 21 5 21 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/>`,
+
+  roleHealer: `<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+               <path d="M12 7V17M7 12H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
 
   // ─── FEEDBACK ─────────────────────────────────────────────────────────────
   feedback: `<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>

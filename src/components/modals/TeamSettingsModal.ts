@@ -1,6 +1,6 @@
 import { loadTeamSettings, saveTeamSettings, toTeamMemberCapacity } from '../../services/teamSettingsService';
 import type { TeamMemberInput, TeamSettings } from '../../types';
-import { icon } from '../../icons';
+import { icon, type IconName } from '../../icons';
 import { renderModalHeader } from '../ui';
 
 const ROLE_OPTIONS: TeamMemberInput['role'][] = [
@@ -11,13 +11,18 @@ const ROLE_OPTIONS: TeamMemberInput['role'][] = [
   '힐러 (PM)',
 ];
 
-const ROLE_EMOJI: Record<string, string> = {
-  '전사 (Frontend)': '🎨',
-  '마법사 (Backend)': '💻',
-  '성기사 (QA)': '🛡️',
-  '궁수 (DevOps)': '🏹',
-  '힐러 (PM)': '💚',
+const ROLE_ICON_MAP: Record<string, { icon: IconName; color: string }> = {
+  '전사 (Frontend)': { icon: 'roleWarrior', color: 'var(--danger)' },
+  '마법사 (Backend)': { icon: 'roleMage', color: 'var(--sky)' },
+  '성기사 (QA)': { icon: 'rolePaladin', color: 'var(--warning)' },
+  '궁수 (DevOps)': { icon: 'roleArcher', color: 'var(--primary-light)' },
+  '힐러 (PM)': { icon: 'roleHealer', color: 'var(--success)' },
 };
+
+function getRoleSvg(roleName: string, size = 16): string {
+  const cfg = ROLE_ICON_MAP[roleName] || { icon: 'users', color: 'var(--text-sub)' };
+  return icon(cfg.icon, `color:${cfg.color}`, size);
+}
 
 function memberRow(m: TeamMemberInput, i: number): string {
   return `
@@ -32,12 +37,12 @@ function memberRow(m: TeamMemberInput, i: number): string {
       padding:0.6rem 0.85rem;
       transition:border-color 0.2s;
     ">
-      <span class="ts-role-mark">${ROLE_EMOJI[m.role] || '•'}</span>
+      <span class="ts-role-mark" style="display:flex;align-items:center;">${getRoleSvg(m.role, 18)}</span>
       <input type="text" class="form-input ts-member-name" data-idx="${i}"
         value="${m.name}" placeholder="이름"
         style="font-size:0.83rem;font-weight:700;min-width:0;" />
       <select class="form-select ts-member-role" data-idx="${i}" style="font-size:0.78rem;min-width:120px;">
-        ${ROLE_OPTIONS.map(r => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${ROLE_EMOJI[r]} ${r}</option>`).join('')}
+        ${ROLE_OPTIONS.map(r => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${r}</option>`).join('')}
       </select>
       <div style="display:flex;align-items:center;gap:0.25rem;">
         <input type="number" class="form-input ts-member-hours" data-idx="${i}"
@@ -151,7 +156,7 @@ export function renderTeamSettingsModal(editMembers: TeamMemberInput[], errorMsg
               <div class="form-group" style="margin:0;">
                 <label style="font-size:0.67rem;color:var(--text-sub);">직업</label>
                 <select class="form-select" id="ts-new-role" style="font-size:0.82rem;">
-                  ${ROLE_OPTIONS.map(r => `<option value="${r}">${ROLE_EMOJI[r]} ${r}</option>`).join('')}
+                  ${ROLE_OPTIONS.map(r => `<option value="${r}">${r}</option>`).join('')}
                 </select>
               </div>
               <div class="form-group" style="margin:0;">

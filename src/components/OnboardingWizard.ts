@@ -1,6 +1,6 @@
 import { loadTeamSettings } from '../services/teamSettingsService';
 import type { TeamSettings, TeamMemberInput } from '../types';
-import { icon } from '../icons';
+import { icon, type IconName } from '../icons';
 
 
 export type WizardStep = 1 | 2 | 3 | 4;
@@ -15,13 +15,18 @@ const ROLE_OPTIONS: TeamMemberInput['role'][] = [
   '힐러 (PM)',
 ];
 
-const ROLE_EMOJI: Record<string, string> = {
-  '전사 (Frontend)': '🎨',
-  '마법사 (Backend)': '💻',
-  '성기사 (QA)': '🛡️',
-  '궁수 (DevOps)': '🏹',
-  '힐러 (PM)': '💚',
+const ROLE_ICON_MAP: Record<string, { icon: IconName; color: string }> = {
+  '전사 (Frontend)': { icon: 'roleWarrior', color: 'var(--danger)' },
+  '마법사 (Backend)': { icon: 'roleMage', color: 'var(--sky)' },
+  '성기사 (QA)': { icon: 'rolePaladin', color: 'var(--warning)' },
+  '궁수 (DevOps)': { icon: 'roleArcher', color: 'var(--primary-light)' },
+  '힐러 (PM)': { icon: 'roleHealer', color: 'var(--success)' },
 };
+
+function getRoleSvg(roleName: string, size = 16): string {
+  const cfg = ROLE_ICON_MAP[roleName] || { icon: 'users', color: 'var(--text-sub)' };
+  return icon(cfg.icon, `color:${cfg.color}`, size);
+}
 
 function stepBar(currentStep: WizardStep): string {
   return `
@@ -108,29 +113,29 @@ function renderStep2(members: TeamMemberInput[], errorMsg: string): string {
           : members.map((m, i) => `
             <div style="background:var(--inner-box-bg);border:1px solid var(--panel-border);padding:0.7rem 0.85rem;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
               <div style="display:flex;align-items:center;gap:0.55rem;">
-                <span style="font-size:1.2rem;">${ROLE_EMOJI[m.role] || '👤'}</span>
+                <span style="display:flex;align-items:center;">${getRoleSvg(m.role, 20)}</span>
                 <div>
-                  <div style="font-size:0.85rem;font-weight:700;">${m.name}</div>
-                  <div style="font-size:0.7rem;color:var(--text-sub);">${m.role} · ${m.workingHoursPerDay}h/일 · 집중 ${Math.round(m.deepWorkRatio * 100)}%</div>
+                  <div style="font-weight:700;font-size:0.85rem;color:var(--text-main);">${m.name}</div>
+                  <div style="font-size:0.72rem;color:var(--text-sub);">${m.role} · ${m.workingHoursPerDay}h/일 (집중 ${Math.round(m.deepWorkRatio * 100)}%)</div>
                 </div>
               </div>
-              <button type="button" class="wizard-remove-member" data-idx="${i}" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.4rem;border-radius:6px;">✕ 삭제</button>
+              <button type="button" class="wiz-remove-member" data-idx="${i}" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;">✕</button>
             </div>
           `).join('')
         }
       </div>
 
       <div style="background:var(--inner-box-bg);border:1px solid var(--primary-border);border-radius:14px;padding:0.9rem;margin-bottom:0.5rem;">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--primary-light);margin-bottom:0.6rem;">+ 팀원 추가</div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--primary-light);margin-bottom:0.6rem;">+ 팀원 추가</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem;">
           <div class="form-group">
             <label style="font-size:0.7rem;color:var(--text-sub);">이름</label>
-            <input type="text" class="form-input" id="new-member-name" placeholder="예: 김개발" style="font-size:0.82rem;" />
+            <input type="text" class="form-input" id="wiz-new-name" placeholder="예: 김개발" style="font-size:0.83rem;" />
           </div>
           <div class="form-group">
             <label style="font-size:0.7rem;color:var(--text-sub);">직업 클래스</label>
             <select class="form-select" id="new-member-role" style="font-size:0.82rem;">
-              ${ROLE_OPTIONS.map(r => `<option value="${r}">${ROLE_EMOJI[r]} ${r}</option>`).join('')}
+              ${ROLE_OPTIONS.map(r => `<option value="${r}">${r}</option>`).join('')}
             </select>
           </div>
         </div>
