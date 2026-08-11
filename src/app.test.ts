@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { calculateCapacity } from './mockData';
 import type { TeamMemberCapacity } from './types';
 import { store } from './store';
@@ -15,6 +15,7 @@ import { getAssignedWorkloadMembers, recalculateWorkload } from './services/work
 import { createAccountDemoData } from './services/accountDemoService';
 import { escapeHtml, safeExternalUrl } from './services/inputSafety';
 import { validateIssueInput } from './services/issueValidation';
+import { showToast } from './toastManager';
 
 const workloadFixture: TeamMemberCapacity[] = [
   { userName: 'Alex', role: 'Frontend Dev', vacationDays: 0, totalSprintDays: 10, workingHoursPerDay: 8, deepWorkLimitRatio: 0.7, availableHours: 56, assignedHours: 12, isOverloaded: false },
@@ -95,6 +96,30 @@ describe('Issue quality safeguards', () => {
   it('validates issue content before it is saved', () => {
     expect(validateIssueInput({ title: 'x', assignee: 'A', dueDate: '', estimatedHours: 0, dialogue: '' })).toBeTruthy();
     expect(validateIssueInput({ title: '로그인 API가 500을 반환함', assignee: 'Lee John', dueDate: '내일 10:00', estimatedHours: 8, dialogue: '재현 절차를 확인합니다.' })).toBeNull();
+  });
+});
+
+describe('Project toast notifications', () => {
+  beforeEach(() => {
+    document.getElementById('toast-container')?.remove();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('uses a project SVG icon and removes decorative emoji from notification text', () => {
+    showToast('🤖 AI 분석이 완료되었습니다!', 'success');
+
+    const toast = document.querySelector('.toast-item');
+    expect(toast?.textContent).toContain('AI 분석이 완료되었습니다!');
+    expect(toast?.textContent).not.toContain('🤖');
+    expect(toast?.querySelector('.toast-icon svg')).not.toBeNull();
+    expect(toast?.getAttribute('role')).toBe('status');
+
+    vi.advanceTimersByTime(3300);
+    expect(document.querySelector('.toast-item')).toBeNull();
   });
 });
 

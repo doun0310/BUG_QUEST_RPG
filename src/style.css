@@ -1173,6 +1173,8 @@ svg { shape-rendering: crispEdges; }
 
 .toast-item, .inline-alert { background-color: var(--pixel-panel) !important; }
 .toast-item { animation-timing-function: steps(5, end) !important; }
+.toast-item .toast-icon { display: inline-grid; place-items: center; flex: 0 0 18px; }
+.toast-item .toast-icon .pixel-icon { filter: drop-shadow(1px 1px 0 var(--pixel-shadow)); }
 .chart-surface, .analytics-summary > div, .archive-metrics > div, .archive-item { background: var(--surface-sunken) !important; }
 .chart-surface canvas { image-rendering: pixelated; }
 .archive-item > img, .archive-item.is-resolved > img { border-radius: 0 !important; image-rendering: pixelated; border: 2px solid var(--pixel-ink); }

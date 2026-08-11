@@ -255,6 +255,25 @@ let loginErrorMsg = '';
 let loginSuccessMsg = '';
 let attachLoginEvents: () => void;
 
+/**
+ * Account authentication writes to local storage, while this module renders from
+ * in-memory variables. Keep both layers in sync so a successful login changes
+ * the visible workspace without requiring a browser refresh.
+ */
+function applyLoggedInAccount(account = getCurrentAccount()) {
+  if (!account) return;
+
+  userState = { ...account.userState };
+  monstersState = [...account.monstersState];
+  currentTheme = account.theme;
+  activeModal = null;
+  attackTargetId = null;
+  hitMonsterId = null;
+  lastHitDamageText = null;
+  isSkillActiveNextAttack = false;
+  battleLogMessage = `[${account.displayName}] 계정 전장 데이터를 불러왔습니다.`;
+}
+
 // ─── Onboarding Wizard State ────────────────────────────────────────────────
 let isOnboardingActive = false;
 let wizardStep: WizardStep = 1;
@@ -2734,6 +2753,7 @@ attachLoginEvents = function attachLoginEvents() {
       loginErrorMsg = '';
       loginSuccessMsg = '';
       store.reloadFromLocalStorage();
+      applyLoggedInAccount(res.account);
       showToast(res.message, 'success');
       renderApp();
     } else {
@@ -2755,10 +2775,11 @@ attachLoginEvents = function attachLoginEvents() {
       const settings = addAccountAsTeamMember(displayName, heroClass);
       teamState = toTeamMemberCapacity(settings.members, settings.sprintDays);
       // Auto login
-      await login(username, pin);
+      const loginResult = await login(username, pin);
       loginErrorMsg = '';
       loginSuccessMsg = '';
       store.reloadFromLocalStorage();
+      applyLoggedInAccount(loginResult.account);
       showToast(res.message, 'success');
       renderApp();
     } else {
