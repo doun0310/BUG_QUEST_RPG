@@ -1,4 +1,6 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css');
 
 /* =========================================
    DESIGN TOKENS — GLASSMORPHISM SYSTEM
@@ -668,12 +670,27 @@ header {
 .monster-impact { animation: impactCard .38s cubic-bezier(.2,.8,.2,1) !important; will-change: transform; }
 .monster-impact-critical { animation: criticalCard .48s cubic-bezier(.16,1,.3,1) !important; border-color: var(--warning) !important; will-change: transform; }
 .monster-impact-weakness { border-color: var(--primary-light) !important; }
+.monster-impact-shield { border-color: var(--success) !important; }
 @keyframes pixelHitFlash {
   0%, 100% { box-shadow: none; filter: brightness(1); }
   16% { box-shadow: inset 0 0 0 3px rgba(255,255,255,.95), inset 0 0 0 7px rgba(56,189,248,.28); filter: brightness(1.28); }
   42% { box-shadow: inset 0 0 0 2px rgba(165,180,252,.6); filter: brightness(1.06); }
 }
 .monster-pixel-flash .dq-monster-container { animation: pixelHitFlash .32s steps(4, end); }
+.hp-bar-ghost { position:absolute; z-index:2; inset-block:1px; left:1px; background:repeating-linear-gradient(90deg,#fbbf24 0 6px,#d97706 6px 8px); opacity:.86; transition:width .36s steps(8,end),opacity .36s steps(4,end); pointer-events:none; }
+.monster-hp-bar .hp-bar-inner { z-index:3; }
+@keyframes dodgeAfterimage { from { opacity:.72; transform:translate3d(3px,0,0); } to { opacity:0; transform:translate3d(20px,-5px,0); } }
+.pixel-dodge-trail { position:absolute; left:26px; top:18px; width:58px; height:58px; border:3px solid #94a3b8; box-shadow:8px -4px 0 -3px #64748b,16px -8px 0 -3px #475569; opacity:.7; pointer-events:none; animation:dodgeAfterimage .5s steps(4,end) forwards; }
+@keyframes shieldBreak { from { opacity:1; transform:scale(.65); } 55% { opacity:1; transform:scale(1.08); } to { opacity:0; transform:scale(1.28); } }
+.pixel-shield-break { position:absolute; left:18px; top:10px; width:74px; height:78px; pointer-events:none; border:3px solid #34d399; clip-path:polygon(50% 0,94% 24%,94% 72%,50% 100%,6% 72%,6% 24%); box-shadow:inset 0 0 0 4px rgba(52,211,153,.22); animation:shieldBreak .45s steps(4,end) forwards; }
+@keyframes skillTrail { from { opacity:0; transform:translate3d(-42px,20px,0) scaleX(.4); } 40% { opacity:1; } to { opacity:0; transform:translate3d(22px,-12px,0) scaleX(1.1); } }
+.pixel-skill-trail { position:absolute; left:10px; top:32px; width:118px; height:8px; pointer-events:none; background:repeating-linear-gradient(90deg,#38bdf8 0 8px,#a5f3fc 8px 12px,transparent 12px 16px); box-shadow:0 8px 0 -3px #818cf8; animation:skillTrail .48s steps(5,end) forwards; }
+.pixel-skill-trail.skill-trail-warrior { background:repeating-linear-gradient(90deg,#fb7185 0 8px,#fda4af 8px 12px,transparent 12px 16px); box-shadow:0 8px 0 -3px #f97316; }
+.pixel-skill-trail.skill-trail-paladin { background:repeating-linear-gradient(90deg,#fbbf24 0 8px,#fef3c7 8px 12px,transparent 12px 16px); box-shadow:0 8px 0 -3px #34d399; }
+@keyframes comboBurst { from { opacity:0; transform:translate3d(0,8px,0) scale(.7); } 25% { opacity:1; } to { opacity:0; transform:translate3d(0,-28px,0) scale(1.05); } }
+.pixel-combo-burst { position:absolute; left:18px; bottom:4px; z-index:101; padding:2px 4px; color:#fff7c2; background:#8d5314; border:2px solid var(--pixel-ink); box-shadow:2px 2px 0 var(--pixel-shadow); font:900 .6rem/1 ui-monospace,monospace; pointer-events:none; animation:comboBurst .7s steps(5,end) forwards; }
+@keyframes finishDissolve { 0%,25% { filter:brightness(2.2); opacity:1; } 100% { filter:brightness(.8); opacity:.18; transform:scale(.78); } }
+.monster-finish-impact .dq-monster-img { animation:finishDissolve .55s steps(6,end) forwards !important; }
 @keyframes pixelImpactSprite {
   0% { background-position: 0% 50%; opacity: 0; transform: translate(-50%, -50%) scale(.72); }
   12% { opacity: 1; }
@@ -755,6 +772,8 @@ body.impact-hit::after { background: repeating-linear-gradient(90deg, rgba(56,18
 
 @media (prefers-reduced-motion: reduce) {
   .hit-animation, .monster-impact, .monster-impact-critical, body.impact-hit #app, body.impact-critical #app { animation: none !important; }
+  .pixel-dodge-trail, .pixel-shield-break, .pixel-skill-trail, .pixel-combo-burst { display: none; }
+  .monster-finish-impact .dq-monster-img { animation: none !important; }
   .monster-pixel-flash .dq-monster-container::after { display: none; }
   body.impact-critical::after, body.impact-hit::after { display: none; }
 }
@@ -1332,3 +1351,698 @@ header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activi
   .card-header, .profile-summary-head { min-height: 24px; }
   .action-btn, .toolbar-pill-btn, .assignee-edit-btn { min-height: 34px; }
 }
+
+/* =====================================================
+   NES / FAMICOM PIXEL THEME  [data-theme="pixel"]
+   NES 원색 팔레트: 빨강 #e60012 / 파랑 #1a1ae6 / 노랑 #f8b800
+   한글 폰트: Galmuri11 (8비트 한글 픽셀 폰트)
+   영문 폰트: Press Start 2P (8비트 영문 픽셀 폰트)
+   ===================================================== */
+
+/* ── 픽셀 테마 CSS 변수 ── */
+[data-theme="pixel"] {
+  --font-family:        'Galmuri11', 'Press Start 2P', ui-monospace, monospace;
+  --font-dq:            'Galmuri11', 'Press Start 2P', ui-monospace, monospace;
+
+  /* 배경 */
+  --bg-color:           #0f0f1a;
+  --bg-gradient:        #0f0f1a;
+
+  /* NES 원색 브랜드 */
+  --primary:            #1a1ae6;
+  --primary-light:      #6464ff;
+  --primary-hover:      #0000c8;
+  --primary-bg:         rgba(26, 26, 230, 0.15);
+  --primary-border:     #1a1ae6;
+
+  --sky:                #00b8f8;
+  --sky-bg:             rgba(0, 184, 248, 0.12);
+
+  --danger:             #e60012;
+  --danger-hover:       #c00010;
+  --danger-light:       rgba(230, 0, 18, 0.15);
+  --danger-border:      #e60012;
+
+  --warning:            #f8b800;
+  --warning-light:      rgba(248, 184, 0, 0.15);
+  --warning-border:     #f8b800;
+
+  --success:            #00a800;
+  --success-light:      rgba(0, 168, 0, 0.15);
+  --success-border:     #00a800;
+
+  /* 패널 */
+  --glass-bg:           #1a1a2e;
+  --glass-bg-hover:     #252545;
+  --glass-border:       #1a1ae6;
+  --glass-border-hover: #6464ff;
+  --glass-glow:         4px 4px 0 #050520;
+  --glass-glow-hover:   4px 4px 0 #050520;
+  --glass-blur:         none;
+
+  --inner-box-bg:       #12122a;
+  --input-bg:           #0a0a1a;
+  --panel-border:       #1a1ae6;
+
+  /* 텍스트 */
+  --text-main:          #ffffff;
+  --text-sub:           #b0b0e0;
+  --text-muted:         #7070b0;
+
+  /* 모달 */
+  --modal-backdrop-bg:  rgba(0, 0, 10, 0.88);
+  --dq-window-bg:       #0a0a1a;
+  --dq-window-border:   #1a1ae6;
+
+  /* 픽셀 토큰 */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+
+  --pixel-ink:        #050520;
+  --pixel-edge:       #1a1ae6;
+  --pixel-shadow:     #050520;
+  --pixel-panel:      #1a1a2e;
+  --pixel-highlight:  #6464ff;
+  --pixel-unit:       4px;
+  --pixel-corner:     0px;
+  --pixel-inset:      rgba(255, 255, 255, 0.06);
+  --pixel-pressed:    rgba(0, 0, 0, 0.45);
+
+  --surface-raised:   #1a1a2e;
+  --surface-sunken:   #0a0a1a;
+}
+
+/* ── 픽셀 그리드 배경 ── */
+[data-theme="pixel"] body {
+  font-family:    var(--font-family);
+  font-size:      7px;
+  letter-spacing: 0.04em;
+  line-height:    2;
+  image-rendering: pixelated;
+  background-color: #0f0f1a;
+  background-image:
+    /* 스캔라인 효과 */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.18) 2px,
+      rgba(0, 0, 0, 0.18) 4px
+    ),
+    /* 픽셀 격자 */
+    linear-gradient(rgba(26, 26, 230, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 26, 230, 0.06) 1px, transparent 1px);
+  background-size: auto, 8px 8px, 8px 8px;
+}
+
+/* ── 모든 border-radius 제거 ── */
+[data-theme="pixel"] *,
+[data-theme="pixel"] *::before,
+[data-theme="pixel"] *::after {
+  border-radius: 0 !important;
+}
+
+/* ── 전역 오버플로우 방지 ── */
+[data-theme="pixel"] {
+  overflow-x: hidden;
+}
+
+/* 모든 flex/grid 자식에 min-width:0 적용 (shrink 허용) */
+[data-theme="pixel"] *:not(canvas):not(img):not(svg) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 한글·영문 모두 줄 넘김 허용, 단어 단위로 자름 */
+[data-theme="pixel"] p,
+[data-theme="pixel"] span,
+[data-theme="pixel"] div,
+[data-theme="pixel"] li,
+[data-theme="pixel"] td,
+[data-theme="pixel"] th,
+[data-theme="pixel"] label {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 단일 줄 고정 요소: 말줄임 처리 */
+[data-theme="pixel"] h1,
+[data-theme="pixel"] h2,
+[data-theme="pixel"] h3,
+[data-theme="pixel"] h4,
+[data-theme="pixel"] .card-title,
+[data-theme="pixel"] .section-label,
+[data-theme="pixel"] .eyebrow {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+[data-theme="pixel"] h1,
+[data-theme="pixel"] h2,
+[data-theme="pixel"] h3,
+[data-theme="pixel"] h4,
+[data-theme="pixel"] .card-title,
+[data-theme="pixel"] .action-btn,
+[data-theme="pixel"] .toolbar-pill-btn,
+[data-theme="pixel"] .badge,
+[data-theme="pixel"] .section-label,
+[data-theme="pixel"] .logo-title,
+[data-theme="pixel"] .eyebrow,
+[data-theme="pixel"] label,
+[data-theme="pixel"] .dq-text,
+[data-theme="pixel"] .monster-hp-label,
+[data-theme="pixel"] .game-hud-label {
+  font-family: 'Galmuri11', 'Press Start 2P', ui-monospace, monospace !important;
+  letter-spacing: 0.04em;
+}
+
+/* ── 타이틀 텍스트 쉐도우 ── */
+[data-theme="pixel"] .logo-title {
+  color: #f8b800 !important;
+  -webkit-text-fill-color: #f8b800 !important;
+  background: none !important;
+  text-shadow:
+    2px 0 0 #050520,
+    0 2px 0 #050520,
+    2px 2px 0 #050520;
+  font-size: 0.38rem !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+/* ── 헤더 / 카드 패널 ── */
+[data-theme="pixel"] header,
+[data-theme="pixel"] .card,
+[data-theme="pixel"] .modal-card,
+[data-theme="pixel"] .dropdown-menu,
+[data-theme="pixel"] .stat-bar-box,
+[data-theme="pixel"] .metric-card,
+[data-theme="pixel"] .activity-log,
+[data-theme="pixel"] .empty-state,
+[data-theme="pixel"] .dq-window,
+[data-theme="pixel"] .archive-item,
+[data-theme="pixel"] .chart-surface,
+[data-theme="pixel"] .analytics-summary > div,
+[data-theme="pixel"] .archive-metrics > div {
+  background-color:  #1a1a2e !important;
+  background-image:
+    /* 코너 레일 */
+    linear-gradient(90deg, #f8b800 0 8px, transparent 8px)   top    left  / 24px 2px no-repeat,
+    linear-gradient(-90deg, #f8b800 0 8px, transparent 8px)  top    right / 24px 2px no-repeat,
+    linear-gradient(90deg, #f8b800 0 8px, transparent 8px)   bottom left  / 24px 2px no-repeat,
+    linear-gradient(-90deg, #f8b800 0 8px, transparent 8px)  bottom right / 24px 2px no-repeat,
+    /* 체커보드 텍스처 */
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.025) 0 4px,
+      transparent 4px 8px
+    ) !important;
+  background-size:   24px 2px, 24px 2px, 24px 2px, 24px 2px, auto !important;
+  border: 3px solid #1a1ae6 !important;
+  box-shadow:
+    5px 5px 0 #050520,
+    inset 0 0 0 1px rgba(100, 100, 255, 0.1) !important;
+}
+
+/* ── 헤더 세부 ── */
+[data-theme="pixel"] header {
+  border-color: #f8b800 !important;
+  box-shadow:
+    5px 5px 0 #050520,
+    inset 0 -3px 0 rgba(248, 184, 0, 0.2) !important;
+}
+
+/* ── 카드 헤더 구분선 ── */
+[data-theme="pixel"] .card-header,
+[data-theme="pixel"] .profile-summary-head {
+  border-bottom: 2px solid #1a1ae6 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="pixel"] .card-header .card-title,
+[data-theme="pixel"] .profile-summary-head strong {
+  color: #f8b800 !important;
+  text-shadow: 2px 2px 0 #050520 !important;
+}
+
+/* ── 브랜드 마크 ── */
+[data-theme="pixel"] .brand-mark,
+[data-theme="pixel"] .metric-icon,
+[data-theme="pixel"] .modal-heading-icon,
+[data-theme="pixel"] .profile-avatar {
+  background: #1a1ae6 !important;
+  border: 3px solid #f8b800 !important;
+  box-shadow: 3px 3px 0 #050520 !important;
+}
+
+/* ── NES 스타일 버튼 ── */
+[data-theme="pixel"] .action-btn,
+[data-theme="pixel"] .toolbar-pill-btn,
+[data-theme="pixel"] .assignee-edit-btn,
+[data-theme="pixel"] .modal-close,
+[data-theme="pixel"] .icon-button {
+  background-color: #1a1ae6 !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.18) 0 3px, transparent 3px) !important;
+  color: #ffffff !important;
+  border: 3px solid #050520 !important;
+  box-shadow:
+    4px 4px 0 #050520,
+    inset -2px -2px 0 rgba(0,0,0,0.4) !important;
+  transform: translate(-2px, -2px);
+  min-height: 30px;
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.38rem !important;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end) !important;
+}
+
+[data-theme="pixel"] .action-btn:hover,
+[data-theme="pixel"] .toolbar-pill-btn:hover,
+[data-theme="pixel"] .assignee-edit-btn:hover,
+[data-theme="pixel"] .modal-close:hover,
+[data-theme="pixel"] .icon-button:hover {
+  background-color: #3030f0 !important;
+  transform: translate(0, 0) !important;
+  box-shadow: 2px 2px 0 #050520 !important;
+  color: #f8b800 !important;
+}
+
+[data-theme="pixel"] .action-btn:active,
+[data-theme="pixel"] .toolbar-pill-btn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: none !important;
+  background-color: #0000c8 !important;
+}
+
+/* 위험 버튼 */
+[data-theme="pixel"] .action-btn-danger {
+  background-color: #e60012 !important;
+  border-color: #050520 !important;
+  box-shadow: 4px 4px 0 #050520, inset -2px -2px 0 rgba(0,0,0,0.4) !important;
+}
+[data-theme="pixel"] .action-btn-danger:hover {
+  background-color: #ff2030 !important;
+}
+
+/* 세컨더리 버튼 */
+[data-theme="pixel"] .action-btn-secondary,
+[data-theme="pixel"] .toolbar-pill-btn {
+  background-color: #0a0a1a !important;
+  color: #b0b0e0 !important;
+  border-color: #1a1ae6 !important;
+}
+[data-theme="pixel"] .action-btn-secondary:hover,
+[data-theme="pixel"] .toolbar-pill-btn:hover {
+  background-color: #1a1a2e !important;
+  color: #f8b800 !important;
+}
+
+/* ── 뱃지 ── */
+[data-theme="pixel"] .badge {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.34rem !important;
+  border: 2px solid currentColor !important;
+  box-shadow: 2px 2px 0 #050520 !important;
+  padding: 0.15rem 0.35rem !important;
+  background-color: #0a0a1a !important;
+  white-space: nowrap;
+}
+
+[data-theme="pixel"] .badge-danger {
+  color: #e60012 !important;
+  border-color: #e60012 !important;
+}
+
+[data-theme="pixel"] .badge-warning {
+  color: #f8b800 !important;
+  border-color: #f8b800 !important;
+}
+
+[data-theme="pixel"] .badge-success {
+  color: #00a800 !important;
+  border-color: #00a800 !important;
+}
+
+/* ── 입력 폼 ── */
+[data-theme="pixel"] .form-input,
+[data-theme="pixel"] .form-select,
+[data-theme="pixel"] textarea.form-input {
+  background: #0a0a1a !important;
+  border: 3px solid #1a1ae6 !important;
+  box-shadow: inset 3px 3px 0 rgba(0,0,0,0.5) !important;
+  color: #ffffff !important;
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.42rem !important;
+}
+
+[data-theme="pixel"] .form-input:focus,
+[data-theme="pixel"] .form-select:focus,
+[data-theme="pixel"] textarea.form-input:focus {
+  border-color: #f8b800 !important;
+  box-shadow:
+    inset 3px 3px 0 rgba(0,0,0,0.5),
+    0 0 0 2px rgba(248, 184, 0, 0.4) !important;
+  outline: none !important;
+}
+
+/* ── HP / XP 바 (블록형) ── */
+[data-theme="pixel"] .hp-bar-outer,
+[data-theme="pixel"] .progress-track,
+[data-theme="pixel"] .member-progress {
+  background: #0a0a1a !important;
+  border: 2px solid #050520 !important;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.6) !important;
+  height: 12px !important;
+}
+
+[data-theme="pixel"] .hp-bar-inner {
+  background: repeating-linear-gradient(
+    90deg,
+    #e60012 0 8px,
+    #a00010 8px 10px
+  ) !important;
+  image-rendering: pixelated;
+  transition: width 200ms steps(10, end) !important;
+}
+
+[data-theme="pixel"] .xp-bar-inner {
+  background: repeating-linear-gradient(
+    90deg,
+    #1a1ae6 0 8px,
+    #1010a0 8px 10px
+  ) !important;
+  image-rendering: pixelated;
+  transition: width 200ms steps(10, end) !important;
+}
+
+[data-theme="pixel"] .progress-value {
+  background: repeating-linear-gradient(
+    90deg,
+    #1a1ae6 0 6px,
+    #00b8f8 6px 8px
+  ) !important;
+}
+
+[data-theme="pixel"] .monster-hp-frame.hp-high .monster-hp-bar .hp-bar-inner,
+[data-theme="pixel"] .monster-hp-bar .hp-bar-inner {
+  background: repeating-linear-gradient(
+    90deg, #00a800 0 8px, #007000 8px 10px
+  ) !important;
+}
+
+[data-theme="pixel"] .monster-hp-frame.hp-medium .monster-hp-bar .hp-bar-inner {
+  background: repeating-linear-gradient(
+    90deg, #f8b800 0 8px, #c08800 8px 10px
+  ) !important;
+}
+
+[data-theme="pixel"] .monster-hp-frame.hp-low .monster-hp-bar .hp-bar-inner {
+  background: repeating-linear-gradient(
+    90deg, #e60012 0 8px, #a00010 8px 10px
+  ) !important;
+}
+
+/* ── 몬스터 HP 프레임 ── */
+[data-theme="pixel"] .monster-hp-frame {
+  background: #050520 !important;
+  border: 3px solid #1a1ae6 !important;
+  box-shadow: 3px 3px 0 #050520 !important;
+  padding: 4px !important;
+}
+
+[data-theme="pixel"] .monster-hp-label {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.38rem !important;
+  color: #6464ff !important;
+  padding-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+[data-theme="pixel"] .monster-hp-label strong {
+  color: #f8b800 !important;
+  text-shadow: 1px 1px 0 #050520;
+}
+
+/* ── 몬스터 카드 ── */
+[data-theme="pixel"] .dq-monster-container {
+  background: #12122a !important;
+  border: 3px solid #1a1ae6 !important;
+  box-shadow: 4px 4px 0 #050520 !important;
+}
+
+[data-theme="pixel"] .dq-monster-container:hover {
+  border-color: #f8b800 !important;
+}
+
+[data-theme="pixel"] .dq-monster-img {
+  image-rendering: pixelated;
+  border: 3px solid #050520 !important;
+  box-shadow: 3px 3px 0 #050520 !important;
+}
+
+/* ── BOSS 카드 ── */
+[data-theme="pixel"] .boss-monster-card {
+  border-color: #e60012 !important;
+  box-shadow: 5px 5px 0 #500010 !important;
+}
+
+[data-theme="pixel"] .boss-monster-card::before {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace;
+  font-size: 0.42rem !important;
+  background: #e60012 !important;
+  color: #ffffff;
+  border: 2px solid #050520;
+  box-shadow: 2px 2px 0 #050520;
+}
+
+/* ── 드롭다운 메뉴 ── */
+[data-theme="pixel"] .dropdown-menu {
+  background: #1a1a2e !important;
+  border: 3px solid #1a1ae6 !important;
+  box-shadow: 5px 5px 0 #050520 !important;
+  padding: 0.3rem !important;
+}
+
+[data-theme="pixel"] .dropdown-item {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.38rem !important;
+  border-left: 4px solid transparent !important;
+  min-height: 26px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: none !important;
+}
+
+[data-theme="pixel"] .dropdown-item:hover,
+[data-theme="pixel"] .dropdown-item:focus-visible {
+  background: #0a0a1a !important;
+  border-left-color: #f8b800 !important;
+  color: #f8b800 !important;
+  box-shadow: inset 4px 0 0 #f8b800 !important;
+}
+
+/* ── 토스트 알림 ── */
+[data-theme="pixel"] .toast-item {
+  background: #1a1a2e !important;
+  border: 3px solid #1a1ae6 !important;
+  border-left: 6px solid #1a1ae6 !important;
+  box-shadow: 5px 5px 0 #050520 !important;
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.38rem !important;
+  line-height: 2;
+  animation-timing-function: steps(6, end) !important;
+}
+
+[data-theme="pixel"] .toast-item.toast-success { border-left-color: #00a800 !important; }
+[data-theme="pixel"] .toast-item.toast-danger  { border-left-color: #e60012 !important; }
+[data-theme="pixel"] .toast-item.toast-warning { border-left-color: #f8b800 !important; }
+
+/* ── 모달 ── */
+[data-theme="pixel"] .modal-backdrop {
+  background: rgba(0, 0, 10, 0.9) !important;
+  backdrop-filter: none !important;
+}
+
+[data-theme="pixel"] .modal-card {
+  border: 4px solid #1a1ae6 !important;
+  box-shadow:
+    8px 8px 0 #050520,
+    inset 0 0 0 2px rgba(100, 100, 255, 0.1) !important;
+  animation-timing-function: steps(5, end) !important;
+}
+
+[data-theme="pixel"] .modal-heading-icon {
+  color: #f8b800 !important;
+}
+
+/* ── DQ 배틀 창 ── */
+[data-theme="pixel"] .dq-window {
+  background: #0a0a1a !important;
+  border: 4px solid #1a1ae6 !important;
+  box-shadow: 4px 4px 0 #050520 !important;
+}
+
+[data-theme="pixel"] .dq-text {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.38rem !important;
+  line-height: 2.2;
+  color: #6464ff !important;
+  word-break: break-word;
+}
+
+/* ── 섹션 라벨 ── */
+[data-theme="pixel"] .section-label {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.38rem !important;
+  color: #6464ff !important;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 스크롤바 ── */
+[data-theme="pixel"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: #0a0a1a;
+}
+
+[data-theme="pixel"] ::-webkit-scrollbar-thumb {
+  background: #1a1ae6;
+  border: 2px solid #050520;
+}
+
+[data-theme="pixel"] ::-webkit-scrollbar-thumb:hover {
+  background: #f8b800;
+}
+
+/* ── 게임 HUD 게이지 ── */
+[data-theme="pixel"] .game-hud-gauge {
+  background: #050520 !important;
+  border: 3px solid #1a1ae6 !important;
+  box-shadow: 3px 3px 0 #050520 !important;
+}
+
+[data-theme="pixel"] .game-hud-label {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.38rem !important;
+  color: #6464ff;
+}
+
+[data-theme="pixel"] .game-hud-label strong {
+  color: #f8b800;
+}
+
+/* ── 포커스 링 ── */
+[data-theme="pixel"] button:focus-visible,
+[data-theme="pixel"] input:focus-visible,
+[data-theme="pixel"] select:focus-visible,
+[data-theme="pixel"] textarea:focus-visible,
+[data-theme="pixel"] a:focus-visible {
+  outline: 3px solid #f8b800 !important;
+  outline-offset: 2px;
+}
+
+/* ── 텍스트 선택 ── */
+[data-theme="pixel"] ::selection {
+  background: #1a1ae6;
+  color: #f8b800;
+}
+
+/* ── kbd 단축키 ── */
+[data-theme="pixel"] kbd {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  background: #0a0a1a;
+  border: 2px solid #1a1ae6;
+  color: #6464ff;
+  box-shadow: 2px 2px 0 #050520;
+  font-size: 0.42rem !important;
+}
+
+/* ── SVG 크리스프 렌더링 ── */
+[data-theme="pixel"] svg {
+  shape-rendering: crispEdges;
+  image-rendering: pixelated;
+}
+
+/* ── 메트릭 카드 수치 ── */
+[data-theme="pixel"] .metric-card strong {
+  color: #f8b800 !important;
+  text-shadow: 1px 1px 0 #050520;
+  font-size: 0.58rem !important;
+}
+
+/* ── 픽셀 던전 맵 ── */
+[data-theme="pixel"] .pixel-dungeon-map {
+  border-color: #f8b800 !important;
+  box-shadow: 5px 5px 0 #050520 !important;
+}
+
+[data-theme="pixel"] .pixel-dungeon-tile {
+  border-color: #1a1ae6 !important;
+  box-shadow: 4px 4px 0 #050520 !important;
+}
+
+[data-theme="pixel"] .pixel-dungeon-tile.is-cleared {
+  border-color: #00a800 !important;
+}
+
+/* ── 인벤토리 그리드 ── */
+[data-theme="pixel"] .pixel-inventory-item {
+  border-color: #1a1ae6 !important;
+  box-shadow: 4px 4px 0 #050520 !important;
+}
+
+[data-theme="pixel"] .pixel-inventory-item::before {
+  color: #f8b800 !important;
+}
+
+/* ── 분리선 ── */
+[data-theme="pixel"] .section-divider {
+  background: linear-gradient(90deg, transparent, #1a1ae6, transparent) !important;
+  height: 2px !important;
+}
+
+/* ── 모션: 스텝 애니메이션만 사용 ── */
+[data-theme="pixel"] .monster-card-animated {
+  animation: none !important;
+}
+
+[data-theme="pixel"] .damage-float-text {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 0.65rem !important;
+  text-shadow: 3px 3px 0 #050520 !important;
+  animation-timing-function: steps(6, end) !important;
+}
+
+[data-theme="pixel"] .damage-float-text.critical {
+  color: #f8b800 !important;
+  font-size: 0.9rem !important;
+}
+
+/* ── 테마 전환 버튼 라벨 ── */
+[data-theme="pixel"] #btn-toggle-theme::after {
+  content: " [8-BIT]";
+  font-size: 0.42rem;
+  opacity: 0.7;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 760px) {
+  [data-theme="pixel"] body { font-size: 6px; }
+  [data-theme="pixel"] .action-btn,
+  [data-theme="pixel"] .toolbar-pill-btn { min-height: 34px; }
+}
+

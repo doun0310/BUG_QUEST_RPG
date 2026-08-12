@@ -25,6 +25,9 @@ export interface AppState {
   battleLogMessage: string;
   hitMonsterId: string | null;
   lastHitDamageText: string | null;
+  skillImpactMonsterId: string | null;
+  finishMonsterId: string | null;
+  damageTrailPctByMonster: Record<string, number>;
   isSkillActiveNextAttack: boolean;
   activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | null;
   selectedPostMortemMonsterId: string | null;
@@ -60,6 +63,9 @@ class Store {
     battleLogMessage: '버그 퀘스트 전장에 오신 것을 환영합니다! 몬스터를 타격하여 PR을 통합하세요.',
     hitMonsterId: null,
     lastHitDamageText: null,
+    skillImpactMonsterId: null,
+    finishMonsterId: null,
+    damageTrailPctByMonster: {},
     isSkillActiveNextAttack: false,
     activeModal: null,
     selectedPostMortemMonsterId: null,

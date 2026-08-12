@@ -19,7 +19,7 @@ export interface Account {
   lastLoginAt: string;
   userState: UserProfile;
   monstersState: BugMonster[];
-  theme: 'dark' | 'light' | 'matrix';
+  theme: 'dark' | 'light' | 'matrix' | 'pixel';
 }
 
 export interface AuthState {

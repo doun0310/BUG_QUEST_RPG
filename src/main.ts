@@ -52,10 +52,10 @@ import {
 } from './mockData';
 import type { VacationRequest, BugMonster, WebhookPayload, WeeklyQuest, TeamCoopBoss, WeeklyRank } from './types';
 
-let currentTheme: 'dark' | 'light' | 'matrix' = 'dark';
+let currentTheme: 'dark' | 'light' | 'matrix' | 'pixel' = 'dark';
 try {
   const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'light' || savedTheme === 'matrix' || savedTheme === 'dark') {
+  if (savedTheme === 'light' || savedTheme === 'matrix' || savedTheme === 'dark' || savedTheme === 'pixel') {
     currentTheme = savedTheme;
   }
 } catch {
@@ -199,6 +199,9 @@ let battleLogMessage: string = '버그 퀘스트 전장에 오신 것을 환영�
 
 let hitMonsterId: string | null = null;
 let lastHitDamageText: string | null = null;
+let skillImpactMonsterId: string | null = null;
+let finishMonsterId: string | null = null;
+const damageTrailPctByMonster: Record<string, number> = {};
 let isSkillActiveNextAttack: boolean = false;
 
 // Modal States
@@ -242,6 +245,8 @@ function applyTheme() {
     document.documentElement.setAttribute('data-theme', 'light');
   } else if (currentTheme === 'matrix') {
     document.documentElement.setAttribute('data-theme', 'matrix');
+  } else if (currentTheme === 'pixel') {
+    document.documentElement.setAttribute('data-theme', 'pixel');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
@@ -269,6 +274,8 @@ function applyLoggedInAccount(account = getCurrentAccount()) {
   attackTargetId = null;
   hitMonsterId = null;
   lastHitDamageText = null;
+  skillImpactMonsterId = null;
+  finishMonsterId = null;
   isSkillActiveNextAttack = false;
   battleLogMessage = `[${account.displayName}] 계정 프로필을 불러왔습니다. 팀 전장은 모든 계정과 공유됩니다.`;
 }
@@ -317,6 +324,9 @@ function renderApp() {
     isSkillActiveNextAttack,
     hitMonsterId,
     lastHitDamageText,
+    skillImpactMonsterId,
+    finishMonsterId,
+    damageTrailPctByMonster,
     calculateCapacity,
     mockBudget,
     mockDailySummary
@@ -339,6 +349,11 @@ function renderApp() {
   `;
 
   attachEvents();
+  requestAnimationFrame(() => {
+    document.querySelectorAll<HTMLElement>('.hp-bar-ghost[data-target-width]').forEach(bar => {
+      bar.style.width = bar.dataset.targetWidth || '0%';
+    });
+  });
   renderChartIfModalOpen();
 }
 
@@ -2134,6 +2149,7 @@ attachEvents = function attachEvents() {
   document.querySelector('#btn-toggle-theme')?.addEventListener('click', () => {
     if (currentTheme === 'dark') currentTheme = 'light';
     else if (currentTheme === 'light') currentTheme = 'matrix';
+    else if (currentTheme === 'matrix') currentTheme = 'pixel';
     else currentTheme = 'dark';
     
     localStorage.setItem('theme', currentTheme);
@@ -2451,6 +2467,7 @@ attachEvents = function attachEvents() {
       }
 
       const isCritical = isSkillActiveNextAttack || Math.random() > 0.6;
+      const wasSkillAttack = isSkillActiveNextAttack;
       
       if (isSkillActiveNextAttack) {
         soundFx.playSkillCastSound();
@@ -2490,7 +2507,7 @@ attachEvents = function attachEvents() {
 
       if (didDodge) {
         soundFx.playDodgeSound();
-        particleService.spawnFloatingText(screenCenterX, screenCenterY - 40, '💨 DODGE!', '#94a3b8', 20);
+        particleService.spawnFloatingText(screenCenterX, screenCenterY - 40, 'DODGE!', '#94a3b8', 20);
         battleLogMessage = `[${monster.title}] 몬스터가 회피 스킬을 사용하여 데미지를 입지 않았습니다!`;
         hitMonsterId = monster.id;
         lastHitDamageText = `DODGE!`;
@@ -2504,11 +2521,20 @@ attachEvents = function attachEvents() {
         return;
       }
 
+      const shielded = monster.defenseTrait === 'Shield';
+      if (shielded) {
+        baseDamage = Math.max(1, Math.round(baseDamage * 0.8));
+        particleService.triggerExplosion(screenCenterX, screenCenterY, '#34d399', 10, 'shield');
+        particleService.spawnFloatingText(screenCenterX, screenCenterY - 56, 'SHIELD -20%', '#6ee7b7', 16);
+      }
+
       particleService.triggerImpact(screenCenterX, screenCenterY, {
         critical: isCritical,
         color: isCritical ? '#fbbf24' : impactColor,
         accentColor: hasElementalAdvantage ? '#ffffff' : undefined,
+        element: hasElementalAdvantage ? monster.elementTrait : undefined,
       });
+      if (wasSkillAttack) particleService.triggerSkillTrail(screenCenterX, screenCenterY, userState.devClass ?? '프론트엔드 마법사');
       if (hasElementalAdvantage) {
         particleService.spawnFloatingText(screenCenterX, screenCenterY - 58, 'WEAKNESS!', impactColor, 16);
       }
@@ -2522,6 +2548,7 @@ attachEvents = function attachEvents() {
       document.body.classList.add(isCritical ? 'impact-critical' : 'impact-hit');
       window.setTimeout(() => document.body.classList.remove('impact-hit', 'impact-critical'), isCritical ? 320 : 180);
 
+      damageTrailPctByMonster[monster.id] = (monster.currentHp / monster.maxHp) * 100;
       monster.currentHp = Math.max(0, monster.currentHp - baseDamage);
       const shouldEnrage = canEnrage(monster) && Math.random() < 0.45;
       if (shouldEnrage) {
@@ -2542,9 +2569,11 @@ attachEvents = function attachEvents() {
       mockGuildWar.guildA.score += baseDamage;
       
       hitMonsterId = monster.id;
+      skillImpactMonsterId = wasSkillAttack ? monster.id : null;
       lastHitDamageText = isCritical
         ? `CRITICAL! -${baseDamage} HP`
-        : hasElementalAdvantage ? `WEAK! -${baseDamage} HP` : `-${baseDamage} HP`;
+        : shielded ? `SHIELD! -${baseDamage} HP`
+          : hasElementalAdvantage ? `WEAK! -${baseDamage} HP` : `-${baseDamage} HP`;
 
       if (!shouldEnrage) {
         battleLogMessage = `[${hasElementalAdvantage ? '약점 속성 적중 +30%' : 'AI 코드 검수'}] ${userState.name}의 공격! ${monster.title}에게 ${baseDamage} 데미지!`;
@@ -2561,6 +2590,8 @@ attachEvents = function attachEvents() {
       });
 
       if (monster.currentHp === 0) {
+        finishMonsterId = monster.id;
+        particleService.triggerFinisher(screenCenterX, screenCenterY, monster.isBoss);
         monster.status = 'Defeated';
         userState.xp += monster.rewardXp;
         userState.defeatedBugs += 1;
@@ -2580,7 +2611,7 @@ attachEvents = function attachEvents() {
         }
 
         soundFx.playVictorySound();
-        confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } });
+        confetti({ particleCount: monster.isBoss ? 90 : 50, spread: monster.isBoss ? 90 : 55, origin: { y: 0.55 } });
 
         battleLogMessage = `${monster.title} 몬스터 토벌 완료! (+${monster.rewardXp} XP 획득, Slack 축하 메시지 전송)`;
 
@@ -2617,6 +2648,8 @@ attachEvents = function attachEvents() {
         setTimeout(() => {
           hitMonsterId = null;
           lastHitDamageText = null;
+          skillImpactMonsterId = null;
+          finishMonsterId = null;
         }, 1500);
         return;
       } else {
@@ -2625,8 +2658,15 @@ attachEvents = function attachEvents() {
         window.setTimeout(() => {
           hitMonsterId = null;
           lastHitDamageText = null;
+          skillImpactMonsterId = null;
         }, 500);
       }
+      window.setTimeout(() => {
+        delete damageTrailPctByMonster[monster.id];
+        Array.from(document.querySelectorAll<HTMLElement>('.hp-bar-ghost'))
+          .find(bar => bar.dataset.monsterId === monster.id)
+          ?.remove();
+      }, 460);
       saveState();
     }
 

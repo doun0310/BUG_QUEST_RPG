@@ -7,7 +7,7 @@ export interface Particle {
   color: string;
   alpha: number;
   decay: number;
-  shape: 'pixel' | 'spark';
+  shape: 'pixel' | 'spark' | 'packet' | 'data' | 'shield';
 }
 
 export interface FloatingText {
@@ -35,6 +35,7 @@ export interface ImpactOptions {
   critical?: boolean;
   color?: string;
   accentColor?: string;
+  element?: 'Frontend' | 'Backend' | 'Database' | 'Security';
 }
 
 class ParticleService {
@@ -92,7 +93,7 @@ class ParticleService {
   /**
    * 화면 특정 좌표 (x, y)에 픽셀 파티클 폭발 이펙트 발생
    */
-  public triggerExplosion(x: number, y: number, color: string = '#38bdf8', count: number = 20) {
+  public triggerExplosion(x: number, y: number, color: string = '#38bdf8', count: number = 20, shape: Particle['shape'] = 'pixel') {
     this.initCanvas();
     if (!this.ctx || !this.canRender()) return;
 
@@ -112,7 +113,7 @@ class ParticleService {
         color,
         alpha: 1,
         decay: Math.random() * 0.035 + 0.02,
-        shape: i % 6 === 0 ? 'spark' : 'pixel',
+        shape: i % 6 === 0 ? 'spark' : shape,
       });
     }
 
@@ -125,7 +126,10 @@ class ParticleService {
     const critical = config.critical ?? false;
     const color = config.color ?? (critical ? '#fbbf24' : '#38bdf8');
     const accent = config.accentColor ?? (critical ? '#f43f5e' : '#a5b4fc');
-    this.triggerExplosion(x, y, color, critical ? 34 : 20);
+    const elementalShape: Particle['shape'] = config.element === 'Frontend' ? 'packet'
+      : config.element === 'Backend' ? 'data'
+        : config.element === 'Security' ? 'shield' : 'pixel';
+    this.triggerExplosion(x, y, color, critical ? 34 : 20, elementalShape);
     this.triggerExplosion(x, y, accent, critical ? 16 : 9);
     this.triggerExplosion(x, y, '#ffffff', critical ? 8 : 4);
 
@@ -137,6 +141,23 @@ class ParticleService {
       );
     }
     this.startLoop();
+  }
+
+  /** Lightweight, class-specific skill trail. It reuses the bounded particle pool. */
+  public triggerSkillTrail(x: number, y: number, devClass: string) {
+    const config = devClass === '백엔드 전사'
+      ? { color: '#a78bfa', shape: 'data' as const }
+      : devClass === 'DevOps 성기사'
+        ? { color: '#34d399', shape: 'shield' as const }
+        : { color: '#38bdf8', shape: 'packet' as const };
+    this.triggerExplosion(x - 40, y + 18, config.color, 10, config.shape);
+    this.triggerExplosion(x - 12, y + 4, '#ffffff', 5, config.shape);
+  }
+
+  public triggerFinisher(x: number, y: number, boss: boolean) {
+    this.triggerExplosion(x, y, '#ffffff', boss ? 24 : 14, 'spark');
+    this.triggerExplosion(x, y, boss ? '#f43f5e' : '#fbbf24', boss ? 32 : 18, 'pixel');
+    this.spawnFloatingText(x, y - 42, boss ? 'BOSS EXECUTED!' : 'EXECUTED!', boss ? '#f43f5e' : '#fbbf24', boss ? 26 : 20);
   }
 
   /**
@@ -193,6 +214,15 @@ class ParticleService {
       if (p.shape === 'spark') {
         this.ctx.fillRect(px - p.size, py, p.size * 3, p.size);
         this.ctx.fillRect(px, py - p.size, p.size, p.size * 3);
+      } else if (p.shape === 'packet') {
+        this.ctx.fillRect(px - p.size, py - p.size, p.size * 2, p.size * 2);
+        this.ctx.clearRect(px - Math.max(1, p.size - 2), py - Math.max(1, p.size - 2), Math.max(1, p.size), Math.max(1, p.size));
+      } else if (p.shape === 'data') {
+        this.ctx.fillRect(px - p.size * 2, py, p.size * 4, p.size);
+        this.ctx.fillRect(px - p.size, py - p.size, p.size * 2, p.size * 3);
+      } else if (p.shape === 'shield') {
+        this.ctx.fillRect(px - p.size, py - p.size, p.size * 2, p.size * 2);
+        this.ctx.fillRect(px - p.size * 2, py, p.size * 4, p.size);
       } else {
         this.ctx.fillRect(px, py, p.size, p.size);
       }

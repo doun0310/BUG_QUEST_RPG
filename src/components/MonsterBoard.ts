@@ -11,7 +11,10 @@ export function renderMonsterBoard(state: AppState): string {
     isSkillActiveNextAttack,
     battleLogMessage,
     hitMonsterId,
-    lastHitDamageText
+    lastHitDamageText,
+    skillImpactMonsterId,
+    finishMonsterId,
+    damageTrailPctByMonster = {}
   } = state;
 
   const activeBugs = monstersState.filter(m => m.status === 'Active').length;
@@ -118,6 +121,14 @@ export function renderMonsterBoard(state: AppState): string {
         const isEnraged = m.isEnraged || m.isOverdue;
         const isCriticalImpact = isHit && !!lastHitDamageText?.includes('CRITICAL');
         const isWeaknessImpact = isHit && !!lastHitDamageText?.includes('WEAK!');
+        const isShieldImpact = isHit && !!lastHitDamageText?.includes('SHIELD!');
+        const isSkillImpact = skillImpactMonsterId === m.id;
+        const isFinishImpact = finishMonsterId === m.id;
+        const skillTrailClass = userState.devClass === '백엔드 전사'
+          ? 'skill-trail-warrior'
+          : userState.devClass === 'DevOps 성기사'
+            ? 'skill-trail-paladin'
+            : 'skill-trail-wizard';
         const hpPct = (m.currentHp / m.maxHp) * 100;
         const hpTone = hpPct > 60 ? 'hp-high' : hpPct > 30 ? 'hp-medium' : 'hp-low';
         const accent = severityAccent(m);
@@ -126,13 +137,18 @@ export function renderMonsterBoard(state: AppState): string {
         const artwork = getMonsterArtwork(m);
 
         return `
-          <div class="card monster-card-animated ${m.isBoss ? 'boss-monster-card' : ''} ${isEnraged ? 'enraged-monster-card' : ''} ${isHit ? 'monster-impact monster-pixel-flash' : ''} ${isCriticalImpact ? 'monster-impact-critical' : ''} ${isWeaknessImpact ? 'monster-impact-weakness' : ''}"
+          <div class="card monster-card-animated ${m.isBoss ? 'boss-monster-card' : ''} ${isEnraged ? 'enraged-monster-card' : ''} ${isHit ? 'monster-impact monster-pixel-flash' : ''} ${isCriticalImpact ? 'monster-impact-critical' : ''} ${isWeaknessImpact ? 'monster-impact-weakness' : ''} ${isShieldImpact ? 'monster-impact-shield' : ''} ${isSkillImpact ? 'monster-skill-impact' : ''} ${isFinishImpact ? 'monster-finish-impact' : ''}"
             style="border-left: 3px solid ${accent}; padding: 0;">
 
             <div class="dq-monster-container" style="margin: 0; border: none; background: transparent; border-radius: 16px; padding: 1rem 1.15rem;">
 
               <!-- Monster Image -->
               <div role="img" aria-label="${escapeHtml(artwork.label)} — ${escapeHtml(m.title)}" class="dq-monster-img pixel-sprite pixel-monster-sprite ${monsterArtworkClass(m)} ${m.status === 'Defeated' ? 'dq-monster-defeated' : ''} ${isHit ? 'hit-animation' : ''}" style="width:68px;height:68px;"></div>
+
+              ${isHit && lastHitDamageText?.includes('DODGE') ? '<div class="pixel-dodge-trail" aria-hidden="true"></div>' : ''}
+              ${isShieldImpact ? '<div class="pixel-shield-break" aria-hidden="true"></div>' : ''}
+              ${isSkillImpact ? `<div class="pixel-skill-trail ${skillTrailClass}" aria-hidden="true"></div>` : ''}
+              ${isHit && userState.streakCount >= 2 ? `<div class="pixel-combo-burst" aria-hidden="true">${userState.streakCount} COMBO</div>` : ''}
 
               ${isHit && lastHitDamageText ? `
                 <div class="damage-float-text ${lastHitDamageText.includes('CRITICAL') || lastHitDamageText.includes('2X') ? 'critical' : ''} ${lastHitDamageText.includes('WEAK!') ? 'weakness' : ''}">${lastHitDamageText}</div>
@@ -179,6 +195,7 @@ export function renderMonsterBoard(state: AppState): string {
                     <strong>${m.currentHp.toLocaleString()} / ${m.maxHp.toLocaleString()}</strong>
                   </div>
                   <div class="hp-bar-outer monster-hp-bar">
+                    ${damageTrailPctByMonster[m.id] !== undefined ? `<div class="hp-bar-ghost" data-monster-id="${escapeHtml(m.id)}" data-target-width="${hpPct}%" style="width:${damageTrailPctByMonster[m.id]}%"></div>` : ''}
                     <div class="hp-bar-inner" style="width: ${hpPct}%;"></div>
                   </div>
                 </div>
