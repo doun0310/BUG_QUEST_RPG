@@ -1072,7 +1072,16 @@ header { border-radius: 14px; border-color: var(--panel-border); }
 .progress-track, .member-progress { width: 100%; overflow: hidden; background: rgba(148, 163, 184, 0.14); border-radius: 99px; }.progress-track { height: 6px; }.progress-value { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--sky)); }.progress-value.is-danger, .member-progress .is-danger { background: var(--danger); }
 .member-load-list { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px solid var(--panel-border); }.member-load { display: grid; grid-template-columns: 1fr auto; gap: 0.2rem 0.5rem; }.member-load div:first-child { display: flex; gap: 0.3rem; align-items: baseline; min-width: 0; }.member-load span { color: var(--text-sub); font-size: 0.72rem; }.member-load small { color: var(--text-muted); font-size: 0.65rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.member-load > strong { color: var(--text-main); font-size: 0.68rem; }.member-progress { grid-column: 1 / -1; height: 3px; }.member-progress i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }.text-danger { color: var(--danger) !important; }
 .quick-action-list { display: flex; flex-direction: column; gap: 0.45rem; }.quick-action-list .action-btn { width: 100%; justify-content: center; }
-.compact-card { padding-block: 1rem; }.schedule-list { display: flex; flex-direction: column; }.schedule-list > div { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0; border-bottom: 1px solid var(--panel-border); }.schedule-list > div:last-child { border-bottom: 0; }.schedule-list span { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--text-sub); font-size: 0.72rem; }.schedule-list strong { color: var(--text-main); }.schedule-list small, .schedule-list time { color: var(--text-muted); font-size: 0.67rem; }.daily-summary { display: grid; gap: 0.5rem; }.daily-summary > div { padding: 0.6rem 0.7rem; border-left: 2px solid var(--primary); background: var(--inner-box-bg); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }.daily-summary .summary-done { border-left-color: var(--success); }.daily-summary span { color: var(--primary-light); font-size: 0.65rem; font-weight: 800; }.daily-summary .summary-done span { color: var(--success); }.daily-summary p { color: var(--text-main); font-size: 0.72rem; margin-top: 0.15rem; }
+.compact-card { padding-block: 1rem; }
+.schedule-list { display: flex; flex-direction: column; gap: 0.45rem; }
+.schedule-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.6rem; background: var(--inner-box-bg); border: 1px solid var(--panel-border); border-radius: 8px; }
+.schedule-user { display: inline-flex; align-items: center; gap: 0.35rem; min-width: 0; flex: 1; color: var(--text-main); font-size: 0.75rem; }
+.schedule-user strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: var(--text-main); }
+.schedule-meta { display: inline-flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+.schedule-badge { padding: 0.12rem 0.38rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; background: var(--primary-bg); color: var(--primary-light); border: 1px solid var(--primary-border); white-space: nowrap; }
+.schedule-date-badge { padding: 0.12rem 0.38rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; background: var(--inner-box-bg); color: var(--text-sub); border: 1px solid var(--panel-border); white-space: nowrap; font-family: monospace; }
+.schedule-meta time { color: var(--text-muted); font-size: 0.67rem; font-family: monospace; white-space: nowrap; }
+.daily-summary { display: grid; gap: 0.5rem; }.daily-summary > div { padding: 0.6rem 0.7rem; border-left: 2px solid var(--primary); background: var(--inner-box-bg); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }.daily-summary .summary-done { border-left-color: var(--success); }.daily-summary span { color: var(--primary-light); font-size: 0.65rem; font-weight: 800; }.daily-summary .summary-done span { color: var(--success); }.daily-summary p { color: var(--text-main); font-size: 0.72rem; margin-top: 0.15rem; }
 
 @media (max-width: 1120px) {
   .product-nav { display: none; }
@@ -2555,7 +2564,71 @@ header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activi
   margin-top: 0.8rem !important;
   padding-top: 0.7rem !important;
 }
-[data-theme="pixel"] .schedule-list > div { padding: 0.45rem 0 !important; }
+[data-theme="pixel"] .schedule-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.45rem !important;
+}
+[data-theme="pixel"] .schedule-item,
+[data-theme="pixel"] .schedule-list > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+  padding: 0.45rem 0.6rem !important;
+  background: #0a0a1a !important;
+  border: 2px solid #1a1ae6 !important;
+  box-shadow: 2px 2px 0 #050520 !important;
+  border-radius: 0 !important;
+  margin-bottom: 0 !important;
+}
+[data-theme="pixel"] .schedule-user {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+[data-theme="pixel"] .schedule-user strong {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: var(--px-sm) !important;
+  color: #ffffff !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+[data-theme="pixel"] .schedule-meta {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  flex-shrink: 0 !important;
+}
+[data-theme="pixel"] .schedule-badge {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: var(--px-mini) !important;
+  padding: 0.12rem 0.35rem !important;
+  background: #1a1a2e !important;
+  border: 1px solid #f8b800 !important;
+  color: #f8b800 !important;
+  border-radius: 0 !important;
+  white-space: nowrap !important;
+}
+[data-theme="pixel"] .schedule-date-badge {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: var(--px-mini) !important;
+  padding: 0.12rem 0.35rem !important;
+  background: #0a0a1a !important;
+  border: 1px solid #6464ff !important;
+  color: #6464ff !important;
+  border-radius: 0 !important;
+  white-space: nowrap !important;
+}
+[data-theme="pixel"] .schedule-meta time {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: var(--px-mini) !important;
+  color: #6464ff !important;
+  white-space: nowrap !important;
+}
 [data-theme="pixel"] .daily-summary > div { padding: 0.6rem 0.7rem !important; }
 [data-theme="pixel"] .dropdown-item { padding: 0.45rem 0.75rem !important; gap: 0.5rem !important; }
 [data-theme="pixel"] .monster-status-badges { gap: 0.4rem; }

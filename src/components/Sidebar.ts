@@ -49,7 +49,24 @@ export function renderSidebar(state: AppState): string {
 
       <section class="card compact-card">
         <div class="card-header"><h3 class="card-title">${icon('clock', 'color:var(--primary-light)', 15)} 부재 일정</h3></div>
-        <div class="schedule-list">${vacationsState.map(v => `<div><span>${icon('leaf', 'color:var(--success)', 12)} <strong>${v.userName}</strong> <small>${v.type}</small></span><time>${v.startDate.substring(5)}</time></div>`).join('')}</div>
+        <div class="schedule-list">
+          ${vacationsState.length > 0 ? vacationsState.map(v => {
+            const formatD = (d: string) => d.substring(5).replace('-', '/');
+            const dateText = formatD(v.startDate) + (v.startDate !== v.endDate ? '~' + formatD(v.endDate) : '');
+            return `
+              <div class="schedule-item">
+                <div class="schedule-user">
+                  ${icon('leaf', 'color:var(--success)', 12)}
+                  <strong>${v.userName}</strong>
+                </div>
+                <div class="schedule-meta">
+                  <span class="schedule-badge">${v.type}</span>
+                  <span class="schedule-date-badge">${dateText}</span>
+                </div>
+              </div>
+            `;
+          }).join('') : `<p class="schedule-empty" style="margin:0; padding:.45rem; color:var(--text-sub); font-size:.75rem;">등록된 부재 일정이 없습니다.</p>`}
+        </div>
       </section>
     </aside>`;
 }
