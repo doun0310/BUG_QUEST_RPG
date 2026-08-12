@@ -32,7 +32,7 @@ import { updateAccountProfile } from './services/authService';
 import { calculateElementalDamage, canEnrage, isDailyClaimAvailable } from './services/gameRules';
 import { recalculateWorkload } from './services/workloadService';
 import { fetchProjectSnapshot, getProjectApiConfig, saveProjectApiConfig, saveProjectSnapshot, verifyProjectApi } from './services/projectApiService';
-import { createAccountDemoData } from './services/accountDemoService';
+import { createAccountDemoData, getAccountDemoSignature } from './services/accountDemoService';
 import { escapeHtml } from './services/inputSafety';
 import { validateIssueInput } from './services/issueValidation';
 
@@ -205,7 +205,7 @@ let isSkillActiveNextAttack: boolean = false;
 let activeModal: 'vacation' | 'attack' | 'leaderboard' | 'inventory' | 'webhook' | 'cmsDetails' | 'lootBox' | 'forge' | 'quests' | 'simulator' | 'radarStats' | 'seasonPass' | 'guildWar' | 'coopBoss' | 'dungeonMap' | 'dailyRoulette' | 'reassign' | 'createMonster' | 'postMortem' | 'codex' | 'execAnalytics' | 'achievements' | 'apiSync' | 'raidShop' | 'socialFeed' | 'aiPrediction' | 'cicdPipeline' | 'slackBot' | 'releaseMilestone' | 'skillTree' | 'teamSettings' | 'userProfile' | null = null;
 const dailyRewardKey = 'bug_quest_daily_reward_date';
 const accountDemoSeedKey = 'bug_quest_account_demo_seed';
-const accountDemoVersion = 'realistic-bugs-v3';
+const accountDemoVersion = 'account-linked-shared-v4';
 /** Daily rewards follow the product's Korean business day, not UTC midnight. */
 const todayKey = () => {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -264,14 +264,13 @@ function applyLoggedInAccount(account = getCurrentAccount()) {
   if (!account) return;
 
   userState = { ...account.userState };
-  monstersState = [...account.monstersState];
   currentTheme = account.theme;
   activeModal = null;
   attackTargetId = null;
   hitMonsterId = null;
   lastHitDamageText = null;
   isSkillActiveNextAttack = false;
-  battleLogMessage = `[${account.displayName}] 계정 전장 데이터를 불러왔습니다.`;
+  battleLogMessage = `[${account.displayName}] 계정 프로필을 불러왔습니다. 팀 전장은 모든 계정과 공유됩니다.`;
 }
 
 // ─── Onboarding Wizard State ────────────────────────────────────────────────
@@ -2774,6 +2773,7 @@ attachLoginEvents = function attachLoginEvents() {
     if (res.success) {
       const settings = addAccountAsTeamMember(displayName, heroClass);
       teamState = toTeamMemberCapacity(settings.members, settings.sprintDays);
+      refreshAccountLinkedDemo();
       // Auto login
       const loginResult = await login(username, pin);
       loginErrorMsg = '';
@@ -3320,20 +3320,29 @@ if ('serviceWorker' in navigator) {
 
 async function startApplication() {
   await hydrateRemoteProjectState();
-  const accounts = getAllAccounts();
-  const accountSignature = accounts.map(account => account.id).sort().join('|');
-  const demoSignature = `${accountDemoVersion}:${accountSignature}`;
-  if (accounts.length > 0 && localStorage.getItem(accountDemoSeedKey) !== demoSignature) {
-    const demo = createAccountDemoData(accounts, todayKey());
-    // Replace only previous sample records; user-created and synced project data remains intact.
-    monstersState = [...monstersState.filter(monster => !monster.title.startsWith('[샘플]')), ...demo.monsters];
-    vacationsState = [...vacationsState.filter(request => request.reason !== '샘플 외근 일정'), ...demo.vacations];
-    webhooksState = [...webhooksState.filter(webhook => !webhook.summary.startsWith('[샘플]')), ...demo.webhooks];
-    leaderboardState = demo.leaderboard;
-    saveState();
-    localStorage.setItem(accountDemoSeedKey, demoSignature);
-  }
+  refreshAccountLinkedDemo();
   renderApp();
+}
+
+/**
+ * Keeps demo work in the shared team workspace. Account membership changes
+ * regenerate only labelled sample records; account login changes never do.
+ */
+function refreshAccountLinkedDemo(): boolean {
+  const accounts = getAllAccounts();
+  const accountSignature = getAccountDemoSignature(accounts);
+  const demoSignature = `${accountDemoVersion}:${accountSignature}`;
+  if (accounts.length === 0 || localStorage.getItem(accountDemoSeedKey) === demoSignature) return false;
+
+  const demo = createAccountDemoData(accounts, todayKey());
+  // Replace only previous sample records; user-created and synced project data remains intact.
+  monstersState = [...monstersState.filter(monster => !monster.title.startsWith('[샘플]')), ...demo.monsters];
+  vacationsState = [...vacationsState.filter(request => request.reason !== '샘플 외근 일정'), ...demo.vacations];
+  webhooksState = [...webhooksState.filter(webhook => !webhook.summary.startsWith('[샘플]')), ...demo.webhooks];
+  leaderboardState = demo.leaderboard;
+  saveState();
+  localStorage.setItem(accountDemoSeedKey, demoSignature);
+  return true;
 }
 
 if (document.readyState === 'loading') {

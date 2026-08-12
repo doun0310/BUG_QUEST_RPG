@@ -175,7 +175,6 @@ export function deleteAccount(accountId: string, pin: string): { success: boolea
     state.currentAccountId = null;
     state.isLocked = false;
     removeItem('userState');
-    removeItem('monstersState');
     removeItem('theme');
   }
 
@@ -207,7 +206,6 @@ export function purgeLegacyDemoAccounts(): number {
     state.currentAccountId = null;
     state.isLocked = false;
     removeItem('userState');
-    removeItem('monstersState');
     removeItem('vacationsState');
   }
   saveAuthState(state);
@@ -393,7 +391,6 @@ export function logout(): void {
   saveAuthState(state);
 
   removeItem('userState');
-  removeItem('monstersState');
   removeItem('theme');
 }
 
@@ -408,11 +405,9 @@ export function saveCurrentGameStateToAccount(): void {
 
   try {
     const rawUser = getItem('userState');
-    const rawMonsters = getItem('monstersState');
     const rawTheme = getItem('theme');
 
     if (rawUser) account.userState = JSON.parse(rawUser);
-    if (rawMonsters) account.monstersState = JSON.parse(rawMonsters);
     if (rawTheme) account.theme = rawTheme as any;
   } catch { /* ignore */ }
 
@@ -482,10 +477,11 @@ export async function updateAccountProfile(updates: {
 }
 
 /**
- * 계정 상태를 메인 스토어 LocalStorage 키에 동기화합니다.
+ * 계정별 프로필만 메인 스토어에 동기화합니다.
+ * 몬스터와 기타 업무 데이터는 모든 계정이 함께 보는 공용 워크스페이스이므로
+ * 로그인/전환 과정에서 덮어쓰지 않습니다.
  */
 function syncAccountToStore(account: Account): void {
   setItem('userState', JSON.stringify(account.userState));
-  setItem('monstersState', JSON.stringify(account.monstersState));
   setItem('theme', account.theme);
 }

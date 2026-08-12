@@ -8,6 +8,15 @@ export interface AccountDemoData {
   leaderboard: WeeklyRank[];
 }
 
+/**
+ * Shared workspace demo identity. It deliberately depends only on registered
+ * accounts, so switching the currently signed-in account never regenerates or
+ * replaces the team demo data.
+ */
+export function getAccountDemoSignature(accounts: Pick<Account, 'id'>[]): string {
+  return accounts.map(account => account.id).sort().join('|');
+}
+
 interface BugScenario {
   title: string;
   severity: BugMonster['severity'];
@@ -68,6 +77,10 @@ const scenarios: BugScenario[] = [
 
 /** Generates clearly labelled sample work using only real, registered account names. */
 export function createAccountDemoData(accounts: Account[], dateKey: string): AccountDemoData {
+  if (accounts.length === 0) {
+    return { monsters: [], vacations: [], webhooks: [], leaderboard: [] };
+  }
+
   return {
     monsters: Array.from({ length: accounts.length + 3 }, (_, index) => {
       const account = accounts[index % accounts.length];

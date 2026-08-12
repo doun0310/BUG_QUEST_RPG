@@ -12,7 +12,7 @@ import { parseLcovContent } from './services/lcovParser';
 import { createAccount, login, logout, switchAccount, isLoggedIn, getCurrentAccount, deleteAccount, lockSession, unlockSession, isSessionLocked, resetAuthStateForTesting } from './services/authService';
 import { calculateElementalDamage, canEnrage, isDailyClaimAvailable } from './services/gameRules';
 import { getAssignedWorkloadMembers, recalculateWorkload } from './services/workloadService';
-import { createAccountDemoData } from './services/accountDemoService';
+import { createAccountDemoData, getAccountDemoSignature } from './services/accountDemoService';
 import { escapeHtml, safeExternalUrl } from './services/inputSafety';
 import { validateIssueInput } from './services/issueValidation';
 import { showToast } from './toastManager';
@@ -84,6 +84,9 @@ describe('Connected Account Demo Data', () => {
     expect(demo.monsters.every(item => item.title.startsWith('[샘플]'))).toBe(true);
     expect(demo.monsters[0].title).toContain('React Query 캐시 무효화');
     expect(demo.monsters[1].dialogue).toContain('중복 결제');
+    expect(getAccountDemoSignature([
+      { id: 'acc-b' }, { id: 'acc-a' }
+    ] as any)).toBe('acc-a|acc-b');
   });
 });
 
@@ -333,6 +336,38 @@ describe('Multi-Account Auth & Account Switching System', () => {
     logout();
     expect(isLoggedIn()).toBe(false);
     expect(getCurrentAccount()).toBeNull();
+  });
+
+  it('keeps shared workspace demo records intact while accounts log in and out', async () => {
+    const records = new Map<string, string>();
+    const previousStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => records.get(key) ?? null,
+        setItem: (key: string, value: string) => records.set(key, value),
+        removeItem: (key: string) => records.delete(key),
+        clear: () => records.clear(),
+      },
+    });
+
+    try {
+      resetAuthStateForTesting();
+      await createAccount('shared_a', '공용A', '1234', '전사 (Frontend)');
+      await createAccount('shared_b', '공용B', '5678', '마법사 (Backend)');
+      const sharedMonsters = [{ id: 'demo-shared', title: '[샘플] 공용 이슈', severity: 'Minor', status: 'Active', currentHp: 100, maxHp: 100, rewardXp: 50, isBoss: false, assignee: '공용A' }];
+      localStorage.setItem('monstersState', JSON.stringify(sharedMonsters));
+
+      await login('shared_a', '1234');
+      expect(JSON.parse(localStorage.getItem('monstersState') || '[]')).toEqual(sharedMonsters);
+      await login('shared_b', '5678');
+      expect(JSON.parse(localStorage.getItem('monstersState') || '[]')).toEqual(sharedMonsters);
+      logout();
+      expect(JSON.parse(localStorage.getItem('monstersState') || '[]')).toEqual(sharedMonsters);
+    } finally {
+      if (previousStorage) Object.defineProperty(globalThis, 'localStorage', previousStorage);
+      else delete (globalThis as { localStorage?: Storage }).localStorage;
+    }
   });
 
   it('should handle session lock and unlock correctly', async () => {
