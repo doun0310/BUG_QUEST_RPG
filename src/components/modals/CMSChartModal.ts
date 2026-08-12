@@ -5,8 +5,8 @@ import { renderModalHeader } from '../ui';
 
 export function renderCMSChartModal(_state: AppState): string {
   return `
-    <div class="modal-backdrop" id="modal-backdrop">
-      <div class="modal-card analytics-modal">
+    <div class="modal-backdrop budget-analytics-backdrop" id="modal-backdrop">
+      <div class="modal-card analytics-modal budget-analytics-modal">
         ${renderModalHeader({ icon: 'chart', eyebrow: 'PROJECT ANALYTICS', title: '예산 소진 현황' })}
         
         <div class="chart-surface">

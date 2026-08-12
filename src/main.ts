@@ -1263,8 +1263,8 @@ renderModals = function renderModals() {
     const simBurnRate = Math.min(100, Math.round((simBudget / mockBudget.totalBudget) * 100));
 
     return `
-      <div class="modal-backdrop" id="modal-backdrop">
-        <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-backdrop budget-simulator-backdrop" id="modal-backdrop">
+        <div class="modal-card budget-simulator-modal" style="max-width: 520px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
             <h2 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">${icon('flask', 'color:var(--primary-light)', 18)} CMS 예산 & 가동률 시뮬레이터</h2>
             <button class="action-btn action-btn-secondary" id="btn-close-modal">닫기</button>
@@ -1616,12 +1616,14 @@ attachEvents = function attachEvents() {
 
   if (isRpgMenuOpen && rpgDropdownMenu) {
     rpgDropdownMenu.classList.add('show');
+    rpgMenuBtn?.setAttribute('aria-expanded', 'true');
   }
 
   rpgMenuBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     isRpgMenuOpen = !isRpgMenuOpen;
     rpgDropdownMenu?.classList.toggle('show', isRpgMenuOpen);
+    rpgMenuBtn?.setAttribute('aria-expanded', String(isRpgMenuOpen));
   });
 
   rpgDropdownMenu?.addEventListener('click', (e) => {
@@ -1631,12 +1633,14 @@ attachEvents = function attachEvents() {
     if (item && item.id !== 'btn-toggle-sound') {
       isRpgMenuOpen = false;
       rpgDropdownMenu.classList.remove('show');
+      rpgMenuBtn?.setAttribute('aria-expanded', 'false');
     }
   });
 
   document.addEventListener('click', () => {
     isRpgMenuOpen = false;
     rpgDropdownMenu?.classList.remove('show');
+    rpgMenuBtn?.setAttribute('aria-expanded', 'false');
   });
 
   document.querySelector('#btn-open-skilltree')?.addEventListener('click', () => {

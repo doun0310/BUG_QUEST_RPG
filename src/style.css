@@ -2,6 +2,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 @import url('https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css');
 
+/* Pixel-theme display and compact UI faces; both defer to system fallbacks while loading. */
+@font-face {
+  font-family: 'Galmuri11Condensed';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/Galmuri11-Condensed.woff2') format('woff2');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'NeoDunggeunmo';
+  src: url('https://cdn.jsdelivr.net/npm/@kfonts/neodgm@0.5.0/neodgm.woff2') format('woff2');
+  font-display: swap;
+}
+
 /* =========================================
    DESIGN TOKENS — GLASSMORPHISM SYSTEM
    ========================================= */
@@ -222,6 +234,40 @@ header {
   border-radius: 10px;
   border: 1px solid var(--panel-border);
   backdrop-filter: var(--glass-blur);
+}
+
+/* Header information architecture: brand → player HUD → workspace controls. */
+.app-header {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(220px, 1.05fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+}
+.header-hud, .header-actions, .header-utility {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.header-hud { gap: 0.45rem; }
+.header-hud .stat-bar-box { flex: 1 1 0; min-width: 0; width: auto; }
+.game-hud-label { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
+.game-hud-label strong { margin-left: auto; white-space: nowrap; }
+.header-actions { justify-content: flex-end; gap: 0.45rem; }
+.header-utility { gap: 0.35rem; padding-left: 0.45rem; border-left: 1px solid var(--panel-border); }
+.header-rpg-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.42rem 0.85rem; }
+.header-inventory-btn { white-space: nowrap; }
+.header-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.25rem;
+  color: var(--primary-light);
+  background: var(--primary-bg);
+  border-radius: 99px;
+  font-size: 0.63rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .hp-bar-outer {
@@ -1046,6 +1092,10 @@ header { border-radius: 14px; border-color: var(--panel-border); }
   .analytics-summary, .archive-metrics { grid-template-columns: 1fr; }
   .profile-modal, .team-settings-modal { padding: 1.25rem; }
   .user-badge-container { gap:.35rem; }.header-controls > .toolbar-pill-btn { flex:1; justify-content:center; }.dq-monster-container { flex-direction:column; }.dq-monster-container > div { width:100%; }.dq-monster-container h3 + div { flex-wrap:wrap; }.modal-actions { flex-direction:column-reverse; }.modal-actions .action-btn { width:100%; }.daily-roulette { transform:scale(.9); margin:-10px auto; }
+  .app-header { display: flex; gap: .65rem; }
+  .header-hud { width: 100%; }
+  .header-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .header-utility { margin-left: auto; }
 }
 
 /* =========================================
@@ -1363,6 +1413,9 @@ header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activi
 [data-theme="pixel"] {
   --font-family:        'Galmuri11', 'Press Start 2P', ui-monospace, monospace;
   --font-dq:            'Galmuri11', 'Press Start 2P', ui-monospace, monospace;
+  --font-pixel-body:    'Galmuri11', ui-monospace, monospace;
+  --font-pixel-ui:      'Galmuri11Condensed', 'Galmuri11', ui-monospace, monospace;
+  --font-pixel-display: 'NeoDunggeunmo', 'Galmuri11', ui-monospace, monospace;
 
   /* 배경 */
   --bg-color:           #0f0f1a;
@@ -1436,10 +1489,11 @@ header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activi
 
 /* ── 픽셀 그리드 배경 ── */
 [data-theme="pixel"] body {
-  font-family:    var(--font-family);
-  font-size:      7px;
-  letter-spacing: 0.04em;
-  line-height:    2;
+  font-family:    var(--font-pixel-body);
+  /* Galmuri's pixel grid stays crisp at this size while Korean copy remains readable. */
+  font-size:      13px;
+  letter-spacing: 0.01em;
+  line-height:    1.7;
   image-rendering: pixelated;
   background-color: #0f0f1a;
   background-image:
@@ -2034,15 +2088,449 @@ header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activi
 
 /* ── 테마 전환 버튼 라벨 ── */
 [data-theme="pixel"] #btn-toggle-theme::after {
-  content: " [8-BIT]";
-  font-size: 0.42rem;
-  opacity: 0.7;
+  content: none;
 }
 
 /* ── 반응형 ── */
 @media (max-width: 760px) {
-  [data-theme="pixel"] body { font-size: 6px; }
+  [data-theme="pixel"] body { font-size: 12px; }
   [data-theme="pixel"] .action-btn,
   [data-theme="pixel"] .toolbar-pill-btn { min-height: 34px; }
 }
 
+
+/* =====================================================
+   PIXEL THEME — 통일 타입 스케일 & 레이아웃 교정
+   4단계 토큰:
+     --px-mini  0.42rem  뱃지·극소
+     --px-sm    0.5rem   버튼·폼·일반 UI
+     --px-base  0.55rem  카드 타이틀·헤더
+     --px-num   0.65rem  메트릭 수치
+   ===================================================== */
+
+/* ── 토큰 정의 ── */
+[data-theme="pixel"] {
+  /* 8-bit UI scale: compact but readable at normal desktop viewing distance. */
+  --px-mini: 0.68rem;
+  --px-sm:   0.78rem;
+  --px-base: 0.94rem;
+  --px-num:  1.08rem;
+}
+
+/* ── [mini] 극소 요소 ── */
+[data-theme="pixel"] .badge,
+[data-theme="pixel"] kbd,
+[data-theme="pixel"] .form-group label,
+[data-theme="pixel"] .product-nav span,
+[data-theme="pixel"] .overview-intro .eyebrow,
+[data-theme="pixel"] .boss-monster-card::before,
+[data-theme="pixel"] .pixel-inventory-item::before,
+[data-theme="pixel"] .sidebar-actions .action-btn { font-size: var(--px-mini) !important; }
+
+/* ── [sm] 일반 UI 텍스트 ── */
+[data-theme="pixel"] body,
+[data-theme="pixel"] .action-btn,
+[data-theme="pixel"] .toolbar-pill-btn,
+[data-theme="pixel"] .assignee-edit-btn,
+[data-theme="pixel"] .form-input,
+[data-theme="pixel"] .form-select,
+[data-theme="pixel"] textarea.form-input,
+[data-theme="pixel"] .dropdown-item,
+[data-theme="pixel"] .toast-item,
+[data-theme="pixel"] .dq-text,
+[data-theme="pixel"] .monster-hp-label,
+[data-theme="pixel"] .monster-hp-label strong,
+[data-theme="pixel"] .game-hud-label,
+[data-theme="pixel"] .game-hud-label strong,
+[data-theme="pixel"] .section-label,
+[data-theme="pixel"] .logo-title,
+[data-theme="pixel"] .modal-heading-copy h2,
+[data-theme="pixel"] .roulette-wheel span { font-size: var(--px-sm) !important; }
+
+/* ── [base] 카드 타이틀·헤더 ── */
+[data-theme="pixel"] h1,
+[data-theme="pixel"] h2,
+[data-theme="pixel"] h3,
+[data-theme="pixel"] h4,
+[data-theme="pixel"] .card-title { font-size: var(--px-base) !important; }
+
+/* ── [num] 메트릭 수치 ── */
+[data-theme="pixel"] .metric-card strong,
+[data-theme="pixel"] .capacity-percent { font-size: var(--px-num) !important; }
+[data-theme="pixel"] .damage-float-text { font-size: var(--px-num) !important; }
+[data-theme="pixel"] .damage-float-text.critical { font-size: 1.28rem !important; }
+
+/* Do not lose application content to a pixel-theme ellipsis: only true HUD labels stay single-line. */
+[data-theme="pixel"] h1,
+[data-theme="pixel"] h2,
+[data-theme="pixel"] h3,
+[data-theme="pixel"] h4,
+[data-theme="pixel"] .card-title {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.55;
+}
+
+/* ── 레이아웃 교정: 헤더 ── */
+[data-theme="pixel"] header {
+  padding: 0.75rem 1rem !important;
+  flex-wrap: wrap !important;
+  gap: 0.35rem !important;
+  min-height: auto !important;
+}
+[data-theme="pixel"] .brand-lockup { min-width: 0 !important; gap: 0.35rem !important; }
+[data-theme="pixel"] .brand-mark { width: 30px !important; height: 30px !important; flex-shrink: 0; }
+[data-theme="pixel"] .logo-title { max-width: 180px !important; }
+[data-theme="pixel"] .brand-context { display: flex !important; }
+[data-theme="pixel"] .user-badge-container { flex-wrap: wrap !important; gap: 0.3rem !important; }
+[data-theme="pixel"] .header-controls { flex-wrap: wrap !important; gap: 0.3rem !important; }
+[data-theme="pixel"] .stat-bar-box { width: 92px !important; padding: 0.32rem 0.45rem !important; gap: 0.22rem !important; }
+
+/* ── 레이아웃 교정: 카드 ── */
+[data-theme="pixel"] .card { padding: 0.9rem 1rem !important; }
+[data-theme="pixel"] .card-header { margin-bottom: 0.65rem !important; min-height: 28px !important; }
+
+/* ── 레이아웃 교정: 버튼 ── */
+[data-theme="pixel"] .action-btn,
+[data-theme="pixel"] .toolbar-pill-btn {
+  padding: 0.42rem 0.7rem !important;
+  min-height: 36px !important;
+  letter-spacing: 0.02em !important;
+}
+[data-theme="pixel"] .modal-close,
+[data-theme="pixel"] .icon-button { width: 34px !important; height: 34px !important; min-height: 34px !important; }
+
+/* ── 레이아웃 교정: 뱃지 ── */
+[data-theme="pixel"] .badge { padding: 0.18rem 0.38rem !important; min-height: 21px !important; }
+
+/* ── 레이아웃 교정: 폼 ── */
+[data-theme="pixel"] .form-input,
+[data-theme="pixel"] .form-select { padding: 0.45rem 0.6rem !important; min-height: 38px !important; }
+
+/* ── 레이아웃 교정: 몬스터 카드 ── */
+[data-theme="pixel"] .dq-monster-container { padding: 0.8rem 0.9rem !important; gap: 0.75rem !important; }
+[data-theme="pixel"] .dq-monster-img { width: 64px !important; height: 64px !important; flex-shrink: 0 !important; }
+[data-theme="pixel"] .monster-hp-frame { padding: 4px !important; }
+
+/* ── 레이아웃 교정: 메트릭 카드 ── */
+[data-theme="pixel"] .metric-card { padding: 0.65rem 0.7rem !important; gap: 0.5rem !important; }
+[data-theme="pixel"] .metric-icon { width: 30px !important; height: 30px !important; flex-shrink: 0 !important; }
+
+/* ── 레이아웃 교정: 오버뷰 h2 ── */
+[data-theme="pixel"] .overview-intro h2 {
+  font-size: var(--px-base) !important;
+  line-height: 1.6 !important;
+  white-space: normal !important;
+  letter-spacing: 0.02em !important;
+}
+[data-theme="pixel"] .product-overview { padding-bottom: 0.75rem !important; }
+
+/* ── 레이아웃 교정: 사이드바 ── */
+[data-theme="pixel"] .sidebar-actions {
+  grid-template-columns: 1.3fr .8fr 1fr !important;
+  gap: 0.3rem !important;
+  padding-top: 0.5rem !important;
+  margin-top: 0.5rem !important;
+}
+
+/* ── 레이아웃 교정: 모달 ── */
+[data-theme="pixel"] .modal-backdrop { padding: 1rem !important; }
+[data-theme="pixel"] .modal-card {
+  /* Keep the shared modal structure, with a denser pixel-only reading scale. */
+  /* Override the pixel overflow guard's global max-width:100% for the dialog itself. */
+  max-width: 480px;
+  padding: 0.9rem !important;
+  max-height: min(82vh, 680px);
+  font-size: 10px;
+  line-height: 1.42;
+}
+[data-theme="pixel"] .modal-card.modal-form-card { max-width: 520px; }
+[data-theme="pixel"] .modal-heading { margin-bottom: 0.65rem !important; gap: 0.45rem !important; }
+[data-theme="pixel"] .modal-heading-icon { width: 26px !important; height: 26px !important; flex-shrink: 0 !important; }
+[data-theme="pixel"] .modal-card .form-group { margin-bottom: 0.55rem; }
+[data-theme="pixel"] .modal-card .form-group label { margin-bottom: 0.25rem; }
+[data-theme="pixel"] .modal-card .form-input,
+[data-theme="pixel"] .modal-card .form-select,
+[data-theme="pixel"] .modal-card textarea.form-input {
+  min-height: 34px !important;
+  padding: 0.34rem 0.5rem !important;
+}
+[data-theme="pixel"] .modal-card .action-btn,
+[data-theme="pixel"] .modal-card .toolbar-pill-btn {
+  min-height: 32px !important;
+  padding: 0.32rem 0.55rem !important;
+}
+[data-theme="pixel"] .modal-actions { padding-top: 0.5rem !important; gap: 0.3rem !important; }
+
+/* Action dialogs must occupy the same compact viewport footprint as the shared theme dialogs. */
+[data-theme="pixel"] .modal-card.modal-form-card,
+[data-theme="pixel"] .modal-card:has(#form-vacation) {
+  max-height: min(74vh, 560px);
+  overflow-y: auto;
+}
+[data-theme="pixel"] .modal-card.modal-form-card .form-group,
+[data-theme="pixel"] .modal-card:has(#form-vacation) .form-group { margin-bottom: 0.5rem; }
+[data-theme="pixel"] #form-attack #btn-get-ai-hint { margin-bottom: 0.7rem !important; }
+[data-theme="pixel"] #form-vacation > div[style*="margin-top"] {
+  margin-top: 0.85rem !important;
+}
+
+/* Budget analysis follows the shared detail-dialog dimensions, while retaining only the pixel color treatment. */
+[data-theme="pixel"] .budget-simulator-backdrop { padding: 1.5rem !important; }
+[data-theme="pixel"] .budget-simulator-modal {
+  width: min(calc(100vw - 3rem), 620px);
+  max-width: 620px !important;
+  padding: 1.85rem !important;
+  max-height: min(88vh, 860px);
+  font-size: 16px;
+  line-height: 1.6;
+}
+[data-theme="pixel"] .budget-simulator-modal h2 {
+  font-family: var(--font-pixel-body) !important;
+  font-size: 1.22rem !important;
+  line-height: 1.35;
+}
+[data-theme="pixel"] .budget-simulator-modal .form-group label {
+  font-size: 0.86rem !important;
+  line-height: 1.45;
+}
+[data-theme="pixel"] .budget-simulator-modal .form-group strong,
+[data-theme="pixel"] .budget-simulator-modal [style*="font-size: 0.82rem"] strong {
+  font-size: 1.02rem;
+}
+[data-theme="pixel"] .budget-simulator-modal .action-btn,
+[data-theme="pixel"] .budget-simulator-modal .toolbar-pill-btn {
+  min-height: 40px !important;
+  padding: 0.48rem 0.9rem !important;
+}
+
+/* Budget burn analytics is a separate chart dialog and needs its own visual scale. */
+[data-theme="pixel"] .budget-analytics-backdrop { padding: 1.5rem !important; }
+[data-theme="pixel"] .budget-analytics-modal {
+  width: min(calc(100vw - 3rem), 620px);
+  max-width: 620px !important;
+  max-height: min(88vh, 860px);
+  padding: 1.85rem !important;
+  font-size: 16px;
+  line-height: 1.6;
+}
+[data-theme="pixel"] .budget-analytics-modal .modal-heading {
+  margin-bottom: 1.1rem !important;
+}
+[data-theme="pixel"] .budget-analytics-modal .modal-heading-copy h2 {
+  font-family: var(--font-pixel-body) !important;
+  font-size: 1.22rem !important;
+  line-height: 1.35;
+}
+[data-theme="pixel"] .budget-analytics-modal .chart-surface {
+  padding: 1.15rem;
+  margin-bottom: 1rem;
+}
+[data-theme="pixel"] .budget-analytics-modal .chart-surface canvas { max-height: 280px; }
+[data-theme="pixel"] .budget-analytics-modal .analytics-summary { gap: 0.75rem; }
+[data-theme="pixel"] .budget-analytics-modal .analytics-summary > div { padding: 0.9rem; }
+[data-theme="pixel"] .budget-analytics-modal .analytics-summary span { font-size: 0.78rem; }
+[data-theme="pixel"] .budget-analytics-modal .analytics-summary strong { font-size: 1.08rem; }
+
+/* ── 레이아웃 교정: 드롭다운 ── */
+[data-theme="pixel"] .dropdown-item { padding: 0.42rem 0.6rem !important; min-height: 34px !important; gap: 0.4rem !important; }
+
+/* ── 레이아웃 교정: 배틀 로그 ── */
+[data-theme="pixel"] .activity-log { padding: 0.65rem 0.8rem !important; }
+[data-theme="pixel"] .dq-text { line-height: 1.8 !important; }
+
+/* ── 레이아웃 교정: 프로필 ── */
+[data-theme="pixel"] .profile-avatar { width: 34px !important; height: 34px !important; flex-shrink: 0 !important; }
+[data-theme="pixel"] .profile-summary-head { gap: 0.4rem !important; }
+[data-theme="pixel"] .profile-summary-head strong { font-size: var(--px-sm) !important; }
+
+/* Pixel HUD grouping: readable panels without turning the header into a dense toolbar. */
+[data-theme="pixel"] .app-header {
+  grid-template-columns: minmax(190px, 1fr) minmax(220px, 1.05fr) auto;
+  gap: 0.7rem !important;
+}
+[data-theme="pixel"] .header-hud { gap: 0.4rem; }
+[data-theme="pixel"] .header-hud .stat-bar-box {
+  width: auto !important;
+  min-width: 0;
+  padding: 0.38rem 0.45rem !important;
+  border: 2px solid #050520 !important;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .45) !important;
+}
+[data-theme="pixel"] .header-actions { gap: 0.4rem; }
+[data-theme="pixel"] .header-utility { gap: 0.3rem; padding-left: 0.4rem; border-left: 2px solid #1a1ae6; }
+[data-theme="pixel"] .header-rpg-btn { min-width: 88px; justify-content: center; }
+[data-theme="pixel"] .header-count {
+  min-width: 1.35rem;
+  height: 1.35rem;
+  color: #f8b800;
+  background: #050520;
+  border: 1px solid #f8b800;
+  border-radius: 0;
+  font-size: var(--px-mini);
+}
+
+/* Font roles: compact controls, neutral Korean copy, and high-recognition display text. */
+[data-theme="pixel"] .action-btn,
+[data-theme="pixel"] .toolbar-pill-btn,
+[data-theme="pixel"] .assignee-edit-btn,
+[data-theme="pixel"] .dropdown-item,
+[data-theme="pixel"] .form-input,
+[data-theme="pixel"] .form-select,
+[data-theme="pixel"] textarea.form-input,
+[data-theme="pixel"] label,
+[data-theme="pixel"] .monster-hp-label,
+[data-theme="pixel"] .game-hud-label,
+[data-theme="pixel"] .section-label {
+  font-family: var(--font-pixel-body) !important;
+  font-synthesis: none;
+  letter-spacing: 0.01em;
+}
+[data-theme="pixel"] .badge,
+[data-theme="pixel"] kbd,
+[data-theme="pixel"] .header-count {
+  font-family: var(--font-pixel-ui) !important;
+  font-synthesis: none;
+  letter-spacing: 0.01em;
+}
+[data-theme="pixel"] h1,
+[data-theme="pixel"] h2,
+[data-theme="pixel"] h3,
+[data-theme="pixel"] h4,
+[data-theme="pixel"] .card-title {
+  font-family: var(--font-pixel-body) !important;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  font-synthesis: none;
+}
+[data-theme="pixel"] .logo-title,
+[data-theme="pixel"] .boss-monster-card::before,
+[data-theme="pixel"] .damage-float-text {
+  font-family: var(--font-pixel-display) !important;
+  font-synthesis: none;
+  letter-spacing: 0.02em;
+}
+
+/* Header type hierarchy: the product name leads; controls and status remain scan-friendly. */
+[data-theme="pixel"] .app-header .logo-title {
+  font-size: 1.12rem !important;
+  line-height: 1.2;
+  letter-spacing: 0.025em;
+  max-width: none !important;
+}
+[data-theme="pixel"] .app-header .brand-context {
+  font-family: var(--font-pixel-body);
+  font-size: 0.66rem;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+[data-theme="pixel"] .app-header .game-hud-label {
+  font-size: 0.66rem !important;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+[data-theme="pixel"] .app-header .game-hud-label strong {
+  font-size: 0.72rem;
+  color: #f8b800;
+}
+[data-theme="pixel"] .app-header .header-actions .action-btn,
+[data-theme="pixel"] .app-header .header-actions .toolbar-pill-btn {
+  font-size: 0.68rem !important;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+[data-theme="pixel"] .app-header .header-count {
+  font-size: 0.58rem !important;
+  line-height: 1;
+}
+
+/* Pixel borders and drop shadows add visual mass, so regular controls are one step denser than their flat-theme counterparts. */
+[data-theme="pixel"] .action-btn,
+[data-theme="pixel"] .toolbar-pill-btn {
+  min-height: 34px !important;
+  padding: 0.34rem 0.6rem !important;
+  border-width: 2px !important;
+  box-shadow: 3px 3px 0 #050520, inset -1px -1px 0 rgba(0, 0, 0, .4) !important;
+  transform: translate(-1px, -1px);
+}
+[data-theme="pixel"] .action-btn:hover,
+[data-theme="pixel"] .toolbar-pill-btn:hover {
+  box-shadow: 2px 2px 0 #050520 !important;
+}
+[data-theme="pixel"] .action-btn-danger {
+  box-shadow: 3px 3px 0 #050520, inset -1px -1px 0 rgba(0, 0, 0, .4) !important;
+}
+/* Dialog actions retain their compact scale and do not become visually dominant. */
+[data-theme="pixel"] .modal-card .action-btn,
+[data-theme="pixel"] .modal-card .toolbar-pill-btn {
+  min-height: 32px !important;
+  padding: 0.32rem 0.55rem !important;
+}
+
+/* Issue metadata is an operational decision aid, not decorative microcopy. */
+.monster-status-badges {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+.monster-element-badge,
+.monster-severity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 24px;
+  padding: 0.18rem 0.45rem;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.monster-element-badge .badge-key { color: var(--text-muted); font-weight: 650; }
+.monster-element-badge strong { color: var(--text-main); font-weight: 800; }
+.monster-severity-badge.severity-minor { color: var(--primary-light); border-color: var(--primary-border); }
+
+[data-theme="pixel"] .monster-element-badge,
+[data-theme="pixel"] .monster-severity-badge {
+  min-height: 26px !important;
+  padding: 0.2rem 0.45rem !important;
+  font-family: var(--font-pixel-body) !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.01em;
+  background: #050520 !important;
+  border: 2px solid currentColor !important;
+  box-shadow: 2px 2px 0 #050520 !important;
+}
+[data-theme="pixel"] .monster-element-badge .badge-key { color: #b0b0e0; }
+[data-theme="pixel"] .monster-element-badge strong { color: #ffffff; }
+[data-theme="pixel"] .monster-element-badge.weakness-frontend { color: #a5b4fc; }
+[data-theme="pixel"] .monster-element-badge.weakness-backend { color: #7dd3fc; }
+[data-theme="pixel"] .monster-element-badge.weakness-database { color: #fde68a; }
+[data-theme="pixel"] .monster-element-badge.weakness-security { color: #86efac; }
+[data-theme="pixel"] .monster-severity-badge.severity-minor { color: #c7d2fe !important; border-color: #6464ff !important; }
+[data-theme="pixel"] .monster-severity-badge.severity-major { color: #fde68a !important; border-color: #f8b800 !important; }
+[data-theme="pixel"] .monster-severity-badge.severity-critical { color: #fecaca !important; border-color: #e60012 !important; }
+
+/* ── 레이아웃 교정: 요약/스케줄 ── */
+[data-theme="pixel"] .daily-summary > div { padding: 0.35rem 0.5rem !important; }
+[data-theme="pixel"] .schedule-list > div { padding: 0.3rem 0.4rem !important; }
+[data-theme="pixel"] .member-load-list { gap: 0.4rem !important; margin-top: 0.5rem !important; padding-top: 0.5rem !important; }
+
+/* ── 반응형 토큰 오버라이드 ── */
+@media (max-width: 1120px) {
+  [data-theme="pixel"] .overview-metrics { grid-template-columns: repeat(3, minmax(130px, 1fr)) !important; }
+}
+
+@media (max-width: 760px) {
+  [data-theme="pixel"] {
+    --px-mini: 0.62rem;
+    --px-sm:   0.72rem;
+    --px-base: 0.84rem;
+    --px-num:  0.98rem;
+  }
+  [data-theme="pixel"] .stat-bar-box { width: 78px !important; }
+  [data-theme="pixel"] .dq-monster-img { width: 52px !important; height: 52px !important; }
+  [data-theme="pixel"] .overview-metrics { grid-template-columns: 1fr !important; }
+}

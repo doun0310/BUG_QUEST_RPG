@@ -33,11 +33,11 @@ export function renderMonsterBoard(state: AppState): string {
     return 'var(--primary)';
   };
 
-  const elementIcon: Record<string, string> = {
-    Frontend: icon('paint', 'color:var(--primary-light)', 12) + ' 약점: Frontend',
-    Backend: icon('server', 'color:var(--sky)', 12) + ' 약점: Backend',
-    Database: icon('database', 'color:var(--warning)', 12) + ' 약점: Database',
-    Security: icon('shield', 'color:var(--success)', 12) + ' 약점: Security',
+  const elementBadge: Record<string, string> = {
+    Frontend: `<span class="badge monster-element-badge weakness-frontend">${icon('paint', 'color:var(--primary-light)', 12)} <span class="badge-key">약점</span><strong>Frontend</strong></span>`,
+    Backend: `<span class="badge monster-element-badge weakness-backend">${icon('server', 'color:var(--sky)', 12)} <span class="badge-key">약점</span><strong>Backend</strong></span>`,
+    Database: `<span class="badge monster-element-badge weakness-database">${icon('database', 'color:var(--warning)', 12)} <span class="badge-key">약점</span><strong>Database</strong></span>`,
+    Security: `<span class="badge monster-element-badge weakness-security">${icon('shield', 'color:var(--success)', 12)} <span class="badge-key">약점</span><strong>Security</strong></span>`,
   };
 
   return `
@@ -132,7 +132,10 @@ export function renderMonsterBoard(state: AppState): string {
         const hpPct = (m.currentHp / m.maxHp) * 100;
         const hpTone = hpPct > 60 ? 'hp-high' : hpPct > 30 ? 'hp-medium' : 'hp-low';
         const accent = severityAccent(m);
-        const elemLabel = elementIcon[m.elementTrait || 'Frontend'] || elementIcon['Frontend'];
+        const weaknessBadge = elementBadge[m.elementTrait || 'Frontend'] || elementBadge['Frontend'];
+        const severityClass = m.severity === 'Critical' ? 'badge-danger severity-critical'
+          : m.severity === 'Major' ? 'badge-warning severity-major'
+            : 'severity-minor';
         const safePrUrl = safeExternalUrl(m.prUrl);
         const artwork = getMonsterArtwork(m);
 
@@ -162,9 +165,9 @@ export function renderMonsterBoard(state: AppState): string {
                     ${escapeHtml(m.title)}
                     ${isEnraged ? `<span class="badge badge-danger low-hp-warning" style="border-radius: 99px; display: inline-flex; align-items: center; gap: 0.25rem;">${icon('fire', 'color:var(--danger)', 10)} 광포화</span>` : ''}
                   </h3>
-                  <div style="display: flex; gap: 0.3rem; align-items: center; flex-shrink: 0;">
-                    <span class="badge" style="border-radius: 99px; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 0.25rem;">${elemLabel}</span>
-                    <span class="badge ${m.status === 'Defeated' ? 'badge-success' : 'badge-danger'}" style="border-radius: 99px; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                  <div class="monster-status-badges">
+                    ${weaknessBadge}
+                    <span class="badge monster-severity-badge ${m.status === 'Defeated' ? 'badge-success' : severityClass}">
                       ${m.status === 'Defeated'
                         ? icon('check', 'color:var(--success)', 10) + ' 토벌'
                         : icon('warning', 'color:var(--danger)', 10) + ' ' + m.severity}

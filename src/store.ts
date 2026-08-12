@@ -11,7 +11,7 @@ import {
 import { loadTeamSettings, toTeamMemberCapacity, buildProjectBudget } from './services/teamSettingsService';
 
 export interface AppState {
-  currentTheme: 'dark' | 'light' | 'matrix';
+  currentTheme: 'dark' | 'light' | 'matrix' | 'pixel';
   userState: UserProfile;
   monstersState: BugMonster[];
   vacationsState: VacationRequest[];

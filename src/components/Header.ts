@@ -7,11 +7,18 @@ export function renderHeader(state: AppState): string {
   const { userState, currentTheme } = state;
   const hpPct = (userState.hp / userState.maxHp) * 100;
   const xpPct = (userState.xp / userState.maxXp) * 100;
-  const themeIcon = currentTheme === 'dark' ? icon('moon', 'color:var(--primary-light)') : currentTheme === 'light' ? icon('sun', 'color:var(--warning)') : icon('matrix', 'color:var(--success)');
+  const themeIcon = currentTheme === 'dark'
+    ? icon('moon', 'color:var(--primary-light)')
+    : currentTheme === 'light'
+      ? icon('sun', 'color:var(--warning)')
+      : currentTheme === 'matrix'
+        ? icon('matrix', 'color:var(--success)')
+        : icon('matrix', 'color:var(--success)');
+  // The pixel skin is a visual mode of the Matrix destination, so retain the established label.
   const themeLabel = currentTheme === 'dark' ? '다크' : currentTheme === 'light' ? '라이트' : '매트릭스';
 
   return `
-    <header>
+    <header class="app-header" aria-label="BUG QUEST 상단 제어 영역">
       <!-- Logo + Identity -->
       <div class="brand-lockup">
         <div class="brand-mark" aria-hidden="true">${icon('mark', '', 22)}</div>
@@ -27,8 +34,8 @@ export function renderHeader(state: AppState): string {
         </div>
       </div>
 
-      <!-- Stat Bars & Controls -->
-      <div class="user-badge-container header-controls">
+      <!-- Player status HUD -->
+      <div class="header-hud" role="group" aria-label="플레이어 상태">
 
         <!-- HP Bar -->
         <div class="stat-bar-box game-hud-gauge game-hud-hp">
@@ -50,15 +57,17 @@ export function renderHeader(state: AppState): string {
           </div>
         </div>
 
-        <!-- Inventory -->
-        <button class="toolbar-pill-btn" id="btn-open-inventory">
+      </div>
+
+      <!-- Workspace actions -->
+      <div class="header-actions" role="group" aria-label="작업 영역 제어">
+        <button class="toolbar-pill-btn header-inventory-btn" id="btn-open-inventory">
           ${icon('box', '', 14)} 보상함
-          <span style="background: var(--primary-bg); color: var(--primary-light); font-size: 0.63rem; padding: 0 0.32rem; border-radius: 99px; font-weight: 700; margin-left: 0.1rem;">${userState.inventory.length}</span>
+          <span class="header-count">${userState.inventory.length}</span>
         </button>
 
-        <!-- RPG Features Dropdown -->
         <div class="dropdown-container">
-          <button class="action-btn" id="btn-toggle-rpg-menu" style="font-size: 0.73rem; padding: 0.42rem 0.85rem; border-radius: 99px; display: flex; align-items: center; gap: 0.4rem;">
+          <button class="action-btn header-rpg-btn" id="btn-toggle-rpg-menu" aria-haspopup="menu" aria-expanded="false">
             ${icon('sword', '', 14)} RPG 메뉴
           </button>
           <div class="dropdown-menu" id="rpg-dropdown-menu">
@@ -105,13 +114,14 @@ export function renderHeader(state: AppState): string {
           </div>
         </div>
 
-        <!-- Language & Theme Toggles -->
-        <button class="toolbar-pill-btn" id="btn-toggle-lang" style="display: flex; align-items: center; gap: 0.35rem;">
-          ${icon('globe', '', 14)} ${getLang() === 'ko' ? '한국어' : 'English'}
-        </button>
-        <button class="toolbar-pill-btn" id="btn-toggle-theme" style="display: flex; align-items: center; gap: 0.35rem;">
-          ${themeIcon} ${themeLabel}
-        </button>
+        <div class="header-utility" aria-label="언어 및 테마 설정">
+          <button class="toolbar-pill-btn" id="btn-toggle-lang">
+            ${icon('globe', '', 14)} ${getLang() === 'ko' ? '한국어' : 'English'}
+          </button>
+          <button class="toolbar-pill-btn" id="btn-toggle-theme">
+            ${themeIcon} ${themeLabel}
+          </button>
+        </div>
 
       </div>
     </header>
