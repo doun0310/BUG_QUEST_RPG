@@ -2534,3 +2534,34 @@ header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activi
   [data-theme="pixel"] .dq-monster-img { width: 52px !important; height: 52px !important; }
   [data-theme="pixel"] .overview-metrics { grid-template-columns: 1fr !important; }
 }
+
+/* Pixel theme spacing parity: retain square edges and pixel surfaces, but use the shared 4px layout rhythm. */
+[data-theme="pixel"] .app-header { gap: 0.8rem !important; }
+[data-theme="pixel"] .brand-lockup { gap: 0.7rem !important; }
+[data-theme="pixel"] .header-hud,
+[data-theme="pixel"] .header-actions { gap: 0.45rem !important; }
+[data-theme="pixel"] .card { padding: 1.1rem !important; }
+[data-theme="pixel"] .card-header { margin-bottom: 0.85rem !important; }
+[data-theme="pixel"] .dq-monster-container { padding: 1rem !important; gap: 0.9rem !important; }
+[data-theme="pixel"] .metric-card { padding: 0.75rem !important; gap: 0.65rem !important; }
+[data-theme="pixel"] .activity-log { padding: 0.8rem 1rem !important; }
+[data-theme="pixel"] .sidebar-actions {
+  gap: 0.35rem !important;
+  padding-top: 0.7rem !important;
+  margin-top: 0.7rem !important;
+}
+[data-theme="pixel"] .member-load-list {
+  gap: 0.55rem !important;
+  margin-top: 0.8rem !important;
+  padding-top: 0.7rem !important;
+}
+[data-theme="pixel"] .schedule-list > div { padding: 0.45rem 0 !important; }
+[data-theme="pixel"] .daily-summary > div { padding: 0.6rem 0.7rem !important; }
+[data-theme="pixel"] .dropdown-item { padding: 0.45rem 0.75rem !important; gap: 0.5rem !important; }
+[data-theme="pixel"] .monster-status-badges { gap: 0.4rem; }
+
+@media (max-width: 760px) {
+  [data-theme="pixel"] .app-header { gap: 0.65rem !important; }
+  [data-theme="pixel"] .card { padding: 0.9rem !important; }
+  [data-theme="pixel"] .dq-monster-container { padding: 0.85rem !important; gap: 0.75rem !important; }
+}
