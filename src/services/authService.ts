@@ -269,7 +269,7 @@ export async function createAccount(
     lastLoginAt: new Date().toISOString(),
     userState: newUserState,
     monstersState: [...mockMonsters],
-    theme: 'dark',
+    theme: 'pixel',
   };
 
   state.accounts.push(newAccount);
@@ -333,7 +333,7 @@ export function createAccountSync(
     lastLoginAt: new Date().toISOString(),
     userState: newUserState,
     monstersState: [...mockMonsters],
-    theme: 'dark',
+    theme: 'pixel',
   };
 
   state.accounts.push(newAccount);

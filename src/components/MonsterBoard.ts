@@ -228,9 +228,6 @@ export function renderMonsterBoard(state: AppState): string {
                         style="font-size: 0.7rem; padding: 0.28rem 0.6rem; border-radius: 8px; display: flex; align-items: center; gap: 0.35rem;">
                         ${icon('book', '', 12)} ${m.postMortem ? '회고 보기' : '사후 분석 작성 (+50 XP)'}
                       </button>
-                      <span class="badge badge-success" style="border-radius: 99px; display: inline-flex; align-items: center; gap: 0.25rem;">
-                        ${icon('check', 'color:var(--success)', 10)} Slain
-                      </span>
                     </div>
                   `}
                 </div>

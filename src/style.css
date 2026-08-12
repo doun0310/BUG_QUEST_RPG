@@ -2565,3 +2565,23 @@ header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activi
   [data-theme="pixel"] .card { padding: 0.9rem !important; }
   [data-theme="pixel"] .dq-monster-container { padding: 0.85rem !important; gap: 0.75rem !important; }
 }
+
+/* Toast parity: pixel decoration stays, but notification footprint matches the other themes. */
+[data-theme="pixel"] #toast-container { gap: 8px; }
+[data-theme="pixel"] .toast-item {
+  max-width: 360px;
+  padding: 0.55rem 0.75rem !important;
+  border-width: 2px !important;
+  border-left-width: 4px !important;
+  box-shadow: 3px 3px 0 #050520 !important;
+  font-family: var(--font-pixel-body) !important;
+  font-size: 0.72rem !important;
+  line-height: 1.45;
+}
+[data-theme="pixel"] .toast-item .toast-icon { flex-basis: 16px; }
+[data-theme="pixel"] .toast-item .toast-icon .pixel-icon { width: 14px; height: 14px; }
+
+@media (max-width: 760px) {
+  [data-theme="pixel"] #toast-container { right: 12px; bottom: 12px; left: 12px; }
+  [data-theme="pixel"] .toast-item { max-width: none; }
+}

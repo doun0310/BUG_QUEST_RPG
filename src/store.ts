@@ -37,7 +37,7 @@ export interface AppState {
 
 const isStorageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage !== null;
 
-const storedTheme = isStorageAvailable ? (localStorage.getItem('theme') as any) || 'dark' : 'dark';
+const storedTheme = isStorageAvailable ? (localStorage.getItem('theme') as any) || 'pixel' : 'pixel';
 const storedUser = isStorageAvailable ? localStorage.getItem('userState') : null;
 const storedMonsters = isStorageAvailable ? localStorage.getItem('monstersState') : null;
 

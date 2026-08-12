@@ -52,14 +52,14 @@ import {
 } from './mockData';
 import type { VacationRequest, BugMonster, WebhookPayload, WeeklyQuest, TeamCoopBoss, WeeklyRank } from './types';
 
-let currentTheme: 'dark' | 'light' | 'matrix' | 'pixel' = 'dark';
+let currentTheme: 'dark' | 'light' | 'matrix' | 'pixel' = 'pixel';
 try {
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'light' || savedTheme === 'matrix' || savedTheme === 'dark' || savedTheme === 'pixel') {
     currentTheme = savedTheme;
   }
 } catch {
-  // fallback to dark
+  // Default to the pixel theme when stored preferences are unavailable.
 }
 
 let storedUser = null;
@@ -1602,7 +1602,7 @@ renderModals = function renderModals() {
               <div style="font-size: 1.15rem; font-weight: 800; color: var(--primary);">${totalCount} 마리</div>
             </div>
             <div style="background: var(--inner-box-bg); padding: 0.65rem; border-radius: 8px; text-align: center; border: 1px solid var(--panel-border);">
-              <div style="font-size: 0.7rem; color: var(--text-sub);">토벌 완료 (Slain)</div>
+              <div style="font-size: 0.7rem; color: var(--text-sub);">토벌 완료</div>
               <div style="font-size: 1.15rem; font-weight: 800; color: var(--success);">${defeatedCount} 마리</div>
             </div>
             <div style="background: var(--inner-box-bg); padding: 0.65rem; border-radius: 8px; text-align: center; border: 1px solid var(--panel-border);">

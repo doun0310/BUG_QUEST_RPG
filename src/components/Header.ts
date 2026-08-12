@@ -24,7 +24,7 @@ export function renderHeader(state: AppState): string {
         <div class="brand-mark" aria-hidden="true">${icon('mark', '', 22)}</div>
         <div>
           <h1 class="logo-title" style="display: flex; align-items: center; gap: 0.4rem;">
-            BUG QUEST <span>WORKSPACE</span>
+            BUG QUEST <span>RPG</span>
           </h1>
           <div class="brand-context">
             ${icon('activity', 'color:var(--text-muted)', 12)} ${userState.name}
