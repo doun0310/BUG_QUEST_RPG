@@ -14,7 +14,7 @@ import { parseLcovContent } from './services/lcovParser';
 import { isLoggedIn, login, logout, createAccount, switchAccount, saveCurrentGameStateToAccount, getCurrentAccount, getAllAccounts, lockSession, unlockSession, isSessionLocked, purgeLegacyDemoAccounts } from './services/authService';
 import { renderLoginScreen } from './components/LoginScreen';
 import { renderOnboardingWizard, type WizardStep } from './components/OnboardingWizard';
-import { isOnboardingComplete, completeOnboarding, loadTeamSettings, saveTeamSettings, resetOnboarding, toTeamMemberCapacity, addAccountAsTeamMember } from './services/teamSettingsService';
+import { isOnboardingComplete, completeOnboarding, loadTeamSettings, saveTeamSettings, resetOnboarding, toTeamMemberCapacity, addAccountAsTeamMember, buildProjectBudget } from './services/teamSettingsService';
 import type { TeamMemberInput } from './types';
 import { store } from './store';
 import { avatarIcon, icon } from './icons';
@@ -366,6 +366,50 @@ function renderChartIfModalOpen() {
           burnChartInstance.destroy();
         }
 
+        const settings = loadTeamSettings();
+        const budgetInfo = buildProjectBudget(settings, monstersState);
+
+        const totalDays = budgetInfo.projectDays;
+        const currentDay = budgetInfo.currentDay;
+        const idealRate = budgetInfo.idealBurnRate;
+        const actualRate = budgetInfo.actualBurnRate;
+
+        // 마일스톤 생성
+        const quarter1 = Math.round(totalDays * 0.25);
+        const quarter2 = Math.round(totalDays * 0.5);
+        const quarter3 = Math.round(totalDays * 0.75);
+
+        const labels = [
+          '0일차',
+          `${quarter1}일차`,
+          `${quarter2}일차`,
+          `${currentDay}일차 (현재)`,
+          `${quarter3}일차`,
+          `${totalDays}일차 (완료)`
+        ];
+
+        const idealData = [
+          0,
+          25.0,
+          50.0,
+          idealRate,
+          75.0,
+          100.0
+        ];
+
+        // 현재 일차까지의 실제 소진율 추이 (초기 25%, 50% 구간은 현재 소진율 비례 계산)
+        const q1Actual = Math.min(100, Math.round(actualRate * 0.35 * 10) / 10);
+        const q2Actual = Math.min(100, Math.round(actualRate * 0.7 * 10) / 10);
+
+        const actualData = [
+          0,
+          q1Actual,
+          q2Actual,
+          actualRate,
+          null,
+          null
+        ];
+
         const chartCtx = ctx.getContext('2d');
         let idealGradient: any = '#38bdf8';
         let actualGradient: any = '#fb7185';
@@ -383,11 +427,11 @@ function renderChartIfModalOpen() {
         burnChartInstance = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: ['10일차', '20일차', '35일차 (현재)', '45일차', '60일차 (완료)'],
+            labels,
             datasets: [
               {
                 label: '목표 예산 소진 (Ideal)',
-                data: [16.6, 33.3, 58.3, 75.0, 100],
+                data: idealData,
                 borderColor: '#38bdf8',
                 backgroundColor: idealGradient,
                 borderDash: [6, 6],
@@ -399,22 +443,22 @@ function renderChartIfModalOpen() {
               },
               {
                 label: '실제 예산 소진 (Actual)',
-                data: [22.0, 48.0, 73.0, null, null],
-                borderColor: '#fb7185',
+                data: actualData,
+                borderColor: actualRate > idealRate + 10 ? '#ef4444' : '#fb7185',
                 backgroundColor: actualGradient,
                 borderWidth: 3,
                 tension: 0.3,
                 fill: true,
                 pointRadius: 6,
                 pointHoverRadius: 9,
-                pointBackgroundColor: '#fb7185'
+                pointBackgroundColor: actualRate > idealRate + 10 ? '#ef4444' : '#fb7185'
               }
             ]
           },
           options: {
             responsive: true,
             animation: {
-              duration: 1000,
+              duration: 800,
               easing: 'easeOutQuart'
             },
             plugins: {
@@ -433,8 +477,10 @@ function renderChartIfModalOpen() {
                       label += ': ';
                     }
                     if (context.parsed.y !== null) {
-                      label += context.parsed.y + '%';
-                      if (context.dataset.label?.includes('Actual')) {
+                      const pct = context.parsed.y;
+                      const amount = Math.round((budgetInfo.totalBudget * pct) / 100);
+                      label += `${pct.toFixed(1)}% (₩${amount.toLocaleString('ko-KR')})`;
+                      if (context.dataset.label?.includes('Actual') && budgetInfo.burnRateAlert) {
                         label += ' (⚠️ 초과 소진 주의)';
                       }
                     }

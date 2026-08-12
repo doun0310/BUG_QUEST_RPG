@@ -1,4 +1,4 @@
-import type { TeamSettings, TeamMemberInput, TeamMemberCapacity } from '../types';
+import type { TeamSettings, TeamMemberInput, TeamMemberCapacity, BugMonster } from '../types';
 
 const TEAM_SETTINGS_KEY = 'bug_quest_team_settings';
 
@@ -123,15 +123,33 @@ export function toTeamMemberCapacity(members: TeamMemberInput[], sprintDays: num
 }
 
 /**
- * 팀 설정 기반으로 프로젝트 예산 오브젝트 생성
+ * 팀 설정 및 버그/몬스터 처리 상태 기반으로 프로젝트 예산 오브젝트 생성 (실시간 연동)
  */
-export function buildProjectBudget(settings: TeamSettings) {
+export function buildProjectBudget(settings: TeamSettings, monsters: BugMonster[] = []) {
   const today = new Date();
-  const startDate = new Date(settings.projectStartDate);
-  const daysPassed = Math.max(0, Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-  const totalDays = settings.projectDurationDays;
-  const idealBurnRate = totalDays > 0 ? parseFloat(((daysPassed / totalDays) * 100).toFixed(1)) : 0;
-  const spentEstimate = Math.floor(settings.totalBudget * (idealBurnRate / 100) * 1.05); // 5% 초과 가정
+  const startDate = new Date(settings.projectStartDate || new Date().toISOString().split('T')[0]);
+  const daysPassed = Math.max(1, Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const totalDays = settings.projectDurationDays || 60;
+  const idealBurnRate = totalDays > 0 ? parseFloat(Math.min(100, (daysPassed / totalDays) * 100).toFixed(1)) : 0;
+
+  // 몬스터(이슈) 처리 비율 및 작업 시간 기반 소진 비용 동적 산출
+  const totalMonsters = monsters.length;
+  const defeatedCount = monsters.filter(m => m.status === 'Defeated' || m.currentHp <= 0).length;
+  
+  // 몬스터 데미지 소진 비율 (전체 maxHp 대비 감축된 hp 비중)
+  const totalMaxHp = monsters.reduce((acc, m) => acc + (m.maxHp || 100), 0);
+  const totalCurrentHp = monsters.reduce((acc, m) => acc + Math.max(0, m.currentHp || 0), 0);
+  const damageProgressRate = totalMaxHp > 0 ? (totalMaxHp - totalCurrentHp) / totalMaxHp : (totalMonsters > 0 ? defeatedCount / totalMonsters : 0);
+
+  // 고정비 (인프라 + SaaS)
+  const fixedCostsTotal = Math.floor(settings.totalBudget * 0.042);
+  
+  // 경과 일수 기본 소진 (일할 계산) + 작업 진행도에 따른 인건비 소진
+  const timeBasedSpent = settings.totalBudget * 0.5 * (daysPassed / totalDays);
+  const workBasedSpent = settings.totalBudget * 0.45 * damageProgressRate;
+  const spentEstimate = Math.min(settings.totalBudget, Math.floor(fixedCostsTotal + timeBasedSpent + workBasedSpent));
+
+  const actualBurnRate = settings.totalBudget > 0 ? parseFloat(((spentEstimate / settings.totalBudget) * 100).toFixed(1)) : 0;
 
   return {
     totalBudget: settings.totalBudget,
@@ -141,10 +159,13 @@ export function buildProjectBudget(settings: TeamSettings) {
       { id: 'f1', name: '클라우드 인프라 운영비', cost: Math.floor(settings.totalBudget * 0.03), category: '인프라' },
       { id: 'f2', name: 'SaaS 라이선스 & 도구', cost: Math.floor(settings.totalBudget * 0.012), category: '소프트웨어' },
     ],
-    burnRateAlert: idealBurnRate > 0 && (spentEstimate / settings.totalBudget * 100) > idealBurnRate + 10,
+    burnRateAlert: actualBurnRate > idealBurnRate + 10,
     projectDays: totalDays,
     currentDay: daysPassed,
     idealBurnRate,
-    actualBurnRate: settings.totalBudget > 0 ? parseFloat((spentEstimate / settings.totalBudget * 100).toFixed(1)) : 0,
+    actualBurnRate,
+    defeatedCount,
+    totalMonsters,
+    damageProgressRate: Math.round(damageProgressRate * 100),
   };
 }
