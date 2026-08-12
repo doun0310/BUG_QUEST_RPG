@@ -3,7 +3,7 @@ import confetti from 'canvas-confetti';
 import Chart from 'chart.js/auto';
 import { soundFx } from './soundManager';
 import { showToast } from './toastManager';
-import { getLang, setLang } from './i18n';
+import { getLang, setLang, getSeverityKorean } from './i18n';
 import { generateAIDebugGuide } from './aiService';
 import { getGitHubConfig, saveGitHubConfig, verifyGitHubConfig, mergeGitHubPullRequest, fetchOpenPullRequests, type GitHubPullRequest } from './services/githubService';
 import { exportAppData, parseBackupFile } from './services/dataBackupService';
@@ -1623,11 +1623,11 @@ renderModals = function renderModals() {
                         ${escapeHtml(m.title)}
                       </strong>
                       <span class="badge ${m.status === 'Defeated' ? 'badge-success' : 'badge-danger'}">
-                        ${m.status === 'Defeated' ? '🏆 토벌 도감 등록' : m.severity}
+                        ${m.status === 'Defeated' ? '🏆 토벌 도감 등록' : getSeverityKorean(m.severity)}
                       </span>
                     </div>
                     <div style="font-size: 0.72rem; color: var(--text-sub);">
-                      위험도: <strong>${m.severity}</strong> | 처치 경험치: <strong style="color: var(--warning);">+${m.rewardXp} XP</strong>
+                      위험도: <strong>${getSeverityKorean(m.severity)}</strong> | 처치 경험치: <strong style="color: var(--warning);">+${m.rewardXp} XP</strong>
                     </div>
                     ${m.postMortem ? `
                       <div style="font-size: 0.7rem; color: var(--primary); margin-top: 0.2rem; background: rgba(56, 189, 248, 0.1); padding: 0.2rem 0.4rem; border-radius: 4px;">

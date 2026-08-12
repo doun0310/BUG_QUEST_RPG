@@ -1,5 +1,6 @@
 import type { AppState } from '../store';
 import { icon } from '../icons';
+import { getSeverityKorean } from '../i18n';
 import { escapeHtml, safeExternalUrl } from '../services/inputSafety';
 import { getMonsterArtwork, monsterArtworkClass } from '../services/monsterSpriteService';
 
@@ -170,7 +171,7 @@ export function renderMonsterBoard(state: AppState): string {
                     <span class="badge monster-severity-badge ${m.status === 'Defeated' ? 'badge-success' : severityClass}">
                       ${m.status === 'Defeated'
                         ? icon('check', 'color:var(--success)', 10) + ' 토벌'
-                        : icon('warning', 'color:var(--danger)', 10) + ' ' + m.severity}
+                        : icon('warning', 'color:var(--danger)', 10) + ' ' + getSeverityKorean(m.severity)}
                     </span>
                   </div>
                 </div>

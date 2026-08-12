@@ -2314,33 +2314,69 @@ header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activi
   padding: 0.48rem 0.9rem !important;
 }
 
-/* Budget burn analytics is a separate chart dialog and needs its own visual scale. */
+/* ── 8-bit 픽셀 예산 분석 모달 표(Chart & Summary Table) UI ── */
 [data-theme="pixel"] .budget-analytics-backdrop { padding: 1.5rem !important; }
 [data-theme="pixel"] .budget-analytics-modal {
   width: min(calc(100vw - 3rem), 620px);
   max-width: 620px !important;
   max-height: min(88vh, 860px);
-  padding: 1.85rem !important;
-  font-size: 16px;
-  line-height: 1.6;
+  padding: 1.5rem !important;
+  border: 4px solid #1a1ae6 !important;
+  box-shadow: 5px 5px 0 #050520 !important;
+  background-color: #1a1a2e !important;
 }
 [data-theme="pixel"] .budget-analytics-modal .modal-heading {
-  margin-bottom: 1.1rem !important;
+  margin-bottom: 1rem !important;
 }
 [data-theme="pixel"] .budget-analytics-modal .modal-heading-copy h2 {
-  font-family: var(--font-pixel-body) !important;
-  font-size: 1.22rem !important;
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: 1.1rem !important;
   line-height: 1.35;
+  color: #f8b800 !important;
 }
+
+/* 차트 표 박스 UI */
 [data-theme="pixel"] .budget-analytics-modal .chart-surface {
-  padding: 1.15rem;
-  margin-bottom: 1rem;
+  padding: 1.1rem !important;
+  margin-bottom: 0.85rem !important;
+  border: 3px solid #1a1ae6 !important;
+  box-shadow: 3px 3px 0 #050520 !important;
+  background-color: #0a0a1a !important;
+  background-image: linear-gradient(rgba(26, 26, 230, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(26, 26, 230, 0.08) 1px, transparent 1px) !important;
+  background-size: 10px 10px !important;
+  border-radius: 0 !important;
 }
-[data-theme="pixel"] .budget-analytics-modal .chart-surface canvas { max-height: 280px; }
-[data-theme="pixel"] .budget-analytics-modal .analytics-summary { gap: 0.75rem; }
-[data-theme="pixel"] .budget-analytics-modal .analytics-summary > div { padding: 0.9rem; }
-[data-theme="pixel"] .budget-analytics-modal .analytics-summary span { font-size: 0.78rem; }
-[data-theme="pixel"] .budget-analytics-modal .analytics-summary strong { font-size: 1.08rem; }
+[data-theme="pixel"] .budget-analytics-modal .chart-surface canvas {
+  max-height: 250px !important;
+  image-rendering: pixelated !important;
+}
+
+/* 하단 요약 표 박스 UI */
+[data-theme="pixel"] .budget-analytics-modal .analytics-summary {
+  gap: 0.75rem !important;
+}
+[data-theme="pixel"] .budget-analytics-modal .analytics-summary > div {
+  background: #0a0a1a !important;
+  border: 3px solid #1a1ae6 !important;
+  box-shadow: 3px 3px 0 #050520 !important;
+  border-radius: 0 !important;
+  padding: 0.75rem 0.9rem !important;
+}
+[data-theme="pixel"] .budget-analytics-modal .analytics-summary span {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: var(--px-sm) !important;
+  color: #6464ff !important;
+}
+[data-theme="pixel"] .budget-analytics-modal .analytics-summary strong {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: var(--px-num) !important;
+  color: #f8b800 !important;
+  margin-top: 0.25rem !important;
+}
+[data-theme="pixel"] .budget-analytics-modal .analytics-summary small {
+  font-family: 'Galmuri11', 'Press Start 2P', monospace !important;
+  font-size: var(--px-mini) !important;
+}
 
 /* ── 레이아웃 교정: 드롭다운 ── */
 [data-theme="pixel"] .dropdown-item { padding: 0.42rem 0.6rem !important; min-height: 34px !important; gap: 0.4rem !important; }
@@ -2653,6 +2689,13 @@ header, .card, .modal-card, .dropdown-menu, .stat-bar-box, .metric-card, .activi
 }
 [data-theme="pixel"] .toast-item .toast-icon { flex-basis: 16px; }
 [data-theme="pixel"] .toast-item .toast-icon .pixel-icon { width: 14px; height: 14px; }
+
+/* Real-time budget dialog: expose health, cash position and trend as separate scan targets. */
+.budget-status-strip { display:flex; align-items:center; gap:.65rem; padding:.65rem .75rem; margin-bottom:.8rem; border:1px solid var(--panel-border); border-radius:var(--radius-sm); background:var(--surface-sunken); }.budget-status-strip.is-alert { color:var(--danger); border-color:var(--danger-border); background:var(--danger-light); }.budget-status-strip.is-watch { color:var(--warning); border-color:var(--warning-border); background:var(--warning-light); }.budget-status-strip.is-stable { color:var(--success); border-color:var(--success-border); background:var(--success-light); }.budget-status-icon { display:grid; place-items:center; flex:0 0 28px; height:28px; border-radius:var(--radius-sm); background:color-mix(in srgb, currentColor 13%, transparent); }.budget-status-strip > div { min-width:0; flex:1; }.budget-status-strip strong,.budget-status-strip span { display:block; }.budget-status-strip strong { font-size:.75rem; }.budget-status-strip > div > span { margin-top:.08rem; color:var(--text-sub); font-size:.68rem; }.budget-status-delta { font-size:.82rem !important; font-weight:800; white-space:nowrap; }.budget-kpi-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.55rem; margin-bottom:.8rem; }.budget-kpi { padding:.7rem; border:1px solid var(--panel-border); border-radius:var(--radius-sm); background:var(--surface-sunken); }.budget-kpi span,.budget-kpi small { display:block; color:var(--text-muted); font-size:.64rem; }.budget-kpi strong { display:block; margin:.18rem 0; color:var(--text-main); font-size:.83rem; font-variant-numeric:tabular-nums; }.budget-kpi-spent strong { color:var(--primary-light); }.budget-progress-block { padding:.65rem .75rem; margin-bottom:.8rem; border:1px solid var(--panel-border); border-radius:var(--radius-sm); background:var(--surface-sunken); }.budget-progress-block > div:first-child { display:flex; align-items:baseline; justify-content:space-between; gap:.5rem; margin-bottom:.4rem; }.budget-progress-block span { color:var(--text-muted); font-size:.68rem; }.budget-progress-block strong { color:var(--text-main); font-size:.76rem; }.budget-progress-block strong small { color:var(--text-sub); font-size:.66rem; }.budget-progress-track { height:7px; overflow:hidden; border-radius:99px; background:rgba(148,163,184,.16); }.budget-progress-track i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--primary),var(--sky)); }.budget-chart-surface { margin-bottom:0; }
+
+[data-theme="pixel"] .budget-status-strip,[data-theme="pixel"] .budget-kpi,[data-theme="pixel"] .budget-progress-block { border-width:2px; border-radius:0; box-shadow:2px 2px 0 #050520; }[data-theme="pixel"] .budget-status-icon { display:grid; place-items:center; line-height:0; }[data-theme="pixel"] .budget-status-icon .pixel-icon { display:block; width:16px; height:16px; margin:0; }[data-theme="pixel"] .budget-status-strip.is-alert .budget-status-icon { background:#e60012; color:#fff; }.budget-status-strip.is-watch .budget-status-icon { background:#f8b800; color:#050520; }.budget-status-strip.is-stable .budget-status-icon { background:#00a800; color:#fff; }[data-theme="pixel"] .budget-status-strip strong,[data-theme="pixel"] .budget-kpi strong,[data-theme="pixel"] .budget-progress-block strong { font-family:var(--font-pixel-body); }[data-theme="pixel"] .budget-status-strip > div > span,[data-theme="pixel"] .budget-kpi span,[data-theme="pixel"] .budget-kpi small,[data-theme="pixel"] .budget-progress-block span,[data-theme="pixel"] .budget-progress-block strong small { color:#b0b0e0; }[data-theme="pixel"] .budget-kpi-spent strong { color:#f8b800; }[data-theme="pixel"] .budget-progress-track { height:10px; border:2px solid #050520; border-radius:0; background:#0a0a1a; }[data-theme="pixel"] .budget-progress-track i { border-radius:0; background:repeating-linear-gradient(90deg,#1a1ae6 0 8px,#6464ff 8px 10px); }
+
+@media (max-width:760px) { .budget-kpi-grid { grid-template-columns:1fr; }.budget-status-strip { align-items:flex-start; }.budget-status-delta { margin-top:.15rem; } }
 
 @media (max-width: 760px) {
   [data-theme="pixel"] #toast-container { right: 12px; bottom: 12px; left: 12px; }

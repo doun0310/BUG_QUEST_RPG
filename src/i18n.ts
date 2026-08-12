@@ -79,3 +79,17 @@ export function setLang(lang: Lang) {
 export function t(key: string): string {
   return translations[currentLang][key] || key;
 }
+
+export function getSeverityKorean(severity: string): string {
+  switch (severity) {
+    case 'Critical':
+      return '치명적';
+    case 'Major':
+      return '중대';
+    case 'Minor':
+      return '경미';
+    default:
+      return severity;
+  }
+}
+

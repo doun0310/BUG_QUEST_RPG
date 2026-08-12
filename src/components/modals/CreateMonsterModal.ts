@@ -27,9 +27,9 @@ export function renderCreateMonsterModal(state: AppState): string {
               ${icon('warning', '', 12)} 위험도 (Severity)
             </label>
             <select class="form-select" id="new-monster-severity">
-              <option value="Critical" ${selected(editing?.severity, 'Critical')}>Critical — HP 1,000 / 보상 500 XP</option>
-              <option value="Major" ${selected(editing?.severity, 'Major')}>Major — HP 500 / 보상 250 XP</option>
-              <option value="Minor" ${selected(editing?.severity || 'Minor', 'Minor')}>Minor — HP 200 / 보상 100 XP</option>
+              <option value="Critical" ${selected(editing?.severity, 'Critical')}>치명적 (Critical) — HP 1,000 / 보상 500 XP</option>
+              <option value="Major" ${selected(editing?.severity, 'Major')}>중대 (Major) — HP 500 / 보상 250 XP</option>
+              <option value="Minor" ${selected(editing?.severity || 'Minor', 'Minor')}>경미 (Minor) — HP 200 / 보상 100 XP</option>
             </select>
           </div>
           <div class="form-group">
